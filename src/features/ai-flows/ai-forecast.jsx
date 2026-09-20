@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { aiJSON, useAITask } from '@/features/ai/use-ai-task';
-import { FC_BASE } from '@/features/ai-flows/fc-base';
+import { useAITask } from '@/features/ai/use-ai-task';
+import { forecastReplenishmentAction } from '@/features/ai/actions';
 import { variantLabel } from '@/lib/attr-colors';
-import { catById } from '@/lib/mock';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
@@ -20,38 +19,42 @@ import { ConfidenceBar } from '@/features/ai/confidence-bar';
 import { AIWhy } from '@/features/ai/ai-why';
 import { ReviewActions } from '@/features/ai/review-actions';
 
-export function AIForecast() {
+export function AIForecast({ base }) {
   const navigate = useNavigate();
   const [result, setResult] = React.useState(null);
   const [decided, setDecided] = React.useState({});
   const task = useAITask();
 
   const run = () => task.run(async () => {
-    const data = await aiJSON({
-      system: 'Você é analista de reposição de estoque no varejo brasileiro. Ajusta a sugestão de compra considerando sazonalidade, tendência e calendário comercial.',
-      prompt: `Data de hoje: 18 de setembro de 2026. Loja: varejo multicategoria em São Paulo, 4 unidades.
-A sugestão ingênua atual = média de venda de 30 dias ajustada pelo prazo do fornecedor. Ela ignora sazonalidade e tendência.
-
-Produtos a repor (saldo atual, média de venda em 30 dias, prazo do fornecedor em dias, sugestão ingênua):
-${FC_BASE.map(p => `${p.sku} | ${p.name} ${variantLabel(p.attrs)} | categoria ${catById(p.cat).name} | saldo ${p.stock} | media30 ${p.avg30} | prazo ${p.lead}d | ingenua ${p.naive}`).join('\n')}
-
-Para cada SKU, proponha a quantidade ajustada e explique. Considere Black Friday (novembro), Natal, volta às aulas, e o clima de primavera/verão no hemisfério sul.
-Devolva JSON:
-{"items":[{"sku":"...","suggested":numero,"deltaPct":numero,"confidence":0-100,
- "drivers":["fator 1","fator 2","fator 3"],"risk":"o que acontece se errar, uma frase curta"}]}`,
-      max_tokens: 1800,
-    });
+    const data = await forecastReplenishmentAction(base.map(p => ({
+      sku: p.sku, name: p.name, attrs: p.attrs, category: p.category?.name ?? '',
+      stock: p.stock, sold_30d: p.sold_30d, lead_time_days: p.lead_time_days, suggest_qty: p.suggest_qty,
+    })));
     setResult(data.items || []);
     return data;
   });
 
   const decide = (sku, v) => setDecided(d => ({ ...d, [sku]: v }));
 
+  if (base.length === 0) {
+    return (
+      <StoreShell route="/ai/forecast" breadcrumb={['IA', 'Previsão de demanda']} navigate={navigate}>
+        <PageHeader title="Previsão de demanda" sub="Nenhum produto precisa de reposição no momento." />
+        <Page>
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <EmptyState icon={<I.Chart size={18} />} title="Nada para repor agora"
+              desc="Todos os produtos ativos estão com cobertura de estoque suficiente pela velocidade de venda dos últimos 30 dias." />
+          </div>
+        </Page>
+      </StoreShell>
+    );
+  }
+
   return (
     <StoreShell route="/ai/forecast" breadcrumb={['IA', 'Previsão de demanda']} navigate={navigate}>
       <PageHeader
         title="Previsão de demanda"
-        sub="A reposição padrão usa média de 30 dias. Aqui a IA acrescenta sazonalidade, tendência e calendário."
+        sub="A reposição padrão usa velocidade de venda de 30 dias. Aqui a IA acrescenta sazonalidade, tendência e calendário."
         actions={(
           <>
             <button onClick={() => navigate('/purchase-orders')} className="btn btn-outline btn-sm">Reposição padrão</button>
@@ -67,7 +70,7 @@ Devolva JSON:
             <EmptyState
               icon={<I.Chart size={18} />}
               title="Nenhuma previsão nesta sessão"
-              desc="A IA vai comparar a sugestão ingênua com uma projeção que considera sazonalidade, tendência de 3 meses e calendário comercial. Nada é comprado sem sua aprovação."
+              desc="A IA vai comparar a sugestão padrão com uma projeção que considera sazonalidade, tendência e calendário comercial. Nada é comprado sem sua aprovação."
               action={<button onClick={run} className="btn btn-primary"><I.Sparkle size={13} /> Calcular previsão</button>}
             />
           </div>
@@ -80,7 +83,7 @@ Devolva JSON:
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
               {[
                 { l: 'SKUs projetados', v: `${result.length}` },
-                { l: 'Sugestão ingênua', v: `${FC_BASE.reduce((s, p) => s + p.naive, 0)} un`, s: 'média de 30 dias' },
+                { l: 'Sugestão padrão', v: `${base.reduce((s, p) => s + p.suggest_qty, 0)} un`, s: 'velocidade de 30 dias' },
                 { l: 'Sugestão da IA', v: `${result.reduce((s, r) => s + (r.suggested || 0), 0)} un`, s: 'com sazonalidade', tone: 'accent' },
                 { l: 'Confiança média', v: `${Math.round(result.reduce((s, r) => s + (r.confidence || 0), 0) / result.length)}%` },
               ].map((m, i) => (
@@ -93,7 +96,7 @@ Devolva JSON:
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {FC_BASE.map(p => {
+              {base.map(p => {
                 const r = result.find(x => x.sku === p.sku);
                 if (!r) return null;
                 const state = decided[p.sku];
@@ -101,19 +104,19 @@ Devolva JSON:
                 return (
                   <div key={p.sku} className="card" style={{ overflow: 'hidden', opacity: state === 'reject' ? 0.6 : 1 }}>
                     <div style={{ padding: 16, display: 'flex', gap: 13, alignItems: 'flex-start' }}>
-                      <ProductThumb cat={p.cat} attrs={p.attrs} size={34} />
+                      <ProductThumb category={p.category} attrs={p.attrs} size={34} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.01em' }}>{p.name}</span>
                           <AttrChip value={variantLabel(p.attrs)} />
-                          <CategoryBadge cat={p.cat} />
+                          {p.category && <CategoryBadge category={p.category} />}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                            Saldo <strong style={{ color: p.stock < 5 ? 'var(--danger)' : 'var(--fg)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{p.stock}</strong>
+                            Saldo <strong style={{ color: p.stock < p.min_stock ? 'var(--danger)' : 'var(--fg)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{p.stock}</strong>
                           </span>
                           <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                            Ingênua <strong style={{ color: 'var(--fg-muted)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{p.naive}</strong>
+                            Padrão <strong style={{ color: 'var(--fg-muted)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{p.suggest_qty}</strong>
                           </span>
                           <span style={{ color: 'var(--fg-muted)', display: 'flex' }}><I.ArrowRight size={13} /></span>
                           <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>

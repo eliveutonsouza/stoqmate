@@ -3,10 +3,9 @@
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
 import { SAMPLE_NF } from '@/features/ai-flows/sample-nf';
-import { aiJSON, useAITask } from '@/features/ai/use-ai-task';
-import { CATALOG } from '@/lib/catalog';
-import { variantLabel } from '@/lib/attr-colors';
-import { MOCK } from '@/lib/mock';
+import { useAITask } from '@/features/ai/use-ai-task';
+import { extractInvoiceAction } from '@/features/ai/actions';
+import { confirmInvoiceEntryAction } from '@/features/ai-flows/actions';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { Page } from '@/components/ui/page-container';
@@ -25,38 +24,18 @@ import { SummaryRow } from '@/components/ui/summary-row';
 import { SelectInput } from '@/components/ui/select-input';
 import { AIQuotaCard } from '@/features/ai/ai-quota-card';
 
-export function EntryOCR() {
+export function EntryOCR({ stores, categories, products }) {
   const navigate = useNavigate();
   const [text, setText] = React.useState(SAMPLE_NF);
   const [rows, setRows] = React.useState(null);
   const [decided, setDecided] = React.useState({});
+  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const [confirming, setConfirming] = React.useState(false);
+  const [error, setError] = React.useState('');
   const task = useAITask();
 
-  const catalogueHint = CATALOG.map(p => `${p.sku} | ${p.brand} ${p.name} | ${variantLabel(p.attrs)} | custo ~${(p.sale * 0.53).toFixed(2)}`).join('\n');
-
   const extract = () => task.run(async () => {
-    const data = await aiJSON({
-      system: 'Você lê notas fiscais brasileiras (DANFE) de entrada de mercadoria para um sistema de estoque multi-loja e devolve os itens estruturados.',
-      prompt: `Catálogo atual da loja (SKU | produto | variação | custo aproximado):
-${catalogueHint}
-
-Categorias disponíveis e seus atributos:
-${MOCK.categories.map(c => `${c.name} (prefixo ${c.code}, unidade ${c.unit}): ${c.attributes.map(a => a.label + ' [' + a.values.join('/') + ']').join(', ')}`).join('\n')}
-
-Texto da nota fiscal:
-"""
-${text}
-"""
-
-Extraia os itens. Para cada um, decida se casa com um SKU do catálogo acima ou se é produto novo.
-Devolva JSON com esta forma exata:
-{"supplier":"nome do fornecedor","doc":"numero da nota","total":numero,
- "items":[{"line":1,"description":"texto original do item","qty":numero,"unitCost":numero,
-   "match":"existing"|"new","sku":"SKU casado ou SKU sugerido","productName":"nome limpo",
-   "category":"nome da categoria","attributes":{"chave":"valor"},"confidence":0-100,
-   "reason":"por que casou ou por que é novo, em uma frase curta em português"}]}`,
-      max_tokens: 2000,
-    });
+    const data = await extractInvoiceAction(text, { categories, products });
     setRows(data.items || []);
     return data;
   });
@@ -65,6 +44,23 @@ Devolva JSON com esta forma exata:
   const accepted = rows ? rows.filter((_, i) => decided[i] !== 'reject') : [];
   const totalValue = accepted.reduce((s, r) => s + (r.qty || 0) * (r.unitCost || 0), 0);
   const newOnes = accepted.filter(r => r.match === 'new').length;
+
+  const confirm = () => {
+    setError('');
+    setConfirming(true);
+    confirmInvoiceEntryAction({
+      storeId,
+      invoiceRef: task.data?.doc || '',
+      items: accepted.map(r => ({
+        match: r.match, sku: r.sku, productName: r.productName, category: r.category,
+        attributes: r.attributes || {}, qty: r.qty, unitCost: r.unitCost,
+      })),
+    }).then((result) => {
+      setConfirming(false);
+      if (result?.error) { setError(result.error); return; }
+      navigate('/stock/history');
+    });
+  };
 
   return (
     <StoreShell route="/stock/entry/ocr" breadcrumb={['Estoque', 'Entrada por nota']} navigate={navigate}>
@@ -196,6 +192,10 @@ Devolva JSON com esta forma exata:
                 </span>
               </div>
             )}
+
+            {error && (
+              <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5 }}>{error}</div>
+            )}
           </div>
 
           <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -225,13 +225,13 @@ Devolva JSON com esta forma exata:
             </div>
 
             <Field label="Unidade de destino">
-              <SelectInput value="Loja Centro" onChange={() => {}} options={MOCK.store.siblings.map(s => s.name)} />
+              <SelectInput value={storeId} onChange={setStoreId} options={stores.map(s => ({ value: s.id, label: s.name }))} />
             </Field>
 
-            <button onClick={() => navigate('/stock/history')} disabled={!rows || accepted.length === 0}
+            <button onClick={confirm} disabled={!rows || accepted.length === 0 || confirming || !storeId}
               className="btn btn-primary btn-lg"
-              style={{ justifyContent: 'center', width: '100%', opacity: rows && accepted.length ? 1 : 0.45 }}>
-              Confirmar entrada de {accepted.length} item(ns)
+              style={{ justifyContent: 'center', width: '100%', opacity: rows && accepted.length && !confirming ? 1 : 0.45 }}>
+              {confirming ? 'Gravando…' : `Confirmar entrada de ${accepted.length} item(ns)`}
             </button>
             <button onClick={() => navigate('/stock')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Cancelar</button>
 
@@ -242,5 +242,3 @@ Devolva JSON com esta forma exata:
     </StoreShell>
   );
 }
-
-// === /ai/enrich ===

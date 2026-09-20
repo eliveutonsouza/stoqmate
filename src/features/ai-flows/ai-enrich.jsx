@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { GAPS } from '@/features/ai-flows/gaps';
-import { aiJSON, useAITask } from '@/features/ai/use-ai-task';
-import { MOCK, catById } from '@/lib/mock';
+import { useAITask } from '@/features/ai/use-ai-task';
+import { enrichCatalogAction } from '@/features/ai/actions';
+import { applyEnrichmentAction } from '@/features/ai-flows/actions';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { Page } from '@/components/ui/page-container';
@@ -21,41 +21,56 @@ import { AIChip } from '@/features/ai/ai-chip';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { AIQuotaCard } from '@/features/ai/ai-quota-card';
 
-export function AIEnrich() {
+export function AIEnrich({ gaps, categories }) {
   const navigate = useNavigate();
-  const [picked, setPicked] = React.useState(new Set(GAPS.map((_, i) => i)));
+  const [picked, setPicked] = React.useState(new Set(gaps.map((_, i) => i)));
   const [result, setResult] = React.useState(null);
   const [decided, setDecided] = React.useState({});
+  const [applying, setApplying] = React.useState(false);
   const task = useAITask();
 
   const run = () => task.run(async () => {
-    const targets = [...picked].map(i => GAPS[i]).filter(Boolean);
-    const data = await aiJSON({
-      system: 'Você completa atributos faltantes no catálogo de um sistema de estoque, usando apenas o que é dedutível do nome do produto.',
-      prompt: `Esquemas de categoria (atributo: valores permitidos):
-${MOCK.categories.map(c => `${c.name}: ${c.attributes.map(a => a.key + ' [' + a.values.join('/') + ']').join(', ')}`).join('\n')}
-
-Produtos com atributos em branco:
-${targets.map(t => `SKU ${t.sku} | categoria ${catById(t.cat).name} | nome "${t.name}" | já conhecido: ${JSON.stringify(t.known)} | faltando: ${t.missing.join(', ')}`).join('\n')}
-
-Para cada produto, proponha valor para os atributos faltando, escolhendo SOMENTE entre os valores permitidos do esquema daquela categoria.
-Se o nome não permitir deduzir com segurança, devolva null no valor e confidence abaixo de 60.
-Escreva também uma descrição comercial curta em português (máximo 18 palavras).
-Devolva JSON:
-{"items":[{"sku":"...","filled":{"atributo":"valor ou null"},"description":"...","confidence":0-100,"reason":"uma frase curta"}]}`,
-      max_tokens: 1800,
-    });
+    const targets = [...picked].map(i => gaps[i]).filter(Boolean).map(g => ({
+      sku: g.sku, categoryName: g.category?.name ?? '', name: g.name, known: g.known, missing: g.missing,
+    }));
+    const data = await enrichCatalogAction(
+      targets,
+      categories.map(c => ({ name: c.name, unit: c.unit, attributes: (c.category_attributes || []).map(a => ({ key: a.key, values: a.values })) })),
+    );
     setResult(data.items || []);
     return data;
   });
 
   const decide = (sku, v) => setDecided(d => ({ ...d, [sku]: v }));
 
+  const applyAccepted = () => {
+    const accepted = (result || []).filter(r => decided[r.sku] === 'accept' && r.filled);
+    if (!accepted.length) return;
+    setApplying(true);
+    applyEnrichmentAction(accepted.map(r => ({ sku: r.sku, filled: r.filled }))).then(() => {
+      setApplying(false);
+      navigate('/products');
+    });
+  };
+
+  if (gaps.length === 0) {
+    return (
+      <StoreShell route="/ai/enrich" breadcrumb={['IA', 'Enriquecimento']} navigate={navigate}>
+        <PageHeader title="Enriquecimento de catálogo" sub="Nenhum SKU com atributo em branco no momento." />
+        <Page>
+          <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
+            Todo o catálogo já tem os atributos do esquema preenchidos.
+          </div>
+        </Page>
+      </StoreShell>
+    );
+  }
+
   return (
     <StoreShell route="/ai/enrich" breadcrumb={['IA', 'Enriquecimento']} navigate={navigate}>
       <PageHeader
         title="Enriquecimento de catálogo"
-        sub="41 SKUs importados ficaram com atributo em branco — a IA propõe valores dentro do seu esquema."
+        sub={`${gaps.length} SKU(s) ficaram com atributo em branco — a IA propõe valores dentro do seu esquema.`}
         actions={<button onClick={() => navigate('/ai')} className="btn btn-ghost btn-sm">Central de IA</button>}
       />
       <Page>
@@ -78,7 +93,7 @@ Devolva JSON:
               <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>SKUs com lacuna</h3>
-                  <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Selecione o lote a processar. Mostrando 6 de 41.</p>
+                  <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Selecione o lote a processar.</p>
                 </div>
                 <button onClick={run} disabled={task.state === 'running' || picked.size === 0} className="btn btn-primary btn-sm"
                   style={{ opacity: task.state === 'running' || !picked.size ? 0.6 : 1 }}>
@@ -89,8 +104,8 @@ Devolva JSON:
                 <thead>
                   <tr>
                     <th style={{ width: 36 }}>
-                      <input type="checkbox" checked={picked.size === GAPS.length}
-                        onChange={() => setPicked(picked.size === GAPS.length ? new Set() : new Set(GAPS.map((_, i) => i)))} />
+                      <input type="checkbox" checked={picked.size === gaps.length}
+                        onChange={() => setPicked(picked.size === gaps.length ? new Set() : new Set(gaps.map((_, i) => i)))} />
                     </th>
                     <th>Produto</th><th>Categoria</th><th>Já preenchido</th><th>Faltando</th>
                     {result && <th>Sugestão da IA</th>}
@@ -99,7 +114,7 @@ Devolva JSON:
                   </tr>
                 </thead>
                 <tbody>
-                  {GAPS.map((g, i) => {
+                  {gaps.map((g, i) => {
                     const r = result ? result.find(x => x.sku === g.sku) : null;
                     const state = decided[g.sku];
                     return (
@@ -111,14 +126,14 @@ Devolva JSON:
                         </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <ProductThumb cat={g.cat} attrs={g.known} size={26} />
+                            <ProductThumb category={g.category} attrs={g.known} size={26} />
                             <div>
                               <div style={{ fontSize: 13, fontWeight: 500 }}>{g.name}</div>
                               <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{g.sku}</div>
                             </div>
                           </div>
                         </td>
-                        <td><CategoryBadge cat={g.cat} /></td>
+                        <td>{g.category && <CategoryBadge category={g.category} />}</td>
                         <td><AttrChip value={variantLabel(g.known) || '—'} /></td>
                         <td>
                           <div style={{ display: 'flex', gap: 4 }}>
@@ -161,7 +176,7 @@ Devolva JSON:
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 9 }}>
                     Descrições propostas <AIChip />
                   </h3>
-                  <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Curtas, para etiqueta e vitrine. Edite antes de aceitar se quiser.</p>
+                  <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Curtas, para etiqueta e vitrine. Não são gravadas ainda — só os atributos aceitos, ao aplicar.</p>
                 </div>
                 {result.map(r => (
                   <div key={r.sku} style={{ padding: '12px 18px', borderBottom: '1px solid var(--line-soft)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -189,9 +204,9 @@ Devolva JSON:
               </>}
             </div>
 
-            <button onClick={() => navigate('/products')} disabled={!result}
-              className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: result ? 1 : 0.45 }}>
-              Aplicar aos aceitos
+            <button onClick={applyAccepted} disabled={!result || applying || Object.values(decided).filter(v => v === 'accept').length === 0}
+              className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: result && !applying ? 1 : 0.45 }}>
+              {applying ? 'Aplicando…' : 'Aplicar aos aceitos'}
             </button>
             <AIQuotaCard compact />
           </div>
@@ -200,5 +215,3 @@ Devolva JSON:
     </StoreShell>
   );
 }
-
-// === /ai/forecast ===

@@ -189,3 +189,63 @@ export async function classifyProductAction(input: {
     maxTokens: 900,
   });
 }
+
+export async function enrichCatalogAction(
+  targets: { sku: string; categoryName: string; name: string; known: Record<string, string>; missing: string[] }[],
+  categories: { name: string; unit: string; attributes: { key: string; values: string[] }[] }[],
+) {
+  const schemaHint = categories
+    .map((c) => `${c.name}: ${c.attributes.map((a) => `${a.key} [${a.values.join("/")}]`).join(", ")}`)
+    .join("\n");
+  const targetsHint = targets
+    .map((t) => `SKU ${t.sku} | categoria ${t.categoryName} | nome "${t.name}" | já conhecido: ${JSON.stringify(t.known)} | faltando: ${t.missing.join(", ")}`)
+    .join("\n");
+
+  return runAiOp({
+    opId: "enrich",
+    minLevel: 2,
+    system: "Você completa atributos faltantes no catálogo de um sistema de estoque, usando apenas o que é dedutível do nome do produto.",
+    prompt: `Esquemas de categoria (atributo: valores permitidos):\n${schemaHint}\n\nProdutos com atributos em branco:\n${targetsHint}\n\nPara cada produto, proponha valor para os atributos faltando, escolhendo SOMENTE entre os valores permitidos do esquema daquela categoria.\nSe o nome não permitir deduzir com segurança, devolva null no valor e confidence abaixo de 60.\nEscreva também uma descrição comercial curta em português (máximo 18 palavras).\nDevolva JSON:\n{"items":[{"sku":"...","filled":{"atributo":"valor ou null"},"description":"...","confidence":0-100,"reason":"uma frase curta"}]}`,
+    maxTokens: 1800,
+  });
+}
+
+export async function forecastReplenishmentAction(
+  base: { sku: string; name: string; attrs: Record<string, string>; category: string; stock: number; sold_30d: number; lead_time_days: number; suggest_qty: number }[],
+) {
+  const hint = base
+    .map((p) => `${p.sku} | ${p.name} ${Object.values(p.attrs || {}).join(" ")} | categoria ${p.category} | saldo ${p.stock} | media30 ${(p.sold_30d / 30).toFixed(1)} | prazo ${p.lead_time_days}d | ingenua ${p.suggest_qty}`)
+    .join("\n");
+  const today = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
+  return runAiOp({
+    opId: "forecast",
+    minLevel: 2,
+    system: "Você é analista de reposição de estoque no varejo brasileiro. Ajusta a sugestão de compra considerando sazonalidade, tendência e calendário comercial.",
+    prompt: `Data de hoje: ${today}. A sugestão ingênua atual = velocidade de venda de 30 dias ajustada pelo prazo do fornecedor. Ela ignora sazonalidade e tendência.\n\nProdutos a repor (saldo atual, média de venda em 30 dias, prazo do fornecedor em dias, sugestão ingênua):\n${hint}\n\nPara cada SKU, proponha a quantidade ajustada e explique. Considere Black Friday (novembro), Natal, volta às aulas, e o clima de primavera/verão no hemisfério sul.\nDevolva JSON:\n{"items":[{"sku":"...","suggested":numero,"deltaPct":numero,"confidence":0-100,\n "drivers":["fator 1","fator 2","fator 3"],"risk":"o que acontece se errar, uma frase curta"}]}`,
+    maxTokens: 1800,
+  });
+}
+
+export async function extractInvoiceAction(
+  text: string,
+  context: {
+    categories: { name: string; unit: string; category_attributes: { label: string; values: string[] }[] }[];
+    products: { sku: string; brand: string; name: string; attrs: Record<string, string>; cost_price: number }[];
+  },
+) {
+  const catalogueHint = context.products
+    .map((p) => `${p.sku} | ${p.brand} ${p.name} | ${Object.values(p.attrs || {}).join(" ")} | custo ~${Number(p.cost_price).toFixed(2)}`)
+    .join("\n");
+  const schemaHint = context.categories
+    .map((c) => `${c.name} (unidade ${c.unit}): ${c.category_attributes.map((a) => `${a.label} [${a.values.join("/")}]`).join(", ")}`)
+    .join("\n");
+
+  return runAiOp({
+    opId: "ocr",
+    minLevel: 2,
+    system: "Você lê notas fiscais brasileiras (DANFE) de entrada de mercadoria para um sistema de estoque multi-loja e devolve os itens estruturados.",
+    prompt: `Catálogo atual da loja (SKU | produto | variação | custo aproximado):\n${catalogueHint}\n\nCategorias disponíveis e seus atributos:\n${schemaHint}\n\nTexto da nota fiscal:\n"""\n${text}\n"""\n\nExtraia os itens. Para cada um, decida se casa com um SKU do catálogo acima ou se é produto novo.\nDevolva JSON com esta forma exata:\n{"supplier":"nome do fornecedor","doc":"numero da nota","total":numero,\n "items":[{"line":1,"description":"texto original do item","qty":numero,"unitCost":numero,\n   "match":"existing"|"new","sku":"SKU casado ou SKU sugerido","productName":"nome limpo",\n   "category":"nome da categoria","attributes":{"chave":"valor"},"confidence":0-100,\n   "reason":"por que casou ou por que é produto novo, em uma frase curta em português"}]}`,
+    maxTokens: 2000,
+  });
+}
