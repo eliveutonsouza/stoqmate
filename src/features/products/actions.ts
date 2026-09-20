@@ -96,6 +96,52 @@ export async function createProductAction(input: {
   return { id: product.id as string };
 }
 
+export async function updateProductAction(input: {
+  id: string;
+  categoryId: string;
+  brand: string;
+  name: string;
+  sku: string;
+  barcode: string;
+  attrs: Record<string, string>;
+  costPrice: number;
+  salePrice: number;
+  minStock: number;
+  supplierId: string | null;
+  defaultLocationId: string | null;
+  notes: string;
+  photoUrl: string | null;
+}) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("products")
+    .update({
+      category_id: input.categoryId,
+      sku: input.sku,
+      barcode: input.barcode || null,
+      brand: input.brand,
+      name: input.name,
+      attrs: input.attrs,
+      cost_price: input.costPrice,
+      sale_price: input.salePrice,
+      min_stock: input.minStock,
+      supplier_id: input.supplierId,
+      default_location_id: input.defaultLocationId,
+      notes: input.notes || null,
+      ...(input.photoUrl ? { photo_url: input.photoUrl } : {}),
+    })
+    .eq("id", input.id);
+  if (error) {
+    return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : error.message };
+  }
+
+  revalidatePath("/products");
+  revalidatePath("/products/detail");
+  revalidatePath("/products/edit");
+  return { id: input.id };
+}
+
 export async function uploadProductPhotoAction(formData: FormData) {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };

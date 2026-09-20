@@ -15,36 +15,43 @@ import { TextareaInput } from '@/components/ui/textarea-input';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { EmptyState } from '@/components/ui/empty-state';
 import { brl } from '@/lib/format';
-import { createProductAction, uploadProductPhotoAction } from '@/features/products/actions';
+import { createProductAction, updateProductAction, uploadProductPhotoAction } from '@/features/products/actions';
 
 const slug = (s, n) => (s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]/g, '').substring(0, n);
+const money = (n) => String(n ?? 0).replace('.', ',');
 
-export function ProductForm({ categories, suppliers, locations }) {
+export function ProductForm({ categories, suppliers, locations, product }) {
   const navigate = useNavigate();
+  const editing = !!product;
 
   const cats = React.useMemo(
     () => categories.map((c) => ({ ...c, attributes: [...(c.category_attributes || [])].sort((a, b) => a.position - b.position) })),
     [categories],
   );
 
-  const [catId, setCatId] = React.useState(cats[0]?.id ?? '');
+  const [catId, setCatId] = React.useState(product?.category?.id ?? cats[0]?.id ?? '');
   const cat = cats.find((c) => c.id === catId);
 
-  const [f, setF] = React.useState({ brand: '', name: '', purchase: '', sale: '', min: '0', supplierId: '', locationId: '', barcode: '', notes: '' });
+  const [f, setF] = React.useState(() => (product ? {
+    brand: product.brand || '', name: product.name || '',
+    purchase: money(product.cost_price), sale: money(product.sale_price), min: String(product.min_stock ?? 0),
+    supplierId: product.supplier?.id || '', locationId: product.default_location?.id || '',
+    barcode: product.barcode || '', notes: product.notes || '',
+  } : { brand: '', name: '', purchase: '', sale: '', min: '0', supplierId: '', locationId: '', barcode: '', notes: '' }));
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
-  const [attrs, setAttrs] = React.useState({});
+  const [attrs, setAttrs] = React.useState(() => (product ? { [product.category.id]: product.attrs || {} } : {}));
   const attrVal = (key) => attrs[catId]?.[key] ?? '';
   const setAttr = (key, v) => setAttrs((s) => ({ ...s, [catId]: { ...(s[catId] || {}), [key]: v } }));
 
-  const [photo, setPhoto] = React.useState(null); // { file, previewUrl } | { uploadedUrl, name }
+  const [photo, setPhoto] = React.useState(() => (product?.photo_url ? { uploadedUrl: product.photo_url, name: 'Foto atual' } : null)); // { file, previewUrl } | { uploadedUrl, name }
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
   if (!cat) {
     return (
-      <StoreShell route="/products/new" breadcrumb={['Catálogo', 'Cadastrar produto']} navigate={navigate}>
-        <PageHeader title="Cadastrar produto" />
+      <StoreShell route={editing ? '/products/edit' : '/products/new'} breadcrumb={['Catálogo', editing ? 'Editar produto' : 'Cadastrar produto']} navigate={navigate}>
+        <PageHeader title={editing ? 'Editar produto' : 'Cadastrar produto'} />
         <Page>
           <EmptyState
             icon={<I.Sliders size={18} />}
@@ -57,7 +64,10 @@ export function ProductForm({ categories, suppliers, locations }) {
     );
   }
 
-  const sku = [cat.code, slug(f.name, 4), ...cat.attributes.map((a) => slug(attrVal(a.key), 3))].filter(Boolean).join('-');
+  // O SKU só é recalculado na criação — editar um produto não deve trocar o
+  // SKU sozinho (quebraria etiqueta impressa, código de barras e qualquer
+  // referência externa), mesmo que nome/atributos mudem no formulário.
+  const sku = editing ? product.sku : [cat.code, slug(f.name, 4), ...cat.attributes.map((a) => slug(attrVal(a.key), 3))].filter(Boolean).join('-');
   const pNum = parseFloat((f.purchase || '0').replace(/\./g, '').replace(',', '.')) || 0;
   const sNum = parseFloat((f.sale || '0').replace(/\./g, '').replace(',', '.')) || 0;
   const margin = sNum > 0 ? ((sNum - pNum) / sNum) * 100 : 0;
@@ -83,7 +93,7 @@ export function ProductForm({ categories, suppliers, locations }) {
         photoUrl = uploadResult.url;
       }
 
-      const result = await createProductAction({
+      const payload = {
         categoryId: catId,
         brand: f.brand,
         name: f.name,
@@ -97,10 +107,15 @@ export function ProductForm({ categories, suppliers, locations }) {
         defaultLocationId: f.locationId || null,
         notes: f.notes,
         photoUrl,
-      });
+      };
+      const result = editing
+        ? await updateProductAction({ id: product.id, ...payload })
+        : await createProductAction(payload);
       if (result?.error) { setError(result.error); return; }
 
-      if (andCreateAnother) {
+      if (editing) {
+        navigate(`/products/detail?id=${product.id}`);
+      } else if (andCreateAnother) {
         setF({ brand: '', name: '', purchase: '', sale: '', min: '0', supplierId: '', locationId: '', barcode: '', notes: '' });
         setAttrs({});
         setPhoto(null);
@@ -111,15 +126,15 @@ export function ProductForm({ categories, suppliers, locations }) {
   };
 
   return (
-    <StoreShell route="/products/new" breadcrumb={['Catálogo', 'Cadastrar produto']} navigate={navigate}>
+    <StoreShell route={editing ? '/products/edit' : '/products/new'} breadcrumb={['Catálogo', editing ? 'Editar produto' : 'Cadastrar produto']} navigate={navigate}>
       <PageHeader
-        title="Cadastrar produto"
+        title={editing ? `Editar ${product.name}` : 'Cadastrar produto'}
         sub="Escolha a categoria — os atributos e a unidade de medida vêm do esquema dela."
         actions={(
           <>
-            <button onClick={() => navigate('/products')} className="btn btn-ghost btn-sm">Cancelar</button>
-            <button onClick={() => submit(true)} disabled={pending || !canSave} className="btn btn-outline btn-sm">Salvar e criar outro</button>
-            <button onClick={() => submit(false)} disabled={pending || !canSave} className="btn btn-primary btn-sm">{pending ? 'Salvando…' : 'Salvar produto'}</button>
+            <button onClick={() => navigate(editing ? `/products/detail?id=${product.id}` : '/products')} className="btn btn-ghost btn-sm">Cancelar</button>
+            {!editing && <button onClick={() => submit(true)} disabled={pending || !canSave} className="btn btn-outline btn-sm">Salvar e criar outro</button>}
+            <button onClick={() => submit(false)} disabled={pending || !canSave} className="btn btn-primary btn-sm">{pending ? 'Salvando…' : editing ? 'Salvar alterações' : 'Salvar produto'}</button>
           </>
         )}
       />
@@ -229,7 +244,7 @@ export function ProductForm({ categories, suppliers, locations }) {
                       HTML do servidor, então nunca é candidato a LCP; next/image
                       não otimiza blob: URLs mesmo assim. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo.previewUrl} alt="" style={{ width: 84, height: 84, borderRadius: 8, border: '1px solid var(--line)', objectFit: 'cover', flexShrink: 0 }} />
+                  <img src={photo.previewUrl || photo.uploadedUrl} alt="" style={{ width: 84, height: 84, borderRadius: 8, border: '1px solid var(--line)', objectFit: 'cover', flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{photo.name}</div>
                     <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>

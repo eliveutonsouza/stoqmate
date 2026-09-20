@@ -5,5 +5,5 @@ test("lista de produtos → detalhe do produto", async ({ page }) => {
   const firstProductLink = page.locator("table a").first();
   await expect(firstProductLink).toBeVisible();
   await firstProductLink.click();
-  await expect(page).toHaveURL("/products/detail");
+  await expect(page).toHaveURL(/\/products\/detail\?id=/);
 });
