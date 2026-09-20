@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { aiJSON, useAITask } from '@/features/ai/use-ai-task';
-import { MOCK, catById } from '@/lib/mock';
+import { useAITask } from '@/features/ai/use-ai-task';
+import { askInventoryAction } from '@/features/ai/actions';
 import { variantLabel } from '@/lib/attr-colors';
 import { CATALOG } from '@/lib/catalog';
 import { brl } from '@/lib/format';
@@ -28,76 +28,15 @@ export function GlobalSearch() {
   const ask = () => {
     const question = q;
     setAsked(question);
-    // The model translates the question into a FILTER SPEC; the app does the
-    // arithmetic. Asking a model to count rows is how you get confident wrong
-    // numbers — this way the language is understood and the math is exact.
+    // A IA só traduz a pergunta numa especificação de filtro; quem soma,
+    // conta e ordena é o servidor, sobre dado real — pedir pro modelo contar
+    // linhas é como se ganha número errado com confiança.
     ai.run(async () => {
-      const spec = await aiJSON({
-        system: 'Você traduz perguntas em português sobre estoque numa especificação de consulta JSON. Você NUNCA calcula nem conta — apenas descreve o filtro. Quem executa é o sistema.',
-        prompt: `Campos disponíveis no catálogo:
-- stock (número) saldo na unidade atual
-- minStock (número) estoque mínimo, sempre 10
-- sale (número) preço de venda em reais
-- cost (número) preço de compra aproximado
-- margin (número) margem percentual
-- category (texto) uma de: ${MOCK.categories.map(c => c.name).join(', ')}
-- brand (texto) marca
-- name (texto) nome do produto
-- loc (texto) local de estoque
-- supplier (texto) fornecedor
-
-Operadores: "lt", "lte", "gt", "gte", "eq", "contains", "belowMin" (compara stock com minStock), "any".
-
-Pergunta do lojista: "${question}"
-
-Devolva JSON com a especificação. Nada de contagens ou valores calculados.
-{"title":"título curto do resultado",
- "filters":[{"field":"stock","op":"belowMin","value":null}],
- "sort":{"field":"stock","dir":"asc"},
- "columns":["sku","name","variant","stock","sale","loc"],
- "metric":"count"|"sumSale"|"sumStock"|null,
- "note":"uma observação útil sobre o que foi consultado, sem números",
- "confidence":0-100}`,
-        max_tokens: 700,
-      });
-
-      // Deterministic execution over the real rows.
-      const enrich = (p) => {
-        const cost = p.sale * 0.53;
-        return {
-          sku: p.sku, name: `${p.brand} ${p.name}`, variant: variantLabel(p.attrs),
-          stock: p.stock, minStock: 10, sale: p.sale, cost,
-          margin: ((p.sale - cost) / p.sale) * 100,
-          category: catById(p.cat).name, brand: p.brand, loc: p.loc, supplier: p.supplier,
-        };
-      };
-      const norm = (v) => String(v == null ? '' : v).toLowerCase();
-      const test = (row, f) => {
-        const val = row[f.field];
-        switch (f.op) {
-          case 'belowMin': return row.stock < row.minStock;
-          case 'lt': return Number(val) < Number(f.value);
-          case 'lte': return Number(val) <= Number(f.value);
-          case 'gt': return Number(val) > Number(f.value);
-          case 'gte': return Number(val) >= Number(f.value);
-          case 'eq': return norm(val) === norm(f.value);
-          case 'contains': return norm(val).includes(norm(f.value));
-          default: return true;
-        }
-      };
-      let rows = CATALOG.map(enrich).filter(r => (spec.filters || []).every(f => test(r, f)));
-      if (spec.sort && spec.sort.field) {
-        const dir = spec.sort.dir === 'desc' ? -1 : 1;
-        rows = [...rows].sort((a, b) => {
-          const av = a[spec.sort.field], bv = b[spec.sort.field];
-          return (typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv))) * dir;
-        });
-      }
-      const metric = spec.metric === 'sumSale' ? brl(rows.reduce((s, r) => s + r.sale * r.stock, 0))
-        : spec.metric === 'sumStock' ? rows.reduce((s, r) => s + r.stock, 0) + ' unidades'
-        : `${rows.length} ${rows.length === 1 ? 'produto' : 'produtos'}`;
-
-      return { spec, rows, metric };
+      const { spec, rows, metric, metricKind } = await askInventoryAction(question);
+      const metricLabel = metricKind === 'sumSale' ? brl(metric)
+        : metricKind === 'sumStock' ? `${metric} unidades`
+        : `${metric} ${metric === 1 ? 'produto' : 'produtos'}`;
+      return { spec, rows, metric: metricLabel };
     });
   };
 

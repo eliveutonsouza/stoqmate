@@ -168,7 +168,7 @@ export function ProductForm({ categories, suppliers, locations, product }) {
             <FormCard title="Identificação" desc={`O SKU é gerado a partir da categoria, do nome e dos ${cat.attributes.length} atributos de ${cat.name}.`} cols={2}>
               <div style={{ gridColumn: 'span 2' }}>
                 <AIClassifyRow
-                  cat={cat}
+                  categories={cats}
                   onApply={(s) => {
                     const hit = cats.find((c) => c.name.toLowerCase() === String(s.category || '').toLowerCase());
                     if (hit) setCatId(hit.id);

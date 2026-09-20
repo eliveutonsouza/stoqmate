@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from 'react';
-import { aiJSON, useAITask } from '@/features/ai/use-ai-task';
-import { MOCK } from '@/lib/mock';
+import { useAITask } from '@/features/ai/use-ai-task';
+import { classifyProductAction } from '@/features/ai/actions';
 import { AIChip } from '@/features/ai/ai-chip';
 import { TextInput } from '@/components/ui/text-input';
 import { I } from '@/components/icons';
@@ -10,17 +10,16 @@ import { AIError } from '@/features/ai/ai-error';
 import { ConfidenceBar } from '@/features/ai/confidence-bar';
 import { AIWhy } from '@/features/ai/ai-why';
 
-export function AIClassifyRow({ onApply }) {
+export function AIClassifyRow({ categories, onApply }) {
   const [raw, setRaw] = React.useState('Fone de ouvido Bluetooth com cancelamento de ruído, preto, 128 GB — Foneclear');
   const [sug, setSug] = React.useState(null);
   const [applied, setApplied] = React.useState(false);
   const task = useAITask();
 
   const classify = () => task.run(async () => {
-    const data = await aiJSON({
-      system: 'Você classifica produtos no catálogo de um sistema de estoque, escolhendo somente entre as categorias e valores de atributo já cadastrados.',
-      prompt: `Categorias disponíveis e seus atributos (atributo: valores permitidos):\n${MOCK.categories.map(c => `${c.name} (unidade ${c.unit}): ${c.attributes.map(a => a.key + ' [' + a.values.join('/') + ']').join(', ')}`).join('\n')}\n\nDescrição livre do produto, como o lojista digitou:\n"${raw}"\n\nClassifique. Use apenas categoria existente e apenas valores permitidos do esquema dela. Se um atributo não for dedutível, omita a chave.\nDevolva JSON:\n{"category":"nome exato da categoria","brand":"marca","productName":"nome limpo e curto do produto","attributes":{"chave":"valor"},"unit":"unidade de medida","confidence":0-100,"reasons":["por que essa categoria","como deduziu os atributos"]}`,
-      max_tokens: 900,
+    const data = await classifyProductAction({
+      description: raw,
+      categories: categories.map((c) => ({ name: c.name, unit: c.unit, attributes: c.attributes.map((a) => ({ key: a.key, values: a.values })) })),
     });
     setSug(data); setApplied(false);
     return data;
