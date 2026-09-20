@@ -1,0 +1,115 @@
+"use client";
+
+import * as React from 'react';
+import { useNavigate } from '@/hooks/use-navigate';
+import { PLANS } from '@/lib/plans';
+import { LayoutPublic } from '@/components/layout/layout-public';
+import { FormCard } from '@/components/ui/form-card';
+import { Field } from '@/components/ui/field';
+import { TextInput } from '@/components/ui/text-input';
+import { SelectInput } from '@/components/ui/select-input';
+import { I } from '@/components/icons';
+import { SummaryRow } from '@/components/ui/summary-row';
+import { brl } from '@/lib/format';
+
+export function Signup() {
+  const navigate = useNavigate();
+  const [plan, setPlan] = React.useState('controle');
+  const chosen = PLANS.find(p => p.id === plan) || PLANS[1];
+  return (
+    <LayoutPublic navigate={navigate} route="/signup">
+      <section style={{ maxWidth: 1020, margin: '0 auto', padding: '52px 32px 60px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 32, alignItems: 'start' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 34, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+              Criar sua conta no Stoqmate
+            </h1>
+            <p style={{ margin: '12px 0 28px', fontSize: 15, color: 'var(--fg-muted)', maxWidth: 440, lineHeight: 1.55 }}>
+              30 dias grátis. Nenhuma cobrança agora — só pedimos o cartão no fim do período de teste.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <FormCard title="Dados de acesso" cols={2}>
+                <Field label="Seu nome" required span={1}><TextInput placeholder="Mariana Souza" style={{ height: 36 }} /></Field>
+                <Field label="Telefone" span={1}><TextInput placeholder="(11) 98888-0000" mono style={{ height: 36 }} /></Field>
+                <Field label="Email de trabalho" required span={2}><TextInput type="email" placeholder="voce@sualoja.com.br" style={{ height: 36 }} /></Field>
+                <Field label="Senha" required hint="Mínimo 8 caracteres" span={2}><TextInput type="password" placeholder="••••••••" style={{ height: 36 }} /></Field>
+              </FormCard>
+
+              <FormCard title="Sua loja" desc="Você escolhe as categorias que vende no onboarding." cols={2}>
+                <Field label="Nome da loja ou rede" required span={2}><TextInput placeholder="Bonsucesso Varejo" style={{ height: 36 }} /></Field>
+                <Field label="CNPJ" span={1}><TextInput mono placeholder="00.000.000/0001-00" style={{ height: 36 }} /></Field>
+                <Field label="Nº de unidades" span={1}>
+                  <SelectInput options={['1 loja', '2 a 3 lojas', '4 a 10 lojas', 'mais de 10']} value="1 loja" onChange={() => {}} />
+                </Field>
+              </FormCard>
+
+              <label style={{ display: 'flex', gap: 9, fontSize: 12, color: 'var(--fg-muted)', alignItems: 'flex-start', lineHeight: 1.5 }}>
+                <input type="checkbox" defaultChecked style={{ marginTop: 2 }} />
+                <span>Concordo com os <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Termos de uso</a> e com a <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Política de privacidade</a>, incluindo o tratamento de dados conforme a LGPD.</span>
+              </label>
+
+              <button onClick={() => navigate('/onboarding')} className="btn btn-primary btn-lg" style={{ justifyContent: 'center' }}>
+                Criar loja e configurar <I.ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Order summary */}
+          <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="card" style={{ padding: 18 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 12 }}>Escolha seu plano</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {PLANS.map(p => {
+                  const active = plan === p.id;
+                  return (
+                    <button key={p.id} onClick={() => setPlan(p.id)} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 12px',
+                      border: '1px solid ' + (active ? 'var(--accent)' : 'var(--line)'),
+                      background: active ? 'var(--accent-soft)' : 'var(--bg-elev)',
+                      borderRadius: 7, textAlign: 'left', width: '100%',
+                    }}>
+                      <span style={{
+                        width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
+                        border: '1px solid ' + (active ? 'var(--accent)' : 'var(--line-strong)'),
+                        background: active ? 'var(--accent-strong)' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#fff',
+                      }}>{active && <I.Check size={9} stroke={3} />}</span>
+                      <span style={{ flex: 1 }}>
+                        <span style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--fg)' }}>{p.name}</span>
+                        <span style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)' }}>{p.limits.skus ? `${p.limits.skus} SKUs` : 'SKUs ilimitados'} · {p.credits.toLocaleString('pt-BR')} créditos</span>
+                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--fg)' }}>R$ {p.monthly}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--line)', marginTop: 16, paddingTop: 12 }}>
+                <SummaryRow label={`Plano ${chosen.name} · 1 loja`} value={brl(chosen.monthly)} />
+                <SummaryRow label="Teste de 30 dias" value={'− ' + brl(chosen.monthly)} tone="success" />
+                <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
+                  <SummaryRow label="Cobrado hoje" value={brl(0)} strong />
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 8, lineHeight: 1.5 }}>
+                  Primeira cobrança de {brl(chosen.monthly)} em 19 de outubro de 2026. Cancele antes disso sem custo.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '12px 14px', background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 8, display: 'flex', gap: 10 }}>
+              <span style={{ color: 'var(--fg-soft)', flexShrink: 0, marginTop: 1 }}><I.Shield size={14} /></span>
+              <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
+                Pagamento processado pela Stripe. Não armazenamos dados de cartão.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </LayoutPublic>
+  );
+}
+
+// === Auth asides ===
