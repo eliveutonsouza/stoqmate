@@ -1,5 +1,7 @@
 import { SettingsSubscription } from '@/features/settings/settings-subscription';
+import { loadBillingState } from '@/features/billing/queries';
 
-export default function Page() {
-  return <SettingsSubscription />;
+export default async function Page() {
+  const billing = await loadBillingState();
+  return <SettingsSubscription billing={billing} />;
 }

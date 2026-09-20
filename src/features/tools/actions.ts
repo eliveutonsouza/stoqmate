@@ -5,7 +5,11 @@ import { last30Days } from "@/features/reports/queries";
 
 function toCsv(headers: string[], rows: (string | number)[][]) {
   const escape = (v: string | number) => {
-    const s = String(v ?? "");
+    // Prefixa com aspa simples se começar com =, +, -, @, tab ou CR — Excel/
+    // Sheets tratam essas células como fórmula ao abrir o CSV (CSV formula
+    // injection), o que executaria conteúdo vindo de nome de produto/cliente.
+    const raw = String(v ?? "");
+    const s = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
     return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return [headers, ...rows].map((r) => r.map(escape).join(";")).join("\n");

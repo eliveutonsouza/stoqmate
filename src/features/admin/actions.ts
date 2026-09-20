@@ -36,10 +36,23 @@ export async function endImpersonationAction(sessionId: string) {
   return { ok: true };
 }
 
-export async function invitePlatformStaffAction(input: { email: string; name: string; role: string }) {
-  await requireStaff();
-  const admin = createServiceRoleClient();
+const STAFF_ROLES = ["super_admin", "suporte", "engenharia", "comercial"] as const;
 
+export async function invitePlatformStaffAction(input: { email: string; name: string; role: string }) {
+  const supabase = await requireStaff();
+  if (!STAFF_ROLES.includes(input.role as (typeof STAFF_ROLES)[number])) {
+    return { error: "Função inválida." };
+  }
+
+  const {
+    data: { user: caller },
+  } = await supabase.auth.getUser();
+  const { data: callerStaff } = await supabase.from("platform_staff").select("role").eq("user_id", caller?.id).maybeSingle();
+  if (input.role === "super_admin" && callerStaff?.role !== "super_admin") {
+    return { error: "Só um Super Admin pode convidar outro Super Admin." };
+  }
+
+  const admin = createServiceRoleClient();
   const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(input.email, {
     data: { full_name: input.name },
   });

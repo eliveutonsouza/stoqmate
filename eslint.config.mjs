@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Edge Functions rodam em Deno, runtime e convenções de lint próprias
+    // (import npm:, globais Deno.*) — fora do escopo deste config Next.js.
+    "supabase/functions/**",
   ]),
   ...storybook.configs["flat/recommended"]
 ]);
