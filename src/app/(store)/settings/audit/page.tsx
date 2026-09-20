@@ -1,5 +1,7 @@
 import { AuditLog } from '@/features/tools/audit-log';
+import { loadAuditLog } from '@/features/tools/queries';
 
-export default function Page() {
-  return <AuditLog />;
+export default async function Page() {
+  const entries = await loadAuditLog();
+  return <AuditLog entries={entries} />;
 }

@@ -39,6 +39,13 @@ export async function createSupplierAction(input: {
     if (catError) return { error: catError.message };
   }
 
+  await supabase.rpc("fn_write_audit", {
+    p_kind: "supplier",
+    p_message: `Cadastrou o fornecedor "${input.name}"`,
+    p_target_type: "supplier",
+    p_target_id: supplier.id,
+  });
+
   revalidatePath("/suppliers");
   return { id: supplier.id as string };
 }

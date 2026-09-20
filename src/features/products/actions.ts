@@ -114,6 +114,8 @@ export async function updateProductAction(input: {
 }) {
   const supabase = await createClient();
 
+  const { data: before } = await supabase.from("products").select("sale_price, name").eq("id", input.id).maybeSingle();
+
   const { error } = await supabase
     .from("products")
     .update({
@@ -134,6 +136,16 @@ export async function updateProductAction(input: {
     .eq("id", input.id);
   if (error) {
     return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : error.message };
+  }
+
+  const previousSalePrice = before ? Number(before.sale_price) : null;
+  if (before && previousSalePrice !== null && previousSalePrice !== input.salePrice) {
+    await supabase.rpc("fn_write_audit", {
+      p_kind: "price",
+      p_message: `Alterou preço de venda de ${before.name} de R$ ${previousSalePrice.toFixed(2)} para R$ ${input.salePrice.toFixed(2)}`,
+      p_target_type: "product",
+      p_target_id: input.id,
+    });
   }
 
   revalidatePath("/products");

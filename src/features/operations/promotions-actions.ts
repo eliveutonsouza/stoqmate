@@ -42,6 +42,12 @@ export async function createPromotionAction(input: {
     p_until_stock: input.untilStock,
   });
   if (error) return { error: friendlyError(error.message) };
+  await supabase.rpc("fn_write_audit", {
+    p_kind: "promo",
+    p_message: `Criou promoção "${input.name}" · preço R$ ${input.promoPrice.toFixed(2)}`,
+    p_target_type: "promotion",
+    p_target_id: data,
+  });
   revalidatePath("/promotions");
   return { id: data as string };
 }
