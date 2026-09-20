@@ -17,6 +17,9 @@
 /blob-report/
 /playwright/.cache/
 
+# storybook
+/storybook-static/
+
 # next.js
 /.next/
 /out/
@@ -47,3 +50,5 @@ next-env.d.ts
 # local tooling / design handoff reference (not app code)
 .claude/
 doc/
+
+*storybook.log
