@@ -9,6 +9,16 @@ import { NetworkDashboard } from '@/features/analysis/network-dashboard';
 import { TabletPOS } from '@/features/pos/tablet-pos';
 import { ReportABC } from '@/features/analysis/report-abc';
 
+// Vitrine da landing — não é dado de tenant nenhum, só um exemplo ilustrativo
+// pro print da curva ABC (mesma forma que a tela real recebe via props).
+const ABC_SHOWCASE_ROWS = [
+  { product_id: '1', sku: 'ELE-FONE-PRT', name: 'Fone Bluetooth ANC', revenue: 42800, units: 148, stock_qty: 22, stock_value: 3476, category_name: 'Eletrônicos', category_code: 'ELE', category_icon: 'Zap', category_color: '#1D4FD7' },
+  { product_id: '2', sku: 'CAL-TEN-BRC', name: 'Tênis Corrida Branco', revenue: 31200, units: 96, stock_qty: 34, stock_value: 6120, category_name: 'Calçados', category_code: 'CAL', category_icon: 'Footprint', category_color: '#B45309' },
+  { product_id: '3', sku: 'VES-CAM-AZL', name: 'Camisa Social Azul', revenue: 18400, units: 122, stock_qty: 58, stock_value: 4060, category_name: 'Vestuário', category_code: 'VES', category_icon: 'Shirt', category_color: '#0D9488' },
+  { product_id: '4', sku: 'ELE-CARR-65W', name: 'Carregador GaN 65W', revenue: 9600, units: 210, stock_qty: 140, stock_value: 6300, category_name: 'Eletrônicos', category_code: 'ELE', category_icon: 'Zap', category_color: '#1D4FD7' },
+  { product_id: '5', sku: 'CAS-DEC-VAS', name: 'Vaso Decorativo M', revenue: 2100, units: 30, stock_qty: 65, stock_value: 3900, category_name: 'Casa e Decoração', category_code: 'CAS', category_icon: 'Home', category_color: '#7C3AED' },
+];
+
 export function LandingFeatures({ navigate }) {
   return (
     <section style={{ ...SECTION, paddingBottom: 72 }}>
@@ -64,7 +74,7 @@ export function LandingFeatures({ navigate }) {
           cta={{ l: 'Ver a curva ABC', r: '/reports/abc' }}
         >
           <ShowcaseFrame order={3} url="stoqmate.com.br/reports/abc" width={1380} height={900} scale={0.44}>
-            <ReportABC navigate={() => {}} />
+            <ReportABC navigate={() => {}} rows={ABC_SHOWCASE_ROWS} periodDays={30} />
           </ShowcaseFrame>
         </FeatureRow>
       </div>
