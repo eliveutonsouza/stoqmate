@@ -8,6 +8,7 @@ import { FormCard } from '@/components/ui/form-card';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { I } from '@/components/icons';
+import { signOutAction } from '@/features/auth/actions';
 
 export function Profile() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export function Profile() {
             <div style={{ fontSize: 13, fontWeight: 500 }}>Sair da conta</div>
             <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>Encerra esta sessão neste dispositivo.</div>
           </div>
-          <button onClick={() => navigate('/login')} className="btn btn-outline btn-sm"><I.Logout size={12} /> Sair</button>
+          <button onClick={() => signOutAction()} className="btn btn-outline btn-sm"><I.Logout size={12} /> Sair</button>
         </div>
       </SettingsLayout>
     </StoreShell>

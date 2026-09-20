@@ -11,11 +11,30 @@ import { SelectInput } from '@/components/ui/select-input';
 import { I } from '@/components/icons';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { brl } from '@/lib/format';
+import { signUpAction } from '@/features/auth/actions';
 
 export function Signup() {
   const navigate = useNavigate();
   const [plan, setPlan] = React.useState('controle');
   const chosen = PLANS.find(p => p.id === plan) || PLANS[1];
+  const [form, setForm] = React.useState({ fullName: '', phone: '', email: '', password: '', storeName: '', cnpj: '' });
+  const [terms, setTerms] = React.useState(true);
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = () => {
+    setError('');
+    if (!terms) { setError('Aceite os termos de uso pra continuar.'); return; }
+    if (form.fullName.trim().length < 2) { setError('Informe seu nome.'); return; }
+    if (form.password.length < 8) { setError('A senha precisa ter no mínimo 8 caracteres.'); return; }
+    if (form.storeName.trim().length < 2) { setError('Informe o nome da loja.'); return; }
+    startTransition(async () => {
+      const result = await signUpAction({ ...form, planId: plan });
+      if (result?.error) setError(result.error);
+    });
+  };
+
   return (
     <LayoutPublic navigate={navigate} route="/signup">
       <section style={{ maxWidth: 1020, margin: '0 auto', padding: '52px 32px 60px' }}>
@@ -30,27 +49,33 @@ export function Signup() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <FormCard title="Dados de acesso" cols={2}>
-                <Field label="Seu nome" required span={1}><TextInput placeholder="Mariana Souza" style={{ height: 36 }} /></Field>
-                <Field label="Telefone" span={1}><TextInput placeholder="(11) 98888-0000" mono style={{ height: 36 }} /></Field>
-                <Field label="Email de trabalho" required span={2}><TextInput type="email" placeholder="voce@sualoja.com.br" style={{ height: 36 }} /></Field>
-                <Field label="Senha" required hint="Mínimo 8 caracteres" span={2}><TextInput type="password" placeholder="••••••••" style={{ height: 36 }} /></Field>
+                <Field label="Seu nome" required span={1}><TextInput value={form.fullName} onChange={set('fullName')} placeholder="Mariana Souza" style={{ height: 36 }} /></Field>
+                <Field label="Telefone" span={1}><TextInput value={form.phone} onChange={set('phone')} placeholder="(11) 98888-0000" mono style={{ height: 36 }} /></Field>
+                <Field label="Email de trabalho" required span={2}><TextInput type="email" value={form.email} onChange={set('email')} placeholder="voce@sualoja.com.br" style={{ height: 36 }} /></Field>
+                <Field label="Senha" required hint="Mínimo 8 caracteres" span={2}><TextInput type="password" value={form.password} onChange={set('password')} placeholder="••••••••" style={{ height: 36 }} /></Field>
               </FormCard>
 
               <FormCard title="Sua loja" desc="Você escolhe as categorias que vende no onboarding." cols={2}>
-                <Field label="Nome da loja ou rede" required span={2}><TextInput placeholder="Bonsucesso Varejo" style={{ height: 36 }} /></Field>
-                <Field label="CNPJ" span={1}><TextInput mono placeholder="00.000.000/0001-00" style={{ height: 36 }} /></Field>
+                <Field label="Nome da loja ou rede" required span={2}><TextInput value={form.storeName} onChange={set('storeName')} placeholder="Bonsucesso Varejo" style={{ height: 36 }} /></Field>
+                <Field label="CNPJ" span={1}><TextInput mono value={form.cnpj} onChange={set('cnpj')} placeholder="00.000.000/0001-00" style={{ height: 36 }} /></Field>
                 <Field label="Nº de unidades" span={1}>
                   <SelectInput options={['1 loja', '2 a 3 lojas', '4 a 10 lojas', 'mais de 10']} value="1 loja" onChange={() => {}} />
                 </Field>
               </FormCard>
 
               <label style={{ display: 'flex', gap: 9, fontSize: 12, color: 'var(--fg-muted)', alignItems: 'flex-start', lineHeight: 1.5 }}>
-                <input type="checkbox" defaultChecked style={{ marginTop: 2 }} />
+                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} style={{ marginTop: 2 }} />
                 <span>Concordo com os <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Termos de uso</a> e com a <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Política de privacidade</a>, incluindo o tratamento de dados conforme a LGPD.</span>
               </label>
 
-              <button onClick={() => navigate('/onboarding')} className="btn btn-primary btn-lg" style={{ justifyContent: 'center' }}>
-                Criar loja e configurar <I.ArrowRight size={14} />
+              {error && (
+                <div style={{ padding: '10px 13px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5, color: 'var(--fg)' }}>
+                  {error}
+                </div>
+              )}
+
+              <button onClick={submit} disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>
+                {pending ? 'Criando…' : <>Criar loja e configurar <I.ArrowRight size={14} /></>}
               </button>
             </div>
           </div>

@@ -60,6 +60,12 @@ autorização do desenvolvedor (ver `CLAUDE.md`).
 reserva o path literal `/404` pra própria máquina de erro), `/error`,
 `/offline`, `/session-expired`, `/access-denied`
 
+## Route Handlers técnicos (não contam nas 111 rotas — não são `page.tsx`)
+
+`src/app/auth/callback/route.ts` — troca o `code` de um link de email
+(reset de senha, e futuramente OAuth do Google) por uma sessão via cookie.
+Nunca renderiza UI, só redireciona; fora de qualquer route group.
+
 ## Regras
 
 - Toda página é um `page.tsx` fino: `import { X } from '@/features/.../x'; export default function Page() { return <X />; }`. Props estáticas (`mode="edit"`) só quando o componente de fato as declara.

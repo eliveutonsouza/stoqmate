@@ -7,24 +7,35 @@ import { AuthTestimonial } from '@/features/auth/auth-testimonial';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { I } from '@/components/icons';
+import { forgotPasswordAction } from '@/features/auth/actions';
 
 export function ForgotPassword() {
   const navigate = useNavigate();
   const [sent, setSent] = React.useState(false);
+  const [email, setEmail] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+
+  const submit = () => {
+    startTransition(async () => {
+      await forgotPasswordAction({ email });
+      setSent(true);
+    });
+  };
+
   return (
     <AuthShell navigate={navigate} aside={<AuthTestimonial />}>
       {!sent ? (
         <>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 600, letterSpacing: '-0.025em' }}>Recuperar senha</h1>
           <p style={{ margin: '8px 0 28px', fontSize: 14, color: 'var(--fg-muted)' }}>
-            Informe o email da conta e enviaremos um link de redefinição válido por 30 minutos.
+            Informe o email da conta e enviaremos um link de redefinição válido por 1 hora.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Field label="Email">
-              <TextInput type="email" placeholder="voce@sualoja.com.br" style={{ height: 36 }} />
+              <TextInput type="email" placeholder="voce@sualoja.com.br" value={email} onChange={(e) => setEmail(e.target.value)} style={{ height: 36 }} />
             </Field>
-            <button onClick={() => setSent(true)} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
-              Enviar link de redefinição
+            <button onClick={submit} disabled={pending} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>
+              {pending ? 'Enviando…' : 'Enviar link de redefinição'}
             </button>
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login'); }} style={{ fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 6 }}>
               ← Voltar ao login

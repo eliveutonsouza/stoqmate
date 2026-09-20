@@ -1,0 +1,145 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+function slugify(name: string) {
+  const base = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 30);
+  return base || "loja";
+}
+
+export async function signUpAction(input: {
+  fullName: string;
+  email: string;
+  password: string;
+  storeName: string;
+  cnpj: string;
+  planId: string;
+}) {
+  const supabase = await createClient();
+
+  const { error: signUpError } = await supabase.auth.signUp({
+    email: input.email,
+    password: input.password,
+  });
+
+  if (signUpError) {
+    // Pode ser um retry depois de uma falha no passo seguinte (o usuário já
+    // foi criado no auth, mas fn_complete_signup não rodou até o fim) —
+    // tenta logar com a senha informada antes de desistir.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: input.email,
+      password: input.password,
+    });
+    if (signInError) return { error: "Este email já está cadastrado." };
+  }
+
+  const { error: rpcError } = await supabase.rpc("fn_complete_signup", {
+    p_full_name: input.fullName,
+    p_store_name: input.storeName,
+    p_subdomain: slugify(input.storeName),
+    p_cnpj: input.cnpj || null,
+    p_plan_id: input.planId,
+  });
+  if (rpcError) {
+    if (rpcError.message.includes("already has a tenant")) {
+      return { error: "Este email já tem uma loja configurada. Faça login." };
+    }
+    return { error: rpcError.message };
+  }
+
+  redirect("/onboarding");
+}
+
+export async function signInAction(input: { email: string; password: string }) {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword(input);
+  if (error) return { error: "Email ou senha incorretos." };
+  redirect("/dashboard");
+}
+
+export async function signInAdminAction(input: { email: string; password: string; code: string }) {
+  const supabase = await createClient();
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: input.email,
+    password: input.password,
+  });
+  if (signInError) return { error: "Email ou senha incorretos." };
+
+  const { data: staffRow } = await supabase.from("platform_staff").select("user_id").maybeSingle();
+  if (!staffRow) {
+    await supabase.auth.signOut();
+    return { error: "Esta conta não tem acesso ao console da plataforma." };
+  }
+
+  const { data: factorsData } = await supabase.auth.mfa.listFactors();
+  const totp = factorsData?.totp?.[0];
+  if (!totp) {
+    await supabase.auth.signOut();
+    return { error: "Nenhum fator de autenticação (2FA) cadastrado nesta conta." };
+  }
+
+  const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: totp.id });
+  if (challengeError) return { error: challengeError.message };
+
+  const { error: verifyError } = await supabase.auth.mfa.verify({
+    factorId: totp.id,
+    challengeId: challenge.id,
+    code: input.code,
+  });
+  if (verifyError) return { error: "Código 2FA inválido." };
+
+  redirect("/admin");
+}
+
+export async function signOutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
+export async function forgotPasswordAction(input: { email: string }) {
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(input.email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/reset-password`,
+  });
+  // Sempre retorna sucesso, mesmo se o email não existir — não vaza quem tem conta.
+  return { ok: true };
+}
+
+export async function resetPasswordAction(input: { password: string }) {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: input.password });
+  if (error) return { error: error.message };
+  await supabase.auth.signOut();
+  return { ok: true };
+}
+
+export async function acceptInviteAction(input: {
+  token: string;
+  email: string;
+  fullName: string;
+  password: string;
+}) {
+  const supabase = await createClient();
+
+  const { error: signUpError } = await supabase.auth.signUp({
+    email: input.email,
+    password: input.password,
+  });
+  if (signUpError) return { error: signUpError.message };
+
+  const { error: rpcError } = await supabase.rpc("fn_accept_invite", {
+    p_token: input.token,
+    p_full_name: input.fullName,
+  });
+  if (rpcError) return { error: "Convite inválido ou expirado." };
+
+  redirect("/dashboard");
+}
