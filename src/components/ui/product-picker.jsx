@@ -37,11 +37,7 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
     const handle = setTimeout(async () => {
       const supabase = createClient();
       const term = query.trim().replace(/[%_]/g, '');
-      const { data } = await supabase
-        .from('products')
-        .select('id, sku, barcode, brand, name, attrs, sale_price, cost_price, min_stock, category:categories(id, name, code, icon, color, unit, unit_plural), stock_balances(store_id, qty)')
-        .or(`sku.ilike.%${term}%,barcode.ilike.%${term}%,name.ilike.%${term}%,brand.ilike.%${term}%`)
-        .limit(8);
+      const { data } = await supabase.rpc('fn_search_products', { p_term: term, p_limit: 8 });
       if (!cancelled) {
         setResults(data ?? []);
         setSearchedQuery(query);
