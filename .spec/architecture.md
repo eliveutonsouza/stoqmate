@@ -106,8 +106,23 @@ estorno se a Anthropic falhar (`ai_credit_ledger`, `fn_ai_debit_credits`/
 o modelo só traduz/classifica, nunca soma/conta — quem faz a aritmética é
 sempre o Postgres/TypeScript sobre dado real.
 
-**Débito conhecido, não uma regressão silenciosa**: `AIQuotaCard`
-(`src/features/ai/ai-quota-card.jsx`) ainda lê de `ai-constants.js`
-(mock), não do saldo real (`tenants.ai_credit_balance`) — falta decidir a
-política de renovação mensal de crédito (nenhum cron existe ainda) antes
-de wireá-lo. Registrado como pendência, não é dívida escondida.
+**Renovação de crédito**: cota do plano (`tenants.ai_credit_plan_balance`)
+zera todo ciclo, nunca acumula; crédito extra comprado
+(`ai_credit_extra_balance`) nunca é tocado pela renovação. Mecanismo é
+`fn_ai_renew_cycle()` via `pg_cron` diário (não o webhook do Stripe — o
+webhook nunca dispara pra tenant sem assinatura, então dependeria de dois
+caminhos de código pra a mesma coisa). Troca de plano ajusta a cota na
+hora via `fn_ai_apply_plan_change()`, chamada pelo webhook do Stripe.
+`AIQuotaCard` e a tela `settings/credits` já leem esse saldo real —
+só a compra de pacote avulso continua sem processar pagamento de verdade
+(falta checkout de pagamento único do Stripe), divulgado na própria tela.
+
+**Padrão de segurança que já mordeu duas vezes — checar em toda tabela
+nova**: RLS ligado + grant concedido + ZERO policy = nega tudo pro
+`authenticated`, **sem erro nenhum** pro client (a query simplesmente
+volta vazia). Já aconteceu com `ai_ops` (esvaziava silenciosamente o
+"onde os créditos foram") e com `platform_staff` (quebrava de verdade o
+login admin — `signInAdminAction` sempre via 0 linhas e recusava staff
+real). Toda tabela nova precisa OU de uma policy de select explícita OU
+de uma justificativa documentada de por que ela é só lida via
+`service_role`/função `security definer`.

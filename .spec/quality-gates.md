@@ -27,8 +27,17 @@ Portões inegociáveis antes de considerar qualquer mudança pronta:
    valida esse id contra `auth_tenant_id()` antes de usar — ela roda com
    privilégio elevado, então pular essa checagem é abrir brecha
    cross-tenant, não atalho.
+9. Toda tabela nova criada por uma migration é conferida contra o padrão
+   "RLS ligado + grant concedido + zero policy = nega tudo, sem erro pro
+   client" antes de dar a tabela por pronta — já mordeu duas vezes de
+   verdade (`ai_ops`, `platform_staff`; ver `.spec/architecture.md`).
+   Checagem manual: `select tablename, rowsecurity from pg_tables where
+   schemaname='public'` cruzado com `select tablename, count(*) from
+   pg_policies where schemaname='public' group by tablename` — toda
+   tabela com RLS ligado precisa de policy_count > 0 OU de justificativa
+   documentada de que só é lida via `service_role`.
 
-Nenhum desses 8 pode ser pulado ou enfraquecido (ex.: reduzir regra de
+Nenhum desses 9 pode ser pulado ou enfraquecido (ex.: reduzir regra de
 erro pra warning, remover um teste que passou a falhar em vez de corrigir
 o código) sem autorização explícita do desenvolvedor — ver `CLAUDE.md`.
 
@@ -41,8 +50,5 @@ o código) sem autorização explícita do desenvolvedor — ver `CLAUDE.md`.
   Server Action e a página que a chama pedem o mesmo dado na mesma
   requisição. Não feito nesta revisão (Fase 11 foi fechamento de spec, não
   auditoria de performance); é o próximo item de qualidade pendente.
-- `AIQuotaCard` (ver `.spec/architecture.md`, seção Backend): mock
-  conhecido, não corrigir sem antes decidir a política de renovação
-  mensal de crédito de IA.
 - `.spec/design-system.md`: decisão de manter estilo inline + CSS utilitário
   em vez de Tailwind-first é deliberada, não pendência.
