@@ -11,26 +11,65 @@ import { TextInput } from '@/components/ui/text-input';
 import { I } from '@/components/icons';
 import { ProductPicker } from '@/components/ui/product-picker';
 import { SelectInput } from '@/components/ui/select-input';
-import { MOCK } from '@/lib/mock';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { brl } from '@/lib/format';
 import { FormPageFooter } from '@/components/ui/form-page-footer';
+import { createPromotionAction, setPromotionActiveAction } from '@/features/operations/promotions-actions';
+import { EmptyState } from '@/components/ui/empty-state';
 
-export function PromotionForm({ mode = 'new' }) {
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function PromotionForm({ mode = 'new', categories, promotion }) {
+  if (mode === 'edit') return <PromotionView promotion={promotion} />;
+  return <PromotionCreateForm categories={categories} />;
+}
+
+function PromotionCreateForm({ categories }) {
   const navigate = useNavigate();
-  const editing = mode === 'edit';
-  const [promoType, setPromoType] = React.useState('period');
+  const [name, setName] = React.useState('');
   const [scope, setScope] = React.useState('product');
-  const [prices, setPrices] = React.useState({ original: 299.00, promo: editing ? 249.00 : 299.00 });
-  const pctOff = prices.original > 0 ? ((prices.original - prices.promo) / prices.original) * 100 : 0;
-  const invalid = prices.promo >= prices.original;
-  const cost = 158;
-  const newMargin = prices.promo > 0 ? ((prices.promo - cost) / prices.promo) * 100 : 0;
+  const [product, setProduct] = React.useState(null);
+  const [categoryId, setCategoryId] = React.useState(categories[0]?.id ?? '');
+  const [promoType, setPromoType] = React.useState('period');
+  const [startsAt, setStartsAt] = React.useState(todayIso());
+  const [endsAt, setEndsAt] = React.useState(todayIso());
+  const [promoPrice, setPromoPrice] = React.useState(0);
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+
+  const original = scope === 'product' ? product?.sale_price ?? 0 : 0;
+  const cost = scope === 'product' ? product?.cost_price ?? 0 : 0;
+  const pctOff = original > 0 ? ((original - promoPrice) / original) * 100 : 0;
+  const invalid = scope === 'product' && original > 0 && promoPrice >= original;
+  const newMargin = promoPrice > 0 && cost > 0 ? ((promoPrice - cost) / promoPrice) * 100 : null;
+  const canSubmit = name.trim() && promoPrice > 0 && !invalid
+    && (scope !== 'product' || product) && (scope !== 'category' || categoryId);
+
+  const submit = () => {
+    setError('');
+    if (!canSubmit) return;
+    startTransition(async () => {
+      const result = await createPromotionAction({
+        name,
+        scopeType: scope,
+        productId: scope === 'product' ? product.id : null,
+        categoryId: scope === 'category' ? categoryId : null,
+        promoPrice,
+        startsAt: new Date(`${startsAt}T00:00:00`).toISOString(),
+        endsAt: promoType === 'period' ? new Date(`${endsAt}T23:59:59`).toISOString() : null,
+        untilStock: promoType === 'until_stock',
+      });
+      if (result?.error) { setError(result.error); return; }
+      navigate('/promotions');
+    });
+  };
 
   return (
-    <StoreShell route={editing ? '/promotions/edit' : '/promotions/new'} breadcrumb={['Promoções', editing ? 'Editar' : 'Criar']} navigate={navigate}>
+    <StoreShell route="/promotions/new" breadcrumb={['Promoções', 'Criar']} navigate={navigate}>
       <PageHeader
-        title={editing ? 'Editar promoção' : 'Criar promoção'}
+        title="Criar promoção"
         sub="Altera o preço de venda aparente durante a vigência. O preço de compra e a margem histórica não são afetados."
       />
       <Page>
@@ -38,18 +77,16 @@ export function PromotionForm({ mode = 'new' }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="Identificação" cols={1}>
               <Field label="Nome da promoção" required hint="Aparece no relatório de descontos e no histórico da venda.">
-                <TextInput defaultValue={editing ? 'Semana do Áudio' : ''} placeholder="Semana do Áudio" />
+                <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Semana do Áudio" />
               </Field>
             </FormCard>
 
             <FormCard title="Abrangência" desc="A que o preço promocional se aplica." cols={1}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {[
-                  { k: 'sku', t: 'Um SKU específico', d: 'Só a variação exata escolhida.' },
-                  { k: 'product', t: 'Um produto inteiro', d: 'Todas as variações do produto, em todas as combinações de atributos.' },
-                  { k: 'attr', t: 'Um valor de atributo', d: 'Ex.: tudo que for tamanho PP, ou toda a cor Preto de uma categoria.' },
+                  { k: 'product', t: 'Um produto', d: 'Aplica ao SKU exato escolhido.' },
                   { k: 'category', t: 'Uma categoria inteira', d: 'Todos os produtos da categoria.' },
-                  { k: 'store', t: 'Toda a loja', d: 'Com possibilidade de excluir categorias.' },
+                  { k: 'store', t: 'Toda a loja', d: 'Aplica ao carrinho todo — configuração fina chega numa próxima etapa.' },
                 ].map(o => (
                   <button key={o.k} onClick={() => setScope(o.k)} style={{
                     display: 'flex', gap: 11, alignItems: 'flex-start', textAlign: 'left',
@@ -74,33 +111,12 @@ export function PromotionForm({ mode = 'new' }) {
 
               {scope === 'product' && (
                 <Field label="Produto" required>
-                  <ProductPicker product={{ sku: 'ELE-FONE-PR-128', cat: 'eletronicos', brand: 'Foneclear', name: 'Fone Bluetooth ANC', attrs: { cor: 'Preto', capacidade: '128 GB' }, stock: 42 }} />
+                  <ProductPicker product={product} onSelect={(p) => { setProduct(p); setPromoPrice(p.sale_price); }} onClear={() => setProduct(null)} />
                 </Field>
               )}
               {scope === 'category' && (
                 <Field label="Categoria" required>
-                  <SelectInput value="Eletrônicos" onChange={() => {}} options={MOCK.categories.map(c => c.name)} />
-                </Field>
-              )}
-              {scope === 'attr' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-                  <Field label="Categoria" required><SelectInput value="Vestuário" onChange={() => {}} options={MOCK.categories.map(c => c.name)} /></Field>
-                  <Field label="Atributo" required><SelectInput value="Tamanho" onChange={() => {}} options={['Cor', 'Tamanho']} /></Field>
-                  <Field label="Valor" required><SelectInput value="PP" onChange={() => {}} options={['PP', 'P', 'M', 'G', 'GG', 'XG']} /></Field>
-                </div>
-              )}
-              {scope === 'sku' && (
-                <Field label="SKU" required><ProductPicker /></Field>
-              )}
-              {scope === 'store' && (
-                <Field label="Categorias excluídas" hint="Deixe vazio para aplicar a tudo.">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                    {MOCK.categories.map((c, i) => (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
-                        <input type="checkbox" defaultChecked={i === 4} /> {c.name}
-                      </label>
-                    ))}
-                  </div>
+                  <SelectInput value={categoryId} onChange={setCategoryId} options={categories.map((c) => ({ value: c.id, label: c.name }))} />
                 </Field>
               )}
             </FormCard>
@@ -118,82 +134,134 @@ export function PromotionForm({ mode = 'new' }) {
                   ))}
                 </div>
               </Field>
-              {promoType === 'period' ? (
-                <>
-                  <Field label="Início" required span={1}><TextInput type="date" defaultValue="2026-09-20" /></Field>
-                  <Field label="Fim" required span={1}><TextInput type="date" defaultValue="2026-09-30" /></Field>
-                </>
-              ) : (
-                <Field label="Encerrar quando o saldo chegar a" span={1} hint="A promoção sai do ar sozinha.">
-                  <TextInput mono defaultValue="0" suffix="un" />
-                </Field>
+              <Field label="Início" required span={1}><TextInput type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} /></Field>
+              {promoType === 'period' && (
+                <Field label="Fim" required span={1}><TextInput type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} /></Field>
               )}
-              <Field label="Unidades participantes" span={promoType === 'period' ? 2 : 1} hint="A promoção pode valer só em algumas lojas.">
-                <SelectInput value="Todas as unidades" onChange={() => {}} options={['Todas as unidades', ...MOCK.store.siblings.map(s => s.name)]} />
-              </Field>
             </FormCard>
 
             <FormCard title="Preço" cols={2}>
-              <Field label="Preço original" span={1} hint="Preço de tabela do produto.">
-                <TextInput mono prefix="R$" value={prices.original} readOnly style={{ background: 'var(--bg-sunken)' }} />
+              <Field label="Preço original" span={1} hint={scope === 'product' ? 'Preço de tabela do produto.' : 'Depende de cada produto na abrangência.'}>
+                <TextInput mono prefix="R$" value={original || '—'} disabled />
               </Field>
               <Field label="Preço promocional" required span={1} error={invalid ? 'Deve ser menor que o preço original.' : null}>
-                <TextInput mono prefix="R$" type="number" value={prices.promo} onChange={(e) => setPrices(p => ({ ...p, promo: +e.target.value || 0 }))} />
+                <TextInput mono prefix="R$" type="number" value={promoPrice} onChange={(e) => setPromoPrice(+e.target.value || 0)} />
               </Field>
-              <Field label="Atalhos de desconto" span={2}>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {[5, 10, 15, 20, 30, 40].map(v => (
-                    <button key={v} onClick={() => setPrices(p => ({ ...p, promo: +(p.original * (1 - v / 100)).toFixed(2) }))} style={{
-                      flex: 1, padding: '7px 0', background: 'var(--bg-elev)',
-                      border: '1px solid var(--line)', borderRadius: 6,
-                      fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 500, color: 'var(--fg)',
-                    }}>−{v}%</button>
-                  ))}
-                </div>
-              </Field>
+              {scope === 'product' && original > 0 && (
+                <Field label="Atalhos de desconto" span={2}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[5, 10, 15, 20, 30, 40].map(v => (
+                      <button key={v} onClick={() => setPromoPrice(+(original * (1 - v / 100)).toFixed(2))} style={{
+                        flex: 1, padding: '7px 0', background: 'var(--bg-elev)',
+                        border: '1px solid var(--line)', borderRadius: 6,
+                        fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 500, color: 'var(--fg)',
+                      }}>−{v}%</button>
+                    ))}
+                  </div>
+                </Field>
+              )}
             </FormCard>
           </div>
 
           <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="card" style={{ padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Impacto</div>
-              <SummaryRow label="Preço original" value={brl(prices.original)} />
-              <SummaryRow label="Preço promocional" value={brl(prices.promo)} />
-              <SummaryRow label="Desconto" value={brl(prices.original - prices.promo)} tone="warning" />
-              <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
-                <SummaryRow label="Desconto percentual" value={pctOff.toFixed(1) + '%'} strong tone={pctOff > 40 ? 'danger' : pctOff > 25 ? 'warning' : 'success'} />
-              </div>
-              <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
-                <SummaryRow label="Custo por unidade" value={brl(cost)} />
-                <SummaryRow label="Margem antes" value="47,2%" />
-                <SummaryRow label="Margem na promoção" value={newMargin.toFixed(1) + '%'} tone={newMargin < 15 ? 'danger' : newMargin < 30 ? 'warning' : 'success'} />
-              </div>
-              {newMargin < 15 && !invalid && (
-                <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, display: 'flex', gap: 9 }}>
-                  <span style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }}><I.Alert size={14} /></span>
-                  <div style={{ fontSize: 11, lineHeight: 1.5 }}>Margem abaixo de 15%. Promoções assim precisam de aprovação do gestor financeiro.</div>
+            {scope === 'product' && original > 0 && (
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Impacto</div>
+                <SummaryRow label="Preço original" value={brl(original)} />
+                <SummaryRow label="Preço promocional" value={brl(promoPrice)} />
+                <SummaryRow label="Desconto" value={brl(Math.max(0, original - promoPrice))} tone="warning" />
+                <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
+                  <SummaryRow label="Desconto percentual" value={pctOff.toFixed(1) + '%'} strong tone={pctOff > 40 ? 'danger' : pctOff > 25 ? 'warning' : 'success'} />
                 </div>
-              )}
-            </div>
-
-            <div className="card" style={{ padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Alcance estimado</div>
-              <SummaryRow label="SKUs afetados" value="8" />
-              <SummaryRow label="Itens em estoque" value="243" />
-              <SummaryRow label="Unidades participantes" value="4" />
-            </div>
+                {newMargin !== null && (
+                  <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
+                    <SummaryRow label="Custo por unidade" value={brl(cost)} />
+                    <SummaryRow label="Margem na promoção" value={newMargin.toFixed(1) + '%'} tone={newMargin < 15 ? 'danger' : newMargin < 30 ? 'warning' : 'success'} />
+                  </div>
+                )}
+                {newMargin !== null && newMargin < 15 && (
+                  <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, display: 'flex', gap: 9 }}>
+                    <span style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }}><I.Alert size={14} /></span>
+                    <div style={{ fontSize: 11, lineHeight: 1.5 }}>Margem abaixo de 15% — confirme com o gestor financeiro antes de publicar.</div>
+                  </div>
+                )}
+              </div>
+            )}
+            {error && (
+              <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>
+            )}
           </div>
         </div>
 
         <FormPageFooter
           onCancel={() => navigate('/promotions')}
-          onSave={() => navigate('/promotions')}
-          saveLabel={editing ? 'Salvar alterações' : 'Criar promoção'}
-          extra={<button className="btn btn-outline">Salvar como rascunho</button>}
+          onSave={submit}
+          saveLabel={pending ? 'Criando…' : 'Criar promoção'}
         />
       </Page>
     </StoreShell>
   );
 }
 
-// === /shelves/new · /shelves/edit ===
+function PromotionView({ promotion }) {
+  const navigate = useNavigate();
+  const [pending, startTransition] = React.useTransition();
+
+  if (!promotion) {
+    return (
+      <StoreShell route="/promotions/edit" breadcrumb={['Promoções', 'Detalhe']} navigate={navigate}>
+        <PageHeader title="Promoção" />
+        <Page>
+          <EmptyState icon={<I.Alert size={18} />} title="Promoção não encontrada" desc="O link é inválido ou a promoção não existe mais."
+            action={<button onClick={() => navigate('/promotions')} className="btn btn-primary btn-sm">Voltar</button>} />
+        </Page>
+      </StoreShell>
+    );
+  }
+
+  const original = promotion.product?.sale_price ?? null;
+  const off = original ? ((original - promotion.promo_price) / original) * 100 : null;
+  const toggle = () => startTransition(async () => {
+    await setPromotionActiveAction({ id: promotion.id, active: !promotion.active });
+    navigate('/promotions');
+  });
+
+  return (
+    <StoreShell route="/promotions/edit" breadcrumb={['Promoções', promotion.name]} navigate={navigate}>
+      <PageHeader title={promotion.name} sub="Preço promocional aplicado durante a vigência." />
+      <Page>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+          <FormCard title="Detalhes" cols={2}>
+            <Field label="Abrangência" span={1}>
+              <TextInput disabled value={
+                promotion.scope_type === 'product' ? `${promotion.product?.sku} · ${promotion.product?.name}`
+                  : promotion.scope_type === 'category' ? promotion.category?.name
+                  : 'Toda a loja'
+              } />
+            </Field>
+            <Field label="Vigência" span={1}>
+              <TextInput disabled value={
+                `${new Date(promotion.starts_at).toLocaleDateString('pt-BR')}` +
+                (promotion.ends_at ? ` – ${new Date(promotion.ends_at).toLocaleDateString('pt-BR')}` : promotion.until_stock ? ' – até acabar o estoque' : ' – sem fim definido')
+              } />
+            </Field>
+            <Field label="Preço original" span={1}><TextInput mono prefix="R$" disabled value={original ?? '—'} /></Field>
+            <Field label="Preço promocional" span={1}><TextInput mono prefix="R$" disabled value={promotion.promo_price} /></Field>
+          </FormCard>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {off !== null && (
+              <div className="card" style={{ padding: 16 }}>
+                <SummaryRow label="Desconto" value={`${off.toFixed(1)}%`} strong />
+              </div>
+            )}
+            <button onClick={toggle} disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%' }}>
+              {pending ? 'Salvando…' : promotion.active ? 'Encerrar promoção agora' : 'Reativar promoção'}
+            </button>
+            <button onClick={() => navigate('/promotions')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Voltar</button>
+          </div>
+        </div>
+      </Page>
+    </StoreShell>
+  );
+}
