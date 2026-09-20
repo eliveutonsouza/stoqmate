@@ -2,13 +2,13 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { POS_SUGGEST } from '@/features/stock/pos-suggest';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
 import { MovementNav } from '@/features/stock/movement-nav';
 import { ProductThumb } from '@/components/ui/product-thumb';
+import { ProductPicker } from '@/components/ui/product-picker';
 import { brl } from '@/lib/format';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AttrChip } from '@/components/ui/attr-chip';
@@ -20,47 +20,80 @@ import { TextInput } from '@/components/ui/text-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { Modal } from '@/components/ui/modal';
+import { confirmSaleAction } from '@/features/pos/actions';
 
-export function StockSale() {
+const PAYMENTS = [
+  { label: 'Dinheiro', value: 'dinheiro' },
+  { label: 'PIX', value: 'pix' },
+  { label: 'Débito', value: 'debito' },
+  { label: 'Cartão de crédito', value: 'credito' },
+  { label: 'Crediário', value: 'crediario' },
+  { label: 'Dividido', value: 'dividido' },
+];
+
+export function StockSale({ stores, cashSessionByStore }) {
   const navigate = useNavigate();
-  const [cart, setCart] = React.useState([
-    { ...POS_SUGGEST[0], qty: 1, off: 0 },
-    { ...POS_SUGGEST[1], qty: 3, off: 0 },
-    { ...POS_SUGGEST[3], qty: 12, off: 10 },
-  ]);
+  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const [cart, setCart] = React.useState([]);
   const [orderOff, setOrderOff] = React.useState({ mode: 'pct', value: 0 });
   const [discountOpen, setDiscountOpen] = React.useState(false);
-  const [payment, setPayment] = React.useState('Cartão de crédito');
+  const [payment, setPayment] = React.useState('credito');
+  const [installments, setInstallments] = React.useState('1×');
+  const [received, setReceived] = React.useState(0);
+  const [notes, setNotes] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+
+  const stockFor = (p) => p.stock_balances?.find((b) => b.store_id === storeId)?.qty ?? 0;
 
   const setLine = (i, patch) => setCart(c => c.map((l, j) => (j === i ? { ...l, ...patch } : l)));
   const removeLine = (i) => setCart(c => c.filter((_, j) => j !== i));
   const addItem = (p) => setCart(c => {
-    const at = c.findIndex(l => l.sku === p.sku);
+    const at = c.findIndex(l => l.id === p.id);
     return at >= 0 ? c.map((l, j) => (j === at ? { ...l, qty: l.qty + 1 } : l)) : [...c, { ...p, qty: 1, off: 0 }];
   });
 
-  const lineNet = (l) => l.qty * l.sale * (1 - l.off / 100);
-  const gross = cart.reduce((s, l) => s + l.qty * l.sale, 0);
-  const lineOffTotal = cart.reduce((s, l) => s + l.qty * l.sale * (l.off / 100), 0);
+  const lineNet = (l) => l.qty * l.sale_price * (1 - l.off / 100);
+  const gross = cart.reduce((s, l) => s + l.qty * l.sale_price, 0);
+  const lineOffTotal = cart.reduce((s, l) => s + l.qty * l.sale_price * (l.off / 100), 0);
   const afterLines = gross - lineOffTotal;
   const orderOffValue = orderOff.mode === 'pct' ? afterLines * (orderOff.value / 100) : Math.min(orderOff.value, afterLines);
   const net = afterLines - orderOffValue;
-  const cost = cart.reduce((s, l) => s + l.qty * l.purchase, 0);
+  const cost = cart.reduce((s, l) => s + l.qty * l.cost_price, 0);
   const profit = net - cost;
   const units = cart.reduce((s, l) => s + l.qty, 0);
-  const overstock = cart.filter(l => l.qty > l.stock);
+  const overstock = cart.filter(l => l.qty > stockFor(l));
   const totalOffPct = gross > 0 ? ((gross - net) / gross) * 100 : 0;
+  const cashSessionId = cashSessionByStore[storeId] ?? null;
+  const needsCashSession = payment === 'dinheiro' && !cashSessionId;
+  const canConfirm = cart.length > 0 && overstock.length === 0 && !needsCashSession;
+
+  const confirm = () => {
+    setError('');
+    if (!canConfirm) return;
+    startTransition(async () => {
+      const result = await confirmSaleAction({
+        storeId,
+        customerId: null,
+        paymentMethod: payment,
+        installments: payment === 'credito' ? parseInt(installments, 10) || 1 : 1,
+        cashSessionId: payment === 'dinheiro' ? cashSessionId : null,
+        notes,
+        items: cart.map((l) => ({ productId: l.id, qty: l.qty, unitPrice: l.sale_price, discountPct: l.off })),
+        orderDiscountAmount: orderOffValue,
+      });
+      if (result?.error) { setError(result.error); return; }
+      navigate(`/receipt?id=${result.id}`);
+    });
+  };
 
   return (
     <StoreShell route="/stock/sale" breadcrumb={['Estoque', 'Venda']} navigate={navigate}>
       <PageHeader
         title="Nova venda"
-        sub="Atendimento #4287 · Loja Centro · balcão 01"
+        sub="Busque o produto pelo SKU, código de barras ou nome para adicionar ao carrinho."
         actions={(
-          <>
-            <button className="btn btn-outline btn-sm"><I.QR size={13} /> Leitor conectado</button>
-            <button onClick={() => setCart([])} className="btn btn-ghost btn-sm">Limpar carrinho</button>
-          </>
+          <button onClick={() => setCart([])} className="btn btn-ghost btn-sm">Limpar carrinho</button>
         )}
       />
       <Page>
@@ -69,34 +102,7 @@ export function StockSale() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 16, alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }}>
-                  <I.Search size={15} />
-                </span>
-                <input className="input" placeholder="Bipe o código de barras ou busque por SKU, marca ou nome…"
-                  style={{ paddingLeft: 38, paddingRight: 70, height: 42, fontSize: 14 }} />
-                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 4 }}>
-                  <span className="kbd">⌘</span><span className="kbd">K</span>
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginRight: 2 }}>Mais vendidos hoje</span>
-                {POS_SUGGEST.map(p => (
-                  <button key={p.sku} onClick={() => addItem(p)} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 7,
-                    height: 30, padding: '0 10px 0 6px',
-                    border: '1px solid var(--line)', background: 'var(--bg-elev)',
-                    borderRadius: 6, fontSize: 12, color: 'var(--fg)',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'var(--bg-elev)'; }}
-                  >
-                    <ProductThumb cat={p.cat} attrs={p.attrs} size={20} />
-                    <span className="truncate" style={{ maxWidth: 130 }}>{p.name}</span>
-                    <span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{brl(p.sale)}</span>
-                  </button>
-                ))}
-              </div>
+              <ProductPicker product={null} storeId={storeId} onSelect={addItem} />
             </div>
 
             <div className="card" style={{ overflow: 'hidden' }}>
@@ -114,7 +120,7 @@ export function StockSale() {
                 <EmptyState
                   icon={<I.Box size={18} />}
                   title="Carrinho vazio"
-                  desc="Bipe o código de barras do produto ou use os atalhos acima para começar o atendimento."
+                  desc="Busque um produto acima para começar o atendimento."
                 />
               ) : (
                 <table className="table">
@@ -127,22 +133,23 @@ export function StockSale() {
                   </thead>
                   <tbody>
                     {cart.map((l, i) => {
-                      const short = l.qty > l.stock;
+                      const stock = stockFor(l);
+                      const short = l.qty > stock;
                       return (
-                        <tr key={l.sku}>
+                        <tr key={l.id}>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <ProductThumb cat={l.cat} attrs={l.attrs} size={28} />
+                              <ProductThumb category={l.category} brand={l.brand} attrs={l.attrs} size={28} />
                               <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 500 }}>{l.name}</div>
+                                <div style={{ fontSize: 13, fontWeight: 500 }}>{l.brand} · {l.name}</div>
                                 <div style={{ fontSize: 10, color: short ? 'var(--danger)' : 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
-                                  {short ? `só ${l.stock} em estoque` : `${l.sku} · ${l.stock} disp.`}
+                                  {short ? `só ${stock} em estoque` : `${l.sku} · ${stock} disp.`}
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td><AttrChip value={variantLabel(l.attrs)} /></td>
-                          <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{brl(l.sale)}</td>
+                          <td><AttrChip value={variantLabel(l.attrs || {})} /></td>
+                          <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{brl(l.sale_price)}</td>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                               <button onClick={() => l.qty > 1 ? setLine(i, { qty: l.qty - 1 }) : removeLine(i)}
@@ -180,7 +187,7 @@ export function StockSale() {
               }}>
                 <span style={{ color: 'var(--danger)', flexShrink: 0 }}><I.Alert size={15} /></span>
                 <span style={{ fontSize: 12, color: 'var(--fg)', flex: 1, lineHeight: 1.5 }}>
-                  <strong>{overstock[0].name}</strong> tem só {overstock[0].stock} em estoque nesta unidade.
+                  <strong>{overstock[0].name}</strong> tem só {stockFor(overstock[0])} em estoque nesta unidade.
                   Reduza a quantidade ou transfira de outra loja.
                 </span>
                 <button onClick={() => navigate('/stock/transfer')} className="btn btn-outline btn-sm">Transferir</button>
@@ -188,17 +195,14 @@ export function StockSale() {
             )}
 
             <FormCard title="Dados do atendimento" cols={3}>
-              <Field label="Vendedor" span={1}>
-                <SelectInput value="Lucas Prado" onChange={() => {}} options={['Lucas Prado', 'Marina Alves', 'Ana Ribeiro']} />
+              <Field label="Unidade" span={1}>
+                <SelectInput value={storeId} onChange={setStoreId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
               </Field>
-              <Field label="Cliente" span={1} hint="Opcional — permite histórico e troca sem nota.">
-                <TextInput placeholder="CPF ou nome" />
-              </Field>
-              <Field label="Data" span={1}>
-                <TextInput type="date" defaultValue="2026-09-18" />
+              <Field label="Cliente" span={2} hint="Cadastro de clientes chega na próxima etapa — por ora, venda de consumidor final.">
+                <TextInput value="Consumidor final" disabled />
               </Field>
               <Field label="Observações" span={3}>
-                <TextareaInput placeholder="Ex.: cliente pediu nota no CNPJ da empresa." />
+                <TextareaInput value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: cliente pediu nota no CNPJ da empresa." />
               </Field>
             </FormCard>
           </div>
@@ -227,35 +231,49 @@ export function StockSale() {
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Pagamento</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                {['Dinheiro', 'PIX', 'Débito', 'Cartão de crédito', 'Crediário', 'Dividido'].map(m => (
-                  <button key={m} onClick={() => setPayment(m)} style={{
+                {PAYMENTS.map((m) => (
+                  <button key={m.value} onClick={() => setPayment(m.value)} style={{
                     padding: '8px 9px', fontSize: 12, fontWeight: 500,
-                    border: '1px solid ' + (payment === m ? 'var(--accent)' : 'var(--line)'),
-                    background: payment === m ? 'var(--accent-soft)' : 'var(--bg-elev)',
-                    color: payment === m ? 'var(--accent-text)' : 'var(--fg)',
+                    border: '1px solid ' + (payment === m.value ? 'var(--accent)' : 'var(--line)'),
+                    background: payment === m.value ? 'var(--accent-soft)' : 'var(--bg-elev)',
+                    color: payment === m.value ? 'var(--accent-text)' : 'var(--fg)',
                     borderRadius: 6,
-                  }}>{m}</button>
+                  }}>{m.label}</button>
                 ))}
               </div>
-              {payment === 'Cartão de crédito' && (
+              {payment === 'credito' && (
                 <div style={{ marginTop: 12 }}>
                   <Field label="Parcelas">
-                    <SelectInput value="3×" onChange={() => {}} options={['1×', '2×', '3×', '4×', '6×', '10×', '12×']} />
+                    <SelectInput value={installments} onChange={setInstallments} options={['1×', '2×', '3×', '4×', '6×', '10×', '12×']} />
                   </Field>
                 </div>
               )}
-              {payment === 'Dinheiro' && (
+              {payment === 'dinheiro' && (
                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <Field label="Valor recebido"><TextInput mono prefix="R$" defaultValue="500,00" /></Field>
-                  <SummaryRow label="Troco" value={brl(Math.max(0, 500 - net))} strong tone="success" />
+                  {needsCashSession ? (
+                    <div style={{ fontSize: 12, color: 'var(--danger)' }}>
+                      Nenhum caixa aberto nesta unidade — abra o caixa antes de vender em dinheiro.
+                    </div>
+                  ) : (
+                    <>
+                      <Field label="Valor recebido"><TextInput mono prefix="R$" type="number" value={received} onChange={(e) => setReceived(+e.target.value || 0)} /></Field>
+                      <SummaryRow label="Troco" value={brl(Math.max(0, received - net))} strong tone="success" />
+                    </>
+                  )}
                 </div>
               )}
             </div>
 
-            <button onClick={() => navigate('/stock/movement')} className="btn btn-primary btn-lg"
-              disabled={cart.length === 0 || overstock.length > 0}
-              style={{ justifyContent: 'center', width: '100%', opacity: cart.length && !overstock.length ? 1 : 0.45 }}>
-              {overstock.length ? 'Estoque insuficiente' : cart.length ? `Confirmar venda · ${brl(net)}` : 'Carrinho vazio'}
+            {error && (
+              <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12, color: 'var(--fg)' }}>
+                {error}
+              </div>
+            )}
+
+            <button onClick={confirm} className="btn btn-primary btn-lg"
+              disabled={!canConfirm || pending}
+              style={{ justifyContent: 'center', width: '100%', opacity: canConfirm && !pending ? 1 : 0.45 }}>
+              {overstock.length ? 'Estoque insuficiente' : needsCashSession ? 'Abra o caixa primeiro' : pending ? 'Confirmando…' : cart.length ? `Confirmar venda · ${brl(net)}` : 'Carrinho vazio'}
             </button>
             <button onClick={() => navigate('/stock')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Cancelar atendimento</button>
 
@@ -333,6 +351,3 @@ export function StockSale() {
     </StoreShell>
   );
 }
-
-
-// === Transfer between stores ===

@@ -3,17 +3,43 @@
 import { useNavigate } from '@/hooks/use-navigate';
 import { I } from '@/components/icons';
 import { brl } from '@/lib/format';
+import { EmptyState } from '@/components/ui/empty-state';
 
-export function Receipt() {
+const PAYMENT_LABELS = {
+  dinheiro: 'Dinheiro',
+  pix: 'PIX',
+  debito: 'Débito',
+  credito: `Cartão de crédito`,
+  crediario: 'Crediário',
+  dividido: 'Dividido',
+};
+
+export function Receipt({ sale }) {
   const navigate = useNavigate();
-  const items = [
-    { name: 'Fone Bluetooth ANC', variant: 'Preto · 128 GB', qty: 1, price: 299.00 },
-    { name: 'Caderno Pautado 200f', variant: 'Preto · A4', qty: 12, price: 34.00, off: 10 },
-    { name: 'Café em Grãos', variant: 'Intenso · 1 kg', qty: 3, price: 60.00 },
-  ];
-  const gross = items.reduce((s, i) => s + i.qty * i.price, 0);
-  const off = items.reduce((s, i) => s + i.qty * i.price * ((i.off || 0) / 100), 0);
-  const net = gross - off;
+
+  if (!sale) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg-sunken)', padding: '32px 24px' }}>
+        <div style={{ maxWidth: 480, margin: '80px auto 0' }}>
+          <EmptyState
+            icon={<I.Alert size={18} />}
+            title="Venda não encontrada"
+            desc="O link do recibo é inválido ou a venda não existe mais."
+            action={<button onClick={() => navigate('/pos')} className="btn btn-primary btn-sm">Voltar ao balcão</button>}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const items = sale.sale_items ?? [];
+  const gross = sale.subtotal;
+  const off = sale.discount_amount;
+  const net = sale.total;
+  const paymentLabel = PAYMENT_LABELS[sale.payment_method] ?? sale.payment_method;
+  const paymentDetail = sale.payment_method === 'credito' && sale.installments > 1 ? `${paymentLabel} ${sale.installments}×` : paymentLabel;
+  const createdAt = new Date(sale.created_at);
+  const shortId = sale.id.slice(0, 8).toUpperCase();
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-sunken)', padding: '32px 24px' }}>
@@ -25,13 +51,11 @@ export function Receipt() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}><I.Check size={18} stroke={2.4} /></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.015em' }}>Venda #4287 registrada</div>
+            <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.015em' }}>Venda #{shortId} registrada</div>
             <div style={{ fontSize: 12.5, color: 'var(--fg-muted)', marginTop: 2 }}>
-              {brl(net)} em cartão de crédito 3× · estoque de 3 SKUs atualizado
+              {brl(net)} em {paymentDetail.toLowerCase()} · estoque de {items.length} {items.length === 1 ? 'SKU' : 'SKUs'} atualizado
             </div>
           </div>
-          <button className="btn btn-outline btn-sm"><I.Download size={13} /> PDF</button>
-          <button className="btn btn-outline btn-sm">Enviar por email</button>
           <button onClick={() => navigate('/pos')} className="btn btn-primary btn-sm">Próximo atendimento</button>
         </div>
 
@@ -44,24 +68,25 @@ export function Receipt() {
             fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1.55,
           }}>
             <div style={{ textAlign: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.02em' }}>BONSUCESSO VAREJO</div>
-              <div style={{ fontSize: 10, marginTop: 3 }}>Loja Centro</div>
-              <div style={{ fontSize: 9.5, color: '#5C574F', marginTop: 2 }}>Av. Brig. Faria Lima, 2232 — Loja 14</div>
-              <div style={{ fontSize: 9.5, color: '#5C574F' }}>CNPJ 24.531.908/0001-72</div>
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.02em' }}>{sale.store?.name?.toUpperCase() ?? 'STOQMATE'}</div>
             </div>
             <div style={{ borderTop: '1px dashed #B8B2A4', borderBottom: '1px dashed #B8B2A4', padding: '7px 0', fontSize: 9.5, color: '#5C574F' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>VENDA</span><span>#4287</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>18/09/2026</span><span>14:38</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>OPERADOR</span><span>LUCAS P.</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>VENDA</span><span>#{shortId}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>{createdAt.toLocaleDateString('pt-BR')}</span><span>{createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              {sale.customer?.name && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>CLIENTE</span><span>{sale.customer.name.toUpperCase()}</span></div>
+              )}
             </div>
             <div style={{ padding: '10px 0' }}>
-              {items.map((it, i) => (
-                <div key={i} style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 500 }}>{it.name.toUpperCase()}</div>
-                  <div style={{ fontSize: 9.5, color: '#5C574F' }}>{it.variant}</div>
+              {items.map((it) => (
+                <div key={it.id} style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 500 }}>{it.name_snapshot.toUpperCase()}</div>
+                  {it.variant_snapshot && <div style={{ fontSize: 9.5, color: '#5C574F' }}>{it.variant_snapshot}</div>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5 }}>
-                    <span>{it.qty} × {it.price.toFixed(2).replace('.', ',')}{it.off ? ` (-${it.off}%)` : ''}</span>
-                    <span>{(it.qty * it.price * (1 - (it.off || 0) / 100)).toFixed(2).replace('.', ',')}</span>
+                    <span>{it.qty} × {it.unit_price.toFixed(2).replace('.', ',')}{it.discount_pct ? ` (-${it.discount_pct}%)` : ''}</span>
+                    <span>{it.total.toFixed(2).replace('.', ',')}</span>
                   </div>
                 </div>
               ))}
@@ -73,29 +98,22 @@ export function Receipt() {
                 <span>TOTAL</span><span>{net.toFixed(2).replace('.', ',')}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10 }}>
-                <span>CARTÃO CRÉDITO 3x</span><span>{net.toFixed(2).replace('.', ',')}</span>
+                <span>{paymentDetail.toUpperCase()}</span><span>{net.toFixed(2).replace('.', ',')}</span>
               </div>
             </div>
             <div style={{ textAlign: 'center', marginTop: 14, fontSize: 9, color: '#5C574F', lineHeight: 1.6 }}>
-              TROCAS EM ATÉ 30 DIAS COM ESTE CUPOM<br/>
               NÃO É DOCUMENTO FISCAL
             </div>
-            <div style={{ display: 'flex', gap: 1, height: 28, alignItems: 'flex-end', marginTop: 12, justifyContent: 'center' }}>
-              {[2,1,1,3,1,2,1,1,2,3,1,1,2,1,3,1,2,1,1,2,3,1,2,1,1,3,1,2,2,1,3,1].map((w, i) => (
-                <div key={i} style={{ width: w, height: '100%', background: i % 2 ? 'transparent' : '#16140F' }}></div>
-              ))}
-            </div>
-            <div style={{ textAlign: 'center', fontSize: 9, marginTop: 4, letterSpacing: '0.08em' }}>4287 18092026</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 12 }}>O que aconteceu</div>
               {[
-                ['Estoque baixado', '3 SKUs · 16 unidades em Loja Centro'],
-                ['Movimentações criadas', '1 venda com 3 linhas · ref #4287'],
-                ['Caixa', '+ R$ 0,00 em dinheiro (pago em cartão)'],
-                ['Alertas disparados', 'Caderno Pautado A4 entrou em alerta de mínimo'],
+                ['Estoque baixado', `${items.length} ${items.length === 1 ? 'SKU' : 'SKUs'} · ${items.reduce((s, i) => s + i.qty, 0)} unidades em ${sale.store?.name ?? '—'}`],
+                ['Movimentações criadas', `1 venda com ${items.length} ${items.length === 1 ? 'linha' : 'linhas'} · ref #${shortId}`],
+                ['Pagamento', paymentDetail],
+                ...(sale.notes ? [['Observações', sale.notes]] : []),
               ].map(([k, v], i, arr) => (
                 <div key={k} style={{ display: 'flex', gap: 12, padding: '9px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
                   <span style={{ fontSize: 12, color: 'var(--fg-muted)', width: 150, flexShrink: 0 }}>{k}</span>
@@ -110,11 +128,8 @@ export function Receipt() {
                 <button onClick={() => navigate('/pos')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
                   <I.Plus size={12} /> Iniciar próximo atendimento
                 </button>
-                <button onClick={() => navigate('/stock/movement')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
+                <button onClick={() => navigate('/stock/history')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
                   <I.Activity size={12} /> Ver a movimentação no histórico
-                </button>
-                <button onClick={() => navigate('/customers')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
-                  <I.Users size={12} /> Vincular a um cliente
                 </button>
                 <button onClick={() => navigate('/cash')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
                   <I.Credit size={12} /> Conferir caixa do turno
