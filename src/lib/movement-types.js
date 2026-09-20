@@ -7,4 +7,5 @@ export const MOVEMENT_TYPES = {
   exchange: { label: 'Troca', color: 'var(--fg-muted)', soft: 'var(--bg-sunken)', icon: <I.ArrowRight size={11} /> },
   transfer: { label: 'Transferência', color: 'var(--accent-text)', soft: 'var(--accent-soft)', icon: <I.Swap size={11} /> },
   adjustment: { label: 'Ajuste', color: 'var(--danger)', soft: 'var(--danger-soft)', icon: <I.Activity size={11} /> },
+  count: { label: 'Contagem', color: 'var(--fg-muted)', soft: 'var(--bg-sunken)', icon: <I.Grid size={11} /> },
 };

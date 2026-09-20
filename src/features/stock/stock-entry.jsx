@@ -2,8 +2,6 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { MOCK, catById } from '@/lib/mock';
-import { PICK } from '@/features/stock/pick';
 import { MovementPage } from '@/features/stock/movement-page';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { brl } from '@/lib/format';
@@ -14,62 +12,93 @@ import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { I } from '@/components/icons';
+import { stockEntryAction } from '@/features/stock/actions';
 
-export function StockEntry() {
+export function StockEntry({ stores, suppliers, locations }) {
   const navigate = useNavigate();
-  const [qty, setQty] = React.useState(48);
-  const [unit, setUnit] = React.useState(158);
-  const c = catById(PICK.cat);
+  const [product, setProduct] = React.useState(null);
+  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const [qty, setQty] = React.useState(1);
+  const [unit, setUnit] = React.useState(0);
+  const [supplierId, setSupplierId] = React.useState('');
+  const [locationId, setLocationId] = React.useState('');
+  const [invoice, setInvoice] = React.useState('');
+  const [notes, setNotes] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+
+  const currentStock = (product?.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
   const total = qty * unit;
+  const canSave = product && qty > 0 && unit > 0 && storeId;
+
+  const submit = () => {
+    setError('');
+    if (!canSave) { setError('Selecione um produto, uma unidade e informe quantidade e custo.'); return; }
+    startTransition(async () => {
+      const result = await stockEntryAction({
+        storeId, productId: product.id, qty, unitCost: unit,
+        notes: [invoice && `NF ${invoice}`, notes].filter(Boolean).join(' — '), locationId,
+      });
+      if (result?.error) { setError(result.error); return; }
+      navigate('/stock/history');
+    });
+  };
+
   return (
     <MovementPage
       route="/stock/entry" navigate={navigate}
       title="Entrada de estoque"
       sub="Registre a compra recebida do fornecedor. O saldo desta unidade sobe na confirmação."
-      submitLabel="Confirmar entrada"
+      submitLabel={pending ? 'Confirmando…' : 'Confirmar entrada'}
+      onSubmit={submit}
+      submitDisabled={!canSave || pending}
       aside={(
         <div className="card" style={{ padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo da entrada</div>
-          <SummaryRow label={`${c.unitPlural} recebidos`} value={`${qty}`} />
+          <SummaryRow label="Unidades recebidas" value={`${qty}`} />
           <SummaryRow label="Custo unitário" value={brl(unit)} />
           <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
             <SummaryRow label="Total da nota" value={brl(total)} strong />
           </div>
-          <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
-            <SummaryRow label="Estoque antes" value={`${PICK.stock} ${c.unitPlural}`} />
-            <SummaryRow label="Estoque depois" value={`${PICK.stock + qty} ${c.unitPlural}`} tone="success" />
-          </div>
+          {product && (
+            <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
+              <SummaryRow label="Estoque antes" value={`${currentStock}`} />
+              <SummaryRow label="Estoque depois" value={`${currentStock + qty}`} tone="success" />
+            </div>
+          )}
+          {error && (
+            <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12, color: 'var(--fg)' }}>
+              {error}
+            </div>
+          )}
         </div>
       )}
     >
       <FormCard title="Produto" desc="Busque pelo SKU, código de barras ou nome." cols={1}>
-        <ProductPicker product={PICK} onClear={() => {}} />
+        <ProductPicker product={product} storeId={storeId} onSelect={setProduct} onClear={() => setProduct(null)} />
       </FormCard>
 
       <FormCard title="Dados da compra" cols={3}>
-        <Field label="Quantidade" required span={1} hint={`Em ${c.unitPlural}.`}>
-          <TextInput mono type="number" value={qty} onChange={(e) => setQty(+e.target.value || 0)} suffix={c.unit === 'unidade' ? 'un' : c.unit} />
+        <Field label="Quantidade" required span={1}>
+          <TextInput mono type="number" value={qty} onChange={(e) => setQty(+e.target.value || 0)} />
         </Field>
         <Field label="Preço de compra unitário" required span={1}>
           <TextInput mono prefix="R$" type="number" value={unit} onChange={(e) => setUnit(+e.target.value || 0)} />
         </Field>
-        <Field label="Data da compra" required span={1}>
-          <TextInput type="date" defaultValue="2026-09-18" />
-        </Field>
-        <Field label="Fornecedor" required span={2}>
-          <SelectInput value="TechDistrib" onChange={() => {}} options={['TechDistrib', 'Vento Sul', 'Malha & Cia', 'Grão Nobre', 'Lar Import', 'Papel Forte']} />
+        <Field label="Fornecedor" span={1}>
+          <SelectInput value={supplierId} onChange={setSupplierId} options={suppliers.map((s) => ({ value: s.id, label: s.name }))} placeholder="Selecione…" />
         </Field>
         <Field label="Nota fiscal" span={1}>
-          <TextInput mono placeholder="NF 8421" />
+          <TextInput mono value={invoice} onChange={(e) => setInvoice(e.target.value)} placeholder="8421" />
         </Field>
-        <Field label="Destino" span={2} hint="Unidade que recebe a mercadoria.">
-          <SelectInput value="Loja Centro" onChange={() => {}} options={MOCK.store.siblings.map(s => s.name)} />
+        <Field label="Destino" span={1} hint="Unidade que recebe a mercadoria.">
+          <SelectInput value={storeId} onChange={setStoreId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
         </Field>
         <Field label="Local de estoque" span={1}>
-          <SelectInput value="A-04" onChange={() => {}} options={['A-04', 'A-05', 'B-12', 'C-01', 'D-02', 'Depósito']} />
+          <SelectInput value={locationId} onChange={setLocationId} options={locations.map((l) => ({ value: l.id, label: l.code }))} placeholder="Selecione…" />
         </Field>
         <Field label="Observações" span={3}>
-          <TextareaInput placeholder="Ex.: duas caixas chegaram amassadas, conteúdo conferido e aceito." />
+          <TextareaInput value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: duas caixas chegaram amassadas, conteúdo conferido e aceito." />
         </Field>
       </FormCard>
 
@@ -78,12 +107,8 @@ export function StockEntry() {
         <div style={{ fontSize: 12, color: 'var(--fg-muted)', flex: 1 }}>
           Recebeu vários SKUs na mesma nota? Leia o XML da NF-e e lance tudo de uma vez.
         </div>
-        <button className="btn btn-outline btn-sm">Importar XML da NF-e</button>
+        <button disabled title="Em breve" className="btn btn-outline btn-sm" style={{ opacity: 0.55, cursor: 'not-allowed' }}>Importar XML da NF-e</button>
       </div>
     </MovementPage>
   );
 }
-
-// === Sale (POS) ===
-// Balcão real vende vários itens por atendimento, então a venda é um carrinho —
-// não um SKU. Desconto existe por linha E no total, que é como a loja negocia.

@@ -18,7 +18,7 @@ export function ProductThumb({ cat, category, brand, attrs, size = 32 }) {
       letterSpacing: '0.01em', border: '1px solid var(--line)',
       position: 'relative', overflow: 'hidden',
     }} title={`${c.name}${brand ? ' · ' + brand : ''}`}>
-      {c.code.substring(0, 2)}
+      {(c.code || c.name || '').substring(0, 2).toUpperCase()}
       {accentValue && (
         <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: colorHex(accentValue) }}></span>
       )}

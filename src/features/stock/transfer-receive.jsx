@@ -17,27 +17,70 @@ import { Field } from '@/components/ui/field';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { SummaryRow } from '@/components/ui/summary-row';
+import { EmptyState } from '@/components/ui/empty-state';
+import { transferReceiveAction } from '@/features/stock/actions';
 
-export function TransferReceive() {
+const REASONS = ['Item não localizado na caixa', 'Item danificado no transporte', 'Volume chegou aberto', 'Divergência na nota de envio', 'Item extra não listado'];
+
+export function TransferReceive({ transfer }) {
   const navigate = useNavigate();
-  const [lines, setLines] = React.useState([
-    { sku: 'CAS-TOAL-BE-ALG', cat: 'casa', name: 'Jogo de Toalhas', attrs: { cor: 'Bege', material: 'Algodão' }, sent: 24, got: 24 },
-    { sku: 'CAS-VASO-VE-CER', cat: 'casa', name: 'Vaso Decorativo', attrs: { cor: 'Verde', material: 'Cerâmica' }, sent: 12, got: 11 },
-    { sku: 'ELE-CARR-PR-65W', cat: 'eletronicos', name: 'Carregador GaN 65W', attrs: { cor: 'Preto' }, sent: 18, got: 18 },
-    { sku: 'VES-MOLE-CZ-G', cat: 'vestuario', name: 'Moletom Flanelado', attrs: { cor: 'Cinza', tamanho: 'G' }, sent: 30, got: 30 },
-  ]);
-  const setGot = (i, v) => setLines(ls => ls.map((l, j) => (j === i ? { ...l, got: v } : l)));
+
+  if (!transfer) {
+    return (
+      <StoreShell route="/stock/transfer/receive" breadcrumb={['Estoque', 'Receber transferência']} navigate={navigate}>
+        <PageHeader title="Receber transferência" />
+        <Page>
+          <MovementNav route="/stock/transfer" navigate={navigate} />
+          <EmptyState
+            icon={<I.Swap size={18} />}
+            title="Nenhuma transferência pendente de conferência"
+            desc="Quando uma unidade despachar mercadoria pra cá, ela aparece aqui pra você conferir item a item."
+            action={<button onClick={() => navigate('/stock/transfer')} className="btn btn-primary btn-sm">Nova transferência</button>}
+          />
+        </Page>
+      </StoreShell>
+    );
+  }
+
+  return <TransferReceiveForm transfer={transfer} navigate={navigate} />;
+}
+
+function TransferReceiveForm({ transfer, navigate }) {
+  const [lines, setLines] = React.useState(() => transfer.transfer_items.map((ti) => ({
+    id: ti.id, sku: ti.product.sku, name: ti.product.name, category: ti.product.category, attrs: ti.product.attrs,
+    sent: ti.qty_sent, got: ti.qty_sent,
+  })));
+  const [reason, setReason] = React.useState(REASONS[0]);
+  const [detail, setDetail] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+  const setGot = (i, v) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, got: v } : l)));
 
   const totalSent = lines.reduce((s, l) => s + l.sent, 0);
   const totalGot = lines.reduce((s, l) => s + l.got, 0);
-  const diverging = lines.filter(l => l.got !== l.sent);
+  const diverging = lines.filter((l) => l.got !== l.sent);
   const hasDivergence = diverging.length > 0;
+
+  const submit = () => {
+    setError('');
+    if (hasDivergence && detail.trim().length < 10) { setError('Detalhe o que foi verificado na divergência.'); return; }
+    startTransition(async () => {
+      const result = await transferReceiveAction({
+        transferId: transfer.id,
+        items: lines.map((l) => ({ transferItemId: l.id, qtyReceived: l.got })),
+        discrepancyReason: hasDivergence ? reason : '',
+        discrepancyDetail: hasDivergence ? detail : '',
+      });
+      if (result?.error) { setError(result.error); return; }
+      navigate('/stock/history');
+    });
+  };
 
   return (
     <StoreShell route="/stock/transfer/receive" breadcrumb={['Estoque', 'Receber transferência']} navigate={navigate}>
       <PageHeader
         title="Receber transferência"
-        sub="TRF-124 · enviada por Loja Centro em 18/09 · 4 SKUs · 84 itens"
+        sub={`De ${transfer.origin.name} · ${lines.length} SKU${lines.length === 1 ? '' : 's'} · ${totalSent} itens`}
         actions={<button onClick={() => navigate('/stock/history')} className="btn btn-ghost btn-sm">Conferir depois</button>}
       />
       <Page>
@@ -50,10 +93,9 @@ export function TransferReceive() {
         }}>
           <span style={{ color: 'var(--accent-text)', flexShrink: 0 }}><I.Swap size={15} /></span>
           <span style={{ color: 'var(--fg)', flex: 1, lineHeight: 1.5 }}>
-            O saldo só entra em <strong>Loja Campinas</strong> depois desta conferência. Enquanto estiver pendente,
+            O saldo só entra em <strong>{transfer.destination.name}</strong> depois desta conferência. Enquanto estiver pendente,
             os itens aparecem como <strong>em trânsito</strong> e não podem ser vendidos em nenhuma unidade.
           </span>
-          <span className="badge badge-accent">Pendente há 6 h</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
@@ -64,7 +106,7 @@ export function TransferReceive() {
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Conferência item a item</h3>
                   <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Informe o que efetivamente chegou. Divergências ficam registradas nas duas unidades.</p>
                 </div>
-                <button onClick={() => setLines(ls => ls.map(l => ({ ...l, got: l.sent })))} className="btn btn-outline btn-sm">
+                <button onClick={() => setLines((ls) => ls.map((l) => ({ ...l, got: l.sent })))} className="btn btn-outline btn-sm">
                   <I.Check size={12} /> Conferir tudo como enviado
                 </button>
               </div>
@@ -79,18 +121,18 @@ export function TransferReceive() {
                   {lines.map((l, i) => {
                     const diff = l.got - l.sent;
                     return (
-                      <tr key={l.sku}>
+                      <tr key={l.id}>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <ProductThumb cat={l.cat} attrs={l.attrs} size={26} />
+                            <ProductThumb category={l.category} attrs={l.attrs} size={26} />
                             <div>
                               <div style={{ fontSize: 13, fontWeight: 500 }}>{l.name}</div>
                               <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{l.sku}</div>
                             </div>
                           </div>
                         </td>
-                        <td><CategoryBadge cat={l.cat} /></td>
-                        <td><AttrChip value={variantLabel(l.attrs)} /></td>
+                        <td>{l.category && <CategoryBadge category={l.category} />}</td>
+                        <td><AttrChip value={variantLabel(l.attrs || {})} /></td>
                         <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{l.sent}</td>
                         <td>
                           <TextInput mono type="number" value={l.got} onChange={(e) => setGot(i, +e.target.value || 0)} style={{ height: 28 }} />
@@ -111,22 +153,18 @@ export function TransferReceive() {
             {hasDivergence && (
               <FormCard title="Justificativa da divergência" desc="Obrigatória — abre uma ocorrência para a unidade de origem." cols={1}>
                 <Field label="Motivo" required>
-                  <SelectInput value="Item não localizado na caixa" onChange={() => {}}
-                    options={['Item não localizado na caixa', 'Item danificado no transporte', 'Volume chegou aberto', 'Divergência na nota de envio', 'Item extra não listado']} />
+                  <SelectInput value={reason} onChange={setReason} options={REASONS} />
                 </Field>
                 <Field label="Detalhamento" required hint="Descreva o estado do volume e o que foi conferido.">
-                  <TextareaInput defaultValue="Caixa 2 de 3 chegou com fita rompida. Faltou 1 Vaso Decorativo Verde; demais itens conferidos e íntegros." style={{ minHeight: 72 }} />
-                </Field>
-                <Field label="Anexar foto do volume" hint="Ajuda na tratativa com a transportadora.">
-                  <div style={{
-                    border: '1.5px dashed var(--line-strong)', borderRadius: 8,
-                    padding: '18px 16px', textAlign: 'center', background: 'var(--bg-sunken)', cursor: 'pointer',
-                  }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 500 }}>Arraste fotos aqui</div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 3 }}>JPG ou PNG · até 5 por ocorrência</div>
-                  </div>
+                  <TextareaInput value={detail} onChange={(e) => setDetail(e.target.value)} style={{ minHeight: 72 }} placeholder="Ex.: caixa 2 de 3 chegou com fita rompida, faltou 1 unidade." />
                 </Field>
               </FormCard>
+            )}
+
+            {error && (
+              <div style={{ padding: '10px 13px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5, color: 'var(--fg)' }}>
+                {error}
+              </div>
             )}
           </div>
 
@@ -143,32 +181,15 @@ export function TransferReceive() {
                   strong tone={totalGot === totalSent ? 'success' : 'danger'}
                 />
               </div>
-              <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
-                <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 6 }}>Loja Campinas (destino)</div>
-                <SummaryRow label="Entra no saldo" value={`${totalGot} itens`} tone="success" />
-                {hasDivergence && <SummaryRow label="Fica em aberto" value={`${totalSent - totalGot} itens`} tone="danger" />}
-              </div>
             </div>
 
-            <button onClick={() => navigate('/stock/history')} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%' }}>
-              {hasDivergence ? 'Confirmar com divergência' : 'Confirmar recebimento'}
+            <button onClick={submit} disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: pending ? 0.7 : 1 }}>
+              {pending ? 'Confirmando…' : hasDivergence ? 'Confirmar com divergência' : 'Confirmar recebimento'}
             </button>
             <button onClick={() => navigate('/stock')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Cancelar</button>
-
-            {hasDivergence && (
-              <div style={{ padding: '11px 13px', background: 'var(--warning-soft)', border: '1px solid var(--warning)', borderRadius: 8, display: 'flex', gap: 10 }}>
-                <span style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }}><I.Alert size={14} /></span>
-                <div style={{ fontSize: 11, color: 'var(--fg)', lineHeight: 1.5 }}>
-                  A origem recebe a ocorrência e precisa resolver os <strong>{totalSent - totalGot} itens</strong> em aberto —
-                  por ajuste de inventário ou reenvio.
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </Page>
     </StoreShell>
   );
 }
-
-// === /stock/count — batch inventory session ===
