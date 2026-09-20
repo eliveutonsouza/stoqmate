@@ -1,58 +1,76 @@
 "use client";
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { useNavigate } from '@/hooks/use-navigate';
-import { MOCK } from '@/lib/mock';
 import { AdminShell } from '@/components/ui/admin-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
-import { StatusBadge } from '@/components/domain/status-badge';
-import { MiniAreaChart } from '@/components/domain/mini-area-chart';
-import { SummaryRow } from '@/components/ui/summary-row';
-import { brl } from '@/lib/format';
 import { Modal } from '@/components/ui/modal';
 import { Field } from '@/components/ui/field';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextInput } from '@/components/ui/text-input';
+import { EmptyState } from '@/components/ui/empty-state';
+import { startImpersonationAction } from '@/features/admin/actions';
 
-export function AdminStoreDetail() {
+const PLAN_NAMES = { balcao: 'Balcão', controle: 'Controle', rede: 'Rede' };
+const REASONS = ['Atendimento de ticket de suporte', 'Investigação de bug reportado', 'Demonstração comercial', 'Migração de dados assistida'];
+
+export function AdminStoreDetail({ detail }) {
   const navigate = useNavigate();
-  const s = MOCK.stores[0];
-  const [impersonateOpen, setImpersonateOpen] = React.useState(false);
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const [reason, setReason] = React.useState(REASONS[0]);
+  const [ticket, setTicket] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+
+  if (!detail) {
+    return (
+      <AdminShell breadcrumb={['Lojas', 'Detalhe']} navigate={navigate}>
+        <PageHeader title="Rede" />
+        <Page>
+          <EmptyState icon={<I.Alert size={18} />} title="Rede não encontrada" desc="O link é inválido ou a rede não existe mais."
+            action={<button onClick={() => navigate('/admin/stores')} className="btn btn-primary btn-sm">Voltar</button>} />
+        </Page>
+      </AdminShell>
+    );
+  }
+
+  const { tenant: t, stores, users, auditLog, skuCount } = detail;
+
+  const startAccess = () => {
+    setError('');
+    startTransition(async () => {
+      const result = await startImpersonationAction({ tenantId: t.id, reason, ticketRef: ticket });
+      if (result?.error) { setError(result.error); return; }
+      setOpen(false);
+      router.refresh();
+    });
+  };
+
   return (
-    <AdminShell route="/admin/stores/detail" breadcrumb={['Lojas', s.name]} navigate={navigate}>
+    <AdminShell breadcrumb={['Lojas', t.name]} navigate={navigate}>
       <PageHeader
-        title={s.name}
-        sub={`${s.city} · plano ${s.plan} · ${s.units} lojas · cliente desde ${s.since}`}
+        title={t.name}
+        sub={`${PLAN_NAMES[t.plan_id] ?? t.plan_id} · ${stores.length} ${stores.length === 1 ? 'loja' : 'lojas'} · cliente desde ${new Date(t.created_at).toLocaleDateString('pt-BR')}`}
         actions={(
-          <>
-            <button className="btn btn-outline btn-sm">Suspender</button>
-            <button onClick={() => navigate('/admin/stores/edit')} className="btn btn-outline btn-sm">Editar</button>
-            <button onClick={() => setImpersonateOpen(true)} className="btn btn-primary btn-sm">
-              <I.Logout size={13} style={{ transform: 'scaleX(-1)' }} /> Entrar como rede
-            </button>
-          </>
+          <button onClick={() => setOpen(true)} className="btn btn-primary btn-sm">
+            <I.Logout size={13} style={{ transform: 'scaleX(-1)' }} /> Registrar acesso de suporte
+          </button>
         )}
-        tabs={[{ id: 'o', label: 'Visão geral' }, { id: 'u', label: 'Usuários · 8' }, { id: 'b', label: 'Faturamento' }, { id: 'a', label: 'Auditoria' }]}
-        activeTab="o"
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
           {[
-            { l: 'Status', v: 'Ativa', badge: 'active' },
-            { l: 'MRR', v: s.mrr },
-            { l: 'Lojas', v: `${s.units} / 5` },
-            { l: 'SKUs', v: s.skus.toLocaleString('pt-BR') },
-            { l: 'Movimentações 30d', v: '1.142' },
+            { l: 'Plano', v: PLAN_NAMES[t.plan_id] ?? t.plan_id },
+            { l: 'Lojas', v: `${stores.length}` },
+            { l: 'SKUs no catálogo', v: `${skuCount}` },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 4 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
-              {m.badge ? (
-                <div style={{ marginTop: 7 }}><StatusBadge status={m.badge} /></div>
-              ) : (
-                <div style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
-              )}
+              <div style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.02em', marginTop: 4 }}>{m.v}</div>
             </div>
           ))}
         </div>
@@ -63,46 +81,23 @@ export function AdminStoreDetail() {
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Dados cadastrais</h3>
             </div>
             {[
-              ['Razão social', 'Bonsucesso Comércio Varejista Ltda.'],
-              ['CNPJ', '24.531.908/0001-72', true],
-              ['Subdomínio', 'bonsucesso.stoqmate.com.br', true],
-              ['Endereço', 'Av. Brigadeiro Faria Lima, 2232 — Loja 14'],
-              ['Cidade', 'São Paulo · SP'],
-              ['Telefone', '(11) 3813-4400', true],
-              ['Email', 'contato@bonsucesso.com.br'],
-              ['Onboarding', 'Concluído em 14 fev 2026'],
+              ['CNPJ', t.cnpj || '—', true],
+              ['Cadastrada em', new Date(t.created_at).toLocaleDateString('pt-BR')],
+              ...stores.map((s) => [s.type === 'loja' ? 'Loja' : s.type, s.name]),
             ].map(([k, v, mono], i, arr) => (
-              <div key={k} style={{ display: 'flex', gap: 12, padding: '10px 18px', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+              <div key={k + i} style={{ display: 'flex', gap: 12, padding: '10px 18px', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
                 <span style={{ fontSize: 12, color: 'var(--fg-muted)', width: 110, flexShrink: 0 }}>{k}</span>
                 <span style={{ fontSize: 12, fontWeight: 500, fontFamily: mono ? 'var(--font-mono)' : undefined }}>{v}</span>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
-              <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Atividade da rede</h3>
-              <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--fg-muted)' }}>Movimentações registradas por dia.</p>
-              <MiniAreaChart data={MOCK.salesSeries} height={130} />
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Assinatura</h3>
             </div>
-
-            <div className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
-                <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Assinatura</h3>
-              </div>
-              <div style={{ padding: 18 }}>
-                <SummaryRow label="Plano" value="Controle · mensal" />
-                <SummaryRow label="Valor" value={brl(890)} />
-                <SummaryRow label="Ciclo atual" value="01/09 – 30/09" />
-                <SummaryRow label="Próxima cobrança" value="01 out 2026" />
-                <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
-                  <SummaryRow label="LTV acumulado" value={brl(6230)} strong tone="success" />
-                </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
-                  <button onClick={() => navigate('/admin/plans/edit')} className="btn btn-outline btn-sm" style={{ flex: 1, justifyContent: 'center' }}>Trocar plano</button>
-                  <button className="btn btn-outline btn-sm" style={{ flex: 1, justifyContent: 'center' }}>Ver faturas</button>
-                </div>
-              </div>
+            <div style={{ padding: 18, fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
+              Cobrança ainda não configurada (Stripe pendente). Plano atual: <strong style={{ color: 'var(--fg)' }}>{PLAN_NAMES[t.plan_id] ?? t.plan_id}</strong>.
             </div>
           </div>
         </div>
@@ -111,49 +106,66 @@ export function AdminStoreDetail() {
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Usuários da rede</h3>
           </div>
-          <table className="table">
-            <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Status</th><th>Último acesso</th></tr></thead>
-            <tbody>
-              {[
-                ['Mariana Souza', 'mariana@bonsucesso.com.br', 'Proprietária', 'agora'],
-                ['Ana Ribeiro', 'ana@bonsucesso.com.br', 'Gestora de Estoque', 'há 4 min'],
-                ['Roberto Lima', 'roberto@bonsucesso.com.br', 'Gestor Financeiro', 'ontem'],
-                ['Lucas Prado', 'lucas@bonsucesso.com.br', 'Vendedor', 'há 12 min'],
-                ['Marina Alves', 'marina@bonsucesso.com.br', 'Vendedor', 'há 1 h'],
-              ].map(([n, e, r, l], i) => (
-                <tr key={i}>
-                  <td style={{ fontSize: 13, fontWeight: 500 }}>{n}</td>
-                  <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{e}</td>
-                  <td style={{ fontSize: 12 }}>{r}</td>
-                  <td><span className="badge badge-success"><span className="badge-dot"></span> Ativo</span></td>
-                  <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{l}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {users.length === 0 ? (
+            <div style={{ padding: 18, fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhum usuário cadastrado.</div>
+          ) : (
+            <table className="table">
+              <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Status</th></tr></thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.user_id}>
+                    <td style={{ fontSize: 13, fontWeight: 500 }}>{u.name}</td>
+                    <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{u.email}</td>
+                    <td style={{ fontSize: 12 }}>{u.role}</td>
+                    <td>{u.status === 'active' ? <span className="badge badge-success"><span className="badge-dot"></span> Ativo</span> : <span className="badge">{u.status}</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Auditoria</h3>
+            <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Inclui ações da rede e acessos de suporte.</p>
+          </div>
+          {auditLog.length === 0 ? (
+            <div style={{ padding: 18, fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhum registro ainda.</div>
+          ) : (
+            <table className="table">
+              <thead><tr><th style={{ width: 140 }}>Quando</th><th>Quem</th><th>Ação</th></tr></thead>
+              <tbody>
+                {auditLog.map((a) => (
+                  <tr key={a.id}>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(a.created_at).toLocaleString('pt-BR')}</td>
+                    <td style={{ fontSize: 12 }}>{a.who}</td>
+                    <td style={{ fontSize: 13, color: a.scope === 'platform' ? 'var(--warning)' : 'var(--fg)' }}>{a.message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </Page>
 
-      <Modal open={impersonateOpen} onClose={() => setImpersonateOpen(false)} title="Entrar como Bonsucesso Varejo?" desc="Você verá o painel exatamente como a rede vê." width={460}
+      <Modal open={open} onClose={() => setOpen(false)} title={`Registrar acesso de suporte a ${t.name}?`} desc="Fica gravado no log de auditoria da rede, visível para ela." width={460}
         footer={<>
-          <button onClick={() => setImpersonateOpen(false)} className="btn btn-ghost">Cancelar</button>
-          <button onClick={() => navigate('/dashboard')} className="btn btn-primary">Entrar como rede</button>
+          <button onClick={() => setOpen(false)} className="btn btn-ghost">Cancelar</button>
+          <button onClick={startAccess} disabled={pending} className="btn btn-primary">{pending ? 'Registrando…' : 'Confirmar acesso'}</button>
         </>}>
+        {error && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>}
         <div style={{ padding: '12px 14px', background: 'var(--warning-soft)', border: '1px solid var(--warning)', borderRadius: 8, display: 'flex', gap: 11 }}>
           <span style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }}><I.Alert size={15} /></span>
           <div style={{ fontSize: 12, lineHeight: 1.55 }}>
-            Sessão de impersonate é <strong>registrada no log de auditoria</strong> com seu usuário, IP e horário.
-            A rede é notificada por email. Ações destrutivas ficam bloqueadas.
+            Este console não assume a sessão do usuário da rede — só amplia sua leitura de apoio, com motivo obrigatório e registro auditável.
           </div>
         </div>
-        <Field label="Motivo do acesso" required hint="Aparece no log e no email enviado à rede.">
-          <SelectInput value="Atendimento de ticket de suporte" onChange={() => {}}
-            options={['Atendimento de ticket de suporte','Investigação de bug reportado','Demonstração comercial','Migração de dados assistida']} />
+        <Field label="Motivo do acesso" required hint="Aparece no log da rede.">
+          <SelectInput value={reason} onChange={setReason} options={REASONS} />
         </Field>
-        <Field label="Referência do ticket"><TextInput mono placeholder="SUP-2841" /></Field>
+        <Field label="Referência do ticket"><TextInput mono value={ticket} onChange={(e) => setTicket(e.target.value)} placeholder="SUP-2841" /></Field>
       </Modal>
     </AdminShell>
   );
 }
-
-// === Plans CRUD ===
