@@ -37,6 +37,18 @@ Roda contra o build de produção (`webServer` do `playwright.config.ts` faz
 `npm run build && npm run start`), não `next dev` — pega regressão que só
 aparece no SSG.
 
+**Backend (Supabase)** — cobertura por verificação manual disciplinada, não
+suíte automatizada ainda (ver Follow-up): toda fase do backend foi fechada
+só depois de (1) `supabase db push` limpo, (2) verificação ao vivo logado
+como um usuário fixture real (nunca `service_role` — RLS só prova algo se
+quem testa é quem a política realmente restringe), (3) o gate completo
+desta página. O teste mais importante em qualquer mudança de RLS/função
+`security definer` é negativo: um usuário do tenant A não pode ler nem
+escrever dado do tenant B, e uma função que recebe `store_id`/`product_id`
+do cliente rejeita um id de outro tenant — isso foi verificado manualmente
+fase a fase (cross-tenant em `fn_stock_entry`, `fn_transfer_dispatch`,
+etc.) mas ainda não virou teste automatizado que rode no CI.
+
 ## O que NÃO tem cobertura, deliberadamente
 
 As ~230 telas de `src/features/`. São composições apresentacionais com
@@ -48,16 +60,20 @@ coreografia do filme do hero (`Film`, `hero-film-scenes.jsx`,
 `hero-film-pieces.jsx`) segue a mesma regra — só `animate`/`clamp` (puros)
 ganham teste unitário; o resultado visual da animação é coberto pelo e2e.
 
-## Follow-up registrado (não fazer agora)
+## Follow-up registrado — ativo agora
 
-Quando o Supabase entrar e `src/features/**` passar a fazer fetch real de
-dado (troca do mock por chamada real), duas coisas mudam nesta seção, com
-autorização do desenvolvedor:
-1. Reaudita `src/features/**` com a skill `vercel-react-best-practices`,
-   focando nas categorias "Eliminating Waterfalls" e "Client-Side Data
-   Fetching" — não se aplicam hoje porque não há fetch nenhum.
-2. Cobertura unitária provavelmente precisa crescer pra cobrir hooks de
-   data-fetching novos, que passam a ter lógica de verdade.
+O Supabase já substituiu o mock por fetch real em `src/features/**`.
+Pendente (autorizado nesta revisão, ainda não feito):
+1. Reauditar `src/features/**` com a skill `vercel-react-best-practices`,
+   focando em "Eliminating Waterfalls" e "Server-Side Performance"
+   (`React.cache()`, `Promise.all`) — ver `.spec/quality-gates.md`.
+2. Testes de integração cobrindo RLS/RPC diretamente (`pgTAP` ou Vitest
+   contra um projeto Supabase de teste), pra virar gate automatizado em
+   vez de checklist manual — o teste mais valioso é o negativo
+   cross-tenant descrito acima. Não existe hoje; verificação continua
+   manual fase a fase.
+3. `AIQuotaCard` mockado (ver `.spec/architecture.md`) não tem teste
+   porque não lê dado real ainda — ganha cobertura junto com o wiring.
 
 ## Rodando
 

@@ -47,13 +47,67 @@ src/hooks/        hooks compartilhados
   mesmo domínio vira arquivo próprio no mesmo domínio; usado por 2+
   domínios é promovido para `components/domain/` ou `lib/`.
 - **Extensão**: código herdado do design original (a maior parte de
-  `components/` e `features/`) fica `.js`/`.jsx`, sem tipagem — não vale a
-  pena tipar isso agora, o formato dos dados muda quando o Supabase entrar.
-  Código novo (rotas, hooks, specs de teste, stories) nasce em `.ts`/`.tsx`.
+  `components/` e `features/`) continua `.js`/`.jsx`, sem tipagem — retipar
+  em massa depois que o Supabase já entrou não paga o custo (a superfície
+  é grande e estável agora, não vale reescrever só por tipo). Código novo
+  (rotas, `queries.ts`/`actions.ts` de backend, hooks, specs de teste,
+  stories) nasce em `.ts`/`.tsx`.
 
-## O que NÃO está aqui
+## Backend (Supabase)
 
-Modelo de dados, autenticação e integrações de backend — o projeto ainda é
-front-end com dado mockado (`src/lib/mock.js`, `src/lib/plans.js`). Esse
-desenho vem depois, quando o Supabase for integrado, e vira uma revisão
-deste documento (com autorização do desenvolvedor).
+Integrado por completo (Fases 0–10 do plano de migração mock→backend
+real, mais a Fase 7 de IA). Camada nova:
+
+```
+src/lib/supabase/client.ts          browser client (Client Components)
+src/lib/supabase/server.ts          Server Component/Server Action client
+                                     (cookies via @supabase/ssr), createClient()
+                                     + getTenantId()
+src/lib/supabase/service-role.ts    server-only — bypassa RLS de propósito.
+                                     Só para /admin/** DEPOIS de confirmar
+                                     is_platform_staff() com o client normal
+src/lib/anthropic.ts                cliente da API da Anthropic, server-only
+src/lib/stripe.ts                   cliente do Stripe, server-only
+supabase/migrations/*.sql           append-only — nunca editar uma migration
+                                     já aplicada, sempre `create or replace`/
+                                     `alter table` numa nova
+supabase/functions/<nome>/          Edge Functions (Deno). Só usada quando
+                                     quem chama é externo ao app (hoje: só
+                                     stripe-webhook) — chamada de IA do
+                                     próprio usuário logado é Server Action,
+                                     não Edge Function
+src/features/<domínio>/queries.ts   leitura, chamada só de Server Component
+src/features/<domínio>/actions.ts   `"use server"` — mutação, chamada só de
+                                     Client Component
+```
+
+**Direção de dependência** (estende a regra da seção anterior):
+`features/*/actions.ts` e `queries.ts` podem importar
+`@/lib/supabase/server` livremente. **Nunca** importar
+`@/lib/supabase/service-role` fora de `src/features/admin/**` — e mesmo lá,
+só depois de checar `is_platform_staff()` com o client normal (RLS-scoped)
+primeiro. Um Client Component (`"use client"`) nunca importa
+`@/lib/supabase/server` nem `service-role` — só chama uma `action` já
+exportada de `actions.ts`.
+
+**Autorização**: toda tabela de domínio tem RLS; toda função `security
+definer` que recebe id vindo do cliente (store_id, product_id, etc.) valida
+esse id contra `auth_tenant_id()` antes de usar — ela roda com privilégio
+elevado, então a validação de tenant não é opcional, é a própria fronteira
+de segurança. `role_area_access` espelha literalmente
+`AREAS`/`ROLES`/`ACCESS` de `src/lib/permissions.js` — mudou um, muda o
+outro no mesmo commit.
+
+**IA**: 5 operações (`classify`, `ask`, `enrich`, `forecast`, `ocr`) via
+`src/features/ai/actions.ts` (+ `ai-flows/actions.ts` para persistência
+específica de enrich/ocr), todas com débito de crédito antes da chamada e
+estorno se a Anthropic falhar (`ai_credit_ledger`, `fn_ai_debit_credits`/
+`fn_ai_refund_credits`). Padrão fixo pra qualquer operação de IA nova:
+o modelo só traduz/classifica, nunca soma/conta — quem faz a aritmética é
+sempre o Postgres/TypeScript sobre dado real.
+
+**Débito conhecido, não uma regressão silenciosa**: `AIQuotaCard`
+(`src/features/ai/ai-quota-card.jsx`) ainda lê de `ai-constants.js`
+(mock), não do saldo real (`tenants.ai_credit_balance`) — falta decidir a
+política de renovação mensal de crédito (nenhum cron existe ainda) antes
+de wireá-lo. Registrado como pendência, não é dívida escondida.
