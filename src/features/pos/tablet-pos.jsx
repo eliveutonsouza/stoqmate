@@ -31,8 +31,6 @@ export function TabletPOS() {
   const total = cart.reduce((s, l) => s + l.qty * l.sale, 0);
   const units = cart.reduce((s, l) => s + l.qty, 0);
 
-  const TILE = { height: 56 };
-
   return (
     <div style={{ minHeight: '100vh', background: '#E7E4DD', padding: 24, display: 'flex', justifyContent: 'center' }}>
       <div style={{ width: '100%', maxWidth: 1024 }}>

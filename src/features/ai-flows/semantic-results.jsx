@@ -19,7 +19,7 @@ export function SemanticResults({ q, navigate }) {
         <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', padding: '9px 0', lineHeight: 1.5 }}>
           Casados pelo que o produto é, não só pela palavra “{q}” no nome — inclui itens que a busca literal deixaria de fora.
         </div>
-        {SEMANTIC_HITS.map((h, i) => (
+        {SEMANTIC_HITS.map((h) => (
           <div key={h.sku} onClick={() => navigate('/products/detail')} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0',
             borderTop: '1px solid var(--line-soft)', cursor: 'pointer',

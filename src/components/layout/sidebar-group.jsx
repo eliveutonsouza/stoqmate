@@ -5,11 +5,11 @@ import { I } from '@/components/icons';
 
 export function SidebarGroup({ icon, label, items, route, navigate, badge }) {
   const childActive = items.some(it => it.r === route);
-  const [open, setOpen] = React.useState(childActive);
-  React.useEffect(() => { if (childActive) setOpen(true); }, [childActive]);
+  const [manualOpen, setManualOpen] = React.useState(null);
+  const open = manualOpen ?? childActive;
   return (
     <div>
-      <a href="#" onClick={(e) => { e.preventDefault(); setOpen(!open); }} style={{
+      <a href="#" onClick={(e) => { e.preventDefault(); setManualOpen(!open); }} style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '0 10px', height: 30, margin: '0 8px', borderRadius: 5,
         color: childActive ? 'var(--fg)' : 'var(--fg-muted)',

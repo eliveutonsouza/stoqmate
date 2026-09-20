@@ -3,7 +3,7 @@
 
 export function SidebarItem({ icon, label, active, onClick, badge, shortcut }) {
   return (
-    <a href="#" onClick={(e) => { e.preventDefault(); onClick && onClick(); }} style={{
+    <a href="#" onClick={(e) => { e.preventDefault(); if (onClick) onClick(); }} style={{
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '0 10px',
       height: 30,

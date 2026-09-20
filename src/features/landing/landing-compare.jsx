@@ -6,7 +6,7 @@ import { Eyebrow } from '@/features/landing/eyebrow';
 import { H2 } from '@/features/landing/h2';
 import { Lead } from '@/features/landing/lead';
 
-export function LandingCompare({ navigate }) {
+export function LandingCompare() {
   const rows = [
     ['Controle por variação de produto', 'manual e frágil', true, 'genérico'],
     ['Multi-loja com saldo isolado', false, true, 'cobrado à parte'],

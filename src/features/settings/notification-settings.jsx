@@ -162,7 +162,7 @@ export function NotificationSettings() {
                 ['16/09 08:00', 'Sugestão de compra da semana · 7 SKUs, R$ 43.104', 'Sugestão de compra', 'ana + gerencia', 'ok'],
                 ['15/09 11:22', 'Anomalia: estoque fantasma em Camiseta Pima Branco M', 'Anomalia detectada', 'ana@bonsucesso.com.br', 'ok'],
                 ['01/09 10:02', 'Fatura de setembro paga · R$ 89,00', 'Fatura paga', 'mariana@bonsucesso.com.br', 'ok'],
-              ].map(([when, subj, rule, to, st], i) => (
+              ].map(([when, subj, rule, to], i) => (
                 <tr key={i}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{when}</td>
                   <td style={{ fontSize: 13 }}>{subj}</td>

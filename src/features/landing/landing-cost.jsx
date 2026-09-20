@@ -6,7 +6,7 @@ import { H2 } from '@/features/landing/h2';
 import { Lead } from '@/features/landing/lead';
 import { I } from '@/components/icons';
 
-export function LandingCost({ navigate }) {
+export function LandingCost() {
   const problems = [
     { n: 'R$ 4.800', l: 'por mês em venda perdida', d: 'O cliente pede, você não tem, ele compra do vizinho. Ninguém registra essa venda que não aconteceu.', icon: 'Alert' },
     { n: '38%', l: 'do capital em item que não gira', d: 'Dinheiro parado em prateleira enquanto o que vende fica em falta. Sem curva ABC, você não sabe qual é qual.', icon: 'Credit' },

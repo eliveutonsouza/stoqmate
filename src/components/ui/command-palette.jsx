@@ -39,6 +39,8 @@ export function CommandPalette({ navigate, admin }) {
   const [open, setOpen] = React.useState(false);
   const [q, setQ] = React.useState('');
   const [sel, setSel] = React.useState(0);
+  const [prevQ, setPrevQ] = React.useState(q);
+  if (q !== prevQ) { setPrevQ(q); setSel(0); }
   const all = admin ? ADMIN_COMMANDS : STORE_COMMANDS;
 
   const hits = q.trim()
@@ -55,8 +57,6 @@ export function CommandPalette({ navigate, admin }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [inShowcase]);
-
-  React.useEffect(() => { setSel(0); }, [q]);
 
   const run = (c) => { setOpen(false); navigate(c.r); };
 

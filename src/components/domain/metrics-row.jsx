@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkline } from '@/features/dashboard/sparkline';
+import { Sparkline } from '@/components/domain/sparkline';
 
 export function MetricsRow({ metrics }) {
   return (

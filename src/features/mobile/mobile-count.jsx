@@ -11,7 +11,7 @@ import { I } from '@/components/icons';
 
 export function MobileCount() {
   const navigate = useNavigate();
-  const [step, setStep] = React.useState('scan');
+  const [, setStep] = React.useState('scan');
   const [rows, setRows] = React.useState([
     { sku: 'ELE-FONE-PR-128', cat: 'eletronicos', name: 'Fone Bluetooth ANC', attrs: { cor: 'Preto', capacidade: '128 GB' }, real: 40 },
     { sku: 'ELE-CARR-PR-65W', cat: 'eletronicos', name: 'Carregador GaN 65W', attrs: { cor: 'Preto' }, real: 66 },

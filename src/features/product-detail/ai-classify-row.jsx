@@ -10,7 +10,7 @@ import { AIError } from '@/features/ai/ai-error';
 import { ConfidenceBar } from '@/features/ai/confidence-bar';
 import { AIWhy } from '@/features/ai/ai-why';
 
-export function AIClassifyRow({ cat, onApply }) {
+export function AIClassifyRow({ onApply }) {
   const [raw, setRaw] = React.useState('Fone de ouvido Bluetooth com cancelamento de ruído, preto, 128 GB — Foneclear');
   const [sug, setSug] = React.useState(null);
   const [applied, setApplied] = React.useState(false);

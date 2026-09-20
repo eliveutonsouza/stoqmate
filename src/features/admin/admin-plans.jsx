@@ -28,7 +28,6 @@ export function AdminPlans() {
     name: 'Starter legado (2024)', badge: 'Balcão', monthly: 29, yearly: null, credits: 0,
     skus: 100, users: 2, stores: 1, cats: 1, nets: 0, units: 0, mrr: 0, active: false,
   }]);
-  const totalMrr = plans.reduce((s, p) => s + p.mrr, 0);
   return (
     <AdminShell route="/admin/plans" breadcrumb={['Planos']} navigate={navigate}>
       <PageHeader

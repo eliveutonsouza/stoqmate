@@ -29,13 +29,19 @@ export function ProductForm() {
   const set = (k, v) => setF(s => ({ ...s, [k]: v }));
 
   // Attribute values are keyed per category so switching category resets cleanly.
-  const [attrs, setAttrs] = React.useState({});
+  const [attrs, setAttrs] = React.useState(() => ({
+    [catId]: Object.fromEntries(cat.attributes.map(a => [a.key, a.values[0]])),
+  }));
   const attrVal = (key) => attrs[catId]?.[key] ?? '';
   const setAttr = (key, v) => setAttrs(s => ({ ...s, [catId]: { ...(s[catId] || {}), [key]: v } }));
 
-  React.useEffect(() => {
-    setAttrs(s => s[catId] ? s : ({ ...s, [catId]: Object.fromEntries(cat.attributes.map(a => [a.key, a.values[0]])) }));
-  }, [catId]);
+  const [prevCatId, setPrevCatId] = React.useState(catId);
+  if (catId !== prevCatId) {
+    setPrevCatId(catId);
+    if (!attrs[catId]) {
+      setAttrs(s => ({ ...s, [catId]: Object.fromEntries(cat.attributes.map(a => [a.key, a.values[0]])) }));
+    }
+  }
 
   const slug = (s, n) => (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, n);
   const sku = [cat.code, slug(f.name, 4), ...cat.attributes.map(a => slug(attrVal(a.key), 3))].filter(Boolean).join('-');

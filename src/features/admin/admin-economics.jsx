@@ -1,7 +1,7 @@
 "use client";
 
 import { useNavigate } from '@/hooks/use-navigate';
-import { AI_OPS, CREDIT_UNIT_COST, CREDIT_WORST, FX, INFRA_PER_STORE, INFRA_STORES, INFRA_TOTAL_USD, INFRA_WEIGHTS, OTHER_INFRA, PLANS, SUPABASE, TOKEN, VARIABLE, infraFor, planEconomics, usd } from '@/lib/plans';
+import { AI_OPS, CREDIT_UNIT_COST, CREDIT_WORST, FX, INFRA_PER_STORE, INFRA_STORES, INFRA_TOTAL_USD, INFRA_WEIGHTS, OTHER_INFRA, PLANS, SUPABASE, TOKEN, VARIABLE, infraFor, planEconomics } from '@/lib/plans';
 import { brl } from '@/lib/format';
 import { AdminShell } from '@/components/ui/admin-shell';
 import { PageHeader } from '@/components/layout/page-header';
@@ -130,7 +130,7 @@ export function AdminEconomics() {
                 <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Conta fechada do mês, em dólar.</p>
               </div>
               <div style={{ padding: '4px 18px 10px' }}>
-                {[...SUPABASE, ...OTHER_INFRA].map((i, idx) => (
+                {[...SUPABASE, ...OTHER_INFRA].map((i) => (
                   <div key={i.l} title={i.note} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--line-soft)' }}>
                     <span style={{ fontSize: 12.5, flex: 1 }}>{i.l}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: i.usd < 0 ? 'var(--success)' : i.usd === 0 ? 'var(--fg-soft)' : 'var(--fg)' }}>

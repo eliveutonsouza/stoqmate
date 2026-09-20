@@ -98,7 +98,7 @@ export function PurchaseOrders() {
                 <tr key={r.sku} style={{ background: picked.has(i) ? 'var(--accent-soft)' : undefined }}>
                   <td>
                     <input type="checkbox" checked={picked.has(i)} onChange={() => {
-                      const n = new Set(picked); n.has(i) ? n.delete(i) : n.add(i); setPicked(n);
+                      const n = new Set(picked); if (n.has(i)) n.delete(i); else n.add(i); setPicked(n);
                     }} />
                   </td>
                   <td>

@@ -1,7 +1,7 @@
 "use client";
 
 
-export function SystemState({ navigate, icon, tone = 'muted', code, title, body, primary, secondary, extra }) {
+export function SystemState({ icon, tone = 'muted', code, title, body, primary, secondary, extra }) {
   const toneColor = { muted: 'var(--fg-soft)', danger: 'var(--danger)', warning: 'var(--warning)', info: 'var(--info)' }[tone];
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>

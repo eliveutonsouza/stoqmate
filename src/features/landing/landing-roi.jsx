@@ -9,6 +9,28 @@ import { Lead } from '@/features/landing/lead';
 import { brl } from '@/lib/format';
 import { I } from '@/components/icons';
 
+const Row = ({ label, value, hint }) => (
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line-soft)' }}>
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: 13 }}>{label}</div>
+      {hint && <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>{hint}</div>}
+    </div>
+    <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>{value}</div>
+  </div>
+);
+
+const Slider = ({ label, value, set, min, max, step, fmt }) => (
+  <div>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+      <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{fmt(value)}</span>
+    </div>
+    <input type="range" min={min} max={max} step={step} value={value}
+      onChange={(e) => set(+e.target.value)}
+      style={{ width: '100%', accentColor: 'var(--accent)' }} />
+  </div>
+);
+
 export function LandingROI({ navigate }) {
   const [skus, setSkus] = React.useState(800);
   const [ticket, setTicket] = React.useState(180);
@@ -25,28 +47,6 @@ export function LandingROI({ navigate }) {
   const plan = stores > 3 ? PLANS[2] : stores > 1 ? PLANS[1] : PLANS[0];
   const cost = plan.monthly * stores;
   const roi = cost > 0 ? gain / cost : 0;
-
-  const Row = ({ label, value, hint }) => (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line-soft)' }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13 }}>{label}</div>
-        {hint && <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>{hint}</div>}
-      </div>
-      <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>{value}</div>
-    </div>
-  );
-
-  const Slider = ({ label, value, set, min, max, step, fmt }) => (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{label}</span>
-        <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{fmt(value)}</span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => set(+e.target.value)}
-        style={{ width: '100%', accentColor: 'var(--accent)' }} />
-    </div>
-  );
 
   return (
     <section style={{ ...SECTION, padding: '76px 32px' }}>

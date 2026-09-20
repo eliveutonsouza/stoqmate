@@ -106,7 +106,7 @@ Devolva JSON:
                       <tr key={g.sku} style={{ background: picked.has(i) && !result ? 'var(--accent-soft)' : undefined, opacity: state === 'reject' ? 0.5 : 1 }}>
                         <td>
                           <input type="checkbox" checked={picked.has(i)} onChange={() => {
-                            const n = new Set(picked); n.has(i) ? n.delete(i) : n.add(i); setPicked(n);
+                            const n = new Set(picked); if (n.has(i)) n.delete(i); else n.add(i); setPicked(n);
                           }} />
                         </td>
                         <td>

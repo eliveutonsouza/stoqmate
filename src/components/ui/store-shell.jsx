@@ -1,11 +1,16 @@
 "use client";
 
 import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { layoutStyles } from '@/components/layout/layout-styles';
 import { StoreSidebar } from '@/components/layout/store-sidebar';
 import { AppHeader } from '@/components/layout/app-header';
 import { MOCK } from '@/lib/mock';
-import { CommandPalette } from '@/components/ui/command-palette';
+
+const CommandPalette = dynamic(
+  () => import('@/components/ui/command-palette').then(m => m.CommandPalette),
+  { ssr: false }
+);
 
 export function StoreShell({ breadcrumb, navigate, headerActions, children }) {
   const pathname = usePathname();

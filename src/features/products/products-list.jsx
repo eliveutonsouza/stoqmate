@@ -101,7 +101,7 @@ export function ProductsList() {
                   <tr key={p.sku} style={{ background: selected.has(i) ? 'var(--accent-soft)' : undefined }}>
                     <td>
                       <input type="checkbox" checked={selected.has(i)} onChange={() => {
-                        const n = new Set(selected); n.has(i) ? n.delete(i) : n.add(i); setSelected(n);
+                        const n = new Set(selected); if (n.has(i)) n.delete(i); else n.add(i); setSelected(n);
                       }} />
                     </td>
                     <td>

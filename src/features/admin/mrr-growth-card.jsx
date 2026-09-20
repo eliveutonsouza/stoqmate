@@ -6,7 +6,7 @@ import { PLATFORM } from '@/lib/plans';
 export function MRRGrowthCard() {
   // build twin series: current + previous period
   const cur = MOCK.adminMetrics[0].spark;
-  const prev = cur.map(v => v * 0.78 - Math.random() * 4 + 6);
+  const prev = cur.map((v, i) => v * 0.78 + Math.sin(i * 1.7) * 4 + 6);
 
   const w = 600, h = 200;
   const max = Math.max(...cur, ...prev);

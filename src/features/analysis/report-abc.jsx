@@ -14,13 +14,12 @@ import { CategoryBadge } from '@/components/ui/category-badge';
 export function ReportABC() {
   const navigate = useNavigate();
   const total = ABC.reduce((s, r) => s + r.rev, 0);
-  let cum = 0;
-  const rows = ABC.map(r => {
-    cum += r.rev;
+  const rows = ABC.reduce((acc, r) => {
+    const cum = (acc.length ? acc[acc.length - 1].cum : 0) + r.rev;
     const cumPct = (cum / total) * 100;
     const cls = cumPct <= 70 ? 'A' : cumPct <= 90 ? 'B' : 'C';
-    return { ...r, cumPct, cls };
-  });
+    return [...acc, { ...r, cum, cumPct, cls }];
+  }, []);
   const counts = { A: rows.filter(r => r.cls === 'A').length, B: rows.filter(r => r.cls === 'B').length, C: rows.filter(r => r.cls === 'C').length };
   const stockByClass = ['A', 'B', 'C'].map(c => rows.filter(r => r.cls === c).reduce((s, r) => s + r.stockVal, 0));
   const totalStock = stockByClass.reduce((a, b) => a + b, 0);
@@ -80,7 +79,7 @@ export function ReportABC() {
             </div>
           </div>
           <div style={{ position: 'relative', height: 200, display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 26 }}>
-            {rows.map((r, i) => (
+            {rows.map((r) => (
               <div key={r.sku} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: 6, position: 'relative' }}>
                 <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{r.cumPct.toFixed(0)}%</span>
                 <div style={{
