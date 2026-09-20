@@ -3,13 +3,15 @@
 import { catById } from '@/lib/mock';
 import { colorHex, isColorValue } from '@/lib/attr-colors';
 
-export function ProductThumb({ cat, brand, attrs, size = 32 }) {
-  const c = catById(cat);
+// `category` (objeto real) tem prioridade sobre `cat` (id do mock) — mesma
+// razão do CategoryBadge: id real é uuid, não existe em src/lib/mock.js.
+export function ProductThumb({ cat, category, brand, attrs, size = 32 }) {
+  const c = category || catById(cat);
   const accentValue = Object.values(attrs || {}).find(isColorValue);
   return (
     <div style={{
       width: size, height: size, borderRadius: 5,
-      background: c.cssVar, flexShrink: 0,
+      background: c.cssVar || c.color, flexShrink: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       color: '#fff', fontFamily: 'var(--font-mono)',
       fontSize: Math.max(10, Math.floor(size * 0.34)), fontWeight: 600,

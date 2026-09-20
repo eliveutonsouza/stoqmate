@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Cliente pra Server Components, Server Actions e Route Handlers — respeita
 // RLS via a sessão do cookie. Nunca importar em código "use client".
@@ -27,4 +28,13 @@ export async function createClient() {
       },
     },
   );
+}
+
+// Tenant do usuário autenticado — toda inserção em tabela de domínio precisa
+// gravar esse valor (RLS só CONFERE tenant_id = auth_tenant_id(), não
+// preenche sozinho).
+export async function getTenantId(supabase: SupabaseClient) {
+  const { data, error } = await supabase.rpc("auth_tenant_id");
+  if (error || !data) throw new Error("Sem tenant associado a esta sessão.");
+  return data as string;
 }

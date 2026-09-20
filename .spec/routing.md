@@ -1,9 +1,15 @@
 # Rotas — contrato congelado
 
-Fonte da verdade: `src/app/**/page.tsx`. 111 rotas em 5 route groups,
-todas estaticamente prerenderizadas (`next build` gera 100% SSG hoje —
-sem dado dinâmico real ainda). Rota nova entra nesta tabela no mesmo
-commit que adiciona o `page.tsx` — não é opcional.
+Fonte da verdade: `src/app/**/page.tsx`. 111 rotas em 5 route groups. Rota
+nova entra nesta tabela no mesmo commit que adiciona o `page.tsx` — não é
+opcional.
+
+Até a Fase 1 do backend Supabase, todas as rotas eram SSG (100% estático,
+sem dado dinâmico). Isso mudou a partir da Fase 2: toda rota cujo
+`page.tsx` vira Server Component lendo Supabase (cookies de sessão) passa a
+ser `ƒ` (dinâmica, renderizada por requisição) — esperado e correto, não
+regressão. Rotas que ainda não foram "backendizadas" continuam `○`
+(estático) até a fase que as tocar.
 
 Mudar o agrupamento (mover uma rota de grupo, criar um grupo novo) exige
 autorização do desenvolvedor (ver `CLAUDE.md`).
