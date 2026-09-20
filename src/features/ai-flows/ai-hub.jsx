@@ -14,7 +14,7 @@ import { TextInput } from '@/components/ui/text-input';
 import { AIQuotaCard } from '@/features/ai/ai-quota-card';
 import { SummaryRow } from '@/components/ui/summary-row';
 
-export function AIHub() {
+export function AIHub({ quota }) {
   const navigate = useNavigate();
   const [features, setFeatures] = React.useState(AI_FEATURES);
   const toggle = (id) => setFeatures(fs => fs.map(f => (f.id === id ? { ...f, on: !f.on } : f)));
@@ -128,7 +128,7 @@ export function AIHub() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 0 }}>
-            <AIQuotaCard navigate={navigate} />
+            <AIQuotaCard navigate={navigate} quota={quota} />
 
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Impacto em setembro</div>

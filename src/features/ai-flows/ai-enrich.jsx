@@ -21,7 +21,7 @@ import { AIChip } from '@/features/ai/ai-chip';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { AIQuotaCard } from '@/features/ai/ai-quota-card';
 
-export function AIEnrich({ gaps, categories }) {
+export function AIEnrich({ gaps, categories, quota }) {
   const navigate = useNavigate();
   const [picked, setPicked] = React.useState(new Set(gaps.map((_, i) => i)));
   const [result, setResult] = React.useState(null);
@@ -208,7 +208,7 @@ export function AIEnrich({ gaps, categories }) {
               className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: result && !applying ? 1 : 0.45 }}>
               {applying ? 'Aplicando…' : 'Aplicar aos aceitos'}
             </button>
-            <AIQuotaCard compact />
+            <AIQuotaCard compact quota={quota} />
           </div>
         </div>
       </Page>

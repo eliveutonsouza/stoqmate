@@ -24,7 +24,7 @@ import { SummaryRow } from '@/components/ui/summary-row';
 import { SelectInput } from '@/components/ui/select-input';
 import { AIQuotaCard } from '@/features/ai/ai-quota-card';
 
-export function EntryOCR({ stores, categories, products }) {
+export function EntryOCR({ stores, categories, products, quota }) {
   const navigate = useNavigate();
   const [text, setText] = React.useState(SAMPLE_NF);
   const [rows, setRows] = React.useState(null);
@@ -235,7 +235,7 @@ export function EntryOCR({ stores, categories, products }) {
             </button>
             <button onClick={() => navigate('/stock')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Cancelar</button>
 
-            <AIQuotaCard compact />
+            <AIQuotaCard compact quota={quota} />
           </div>
         </div>
       </Page>

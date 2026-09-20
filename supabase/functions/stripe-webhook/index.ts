@@ -51,7 +51,15 @@ async function syncSubscription(sub: Stripe.Subscription) {
   }, { onConflict: "stripe_subscription_id" });
 
   if (planId && (sub.status === "active" || sub.status === "trialing")) {
+    const { data: tenant } = await supabase.from("tenants").select("plan_id").eq("id", tenantId).maybeSingle();
     await supabase.from("tenants").update({ plan_id: planId }).eq("id", tenantId);
+    // Ajusta a cota de IA na hora quando o plano muda de verdade — não
+    // espera o cron mensal (fn_ai_renew_cycle). Realinha ai_credit_renews_at
+    // com o ciclo real da assinatura em vez do aniversário genérico.
+    if (tenant && tenant.plan_id !== planId) {
+      const renewsAt = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
+      await supabase.rpc("fn_ai_apply_plan_change", { p_tenant_id: tenantId, p_plan_id: planId, p_renews_at: renewsAt });
+    }
   }
 }
 
