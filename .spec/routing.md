@@ -1,6 +1,6 @@
 # Rotas — contrato congelado
 
-Fonte da verdade: `src/app/**/page.tsx`. 110 rotas em 5 route groups,
+Fonte da verdade: `src/app/**/page.tsx`. 111 rotas em 5 route groups,
 todas estaticamente prerenderizadas (`next build` gera 100% SSG hoje —
 sem dado dinâmico real ainda). Rota nova entra nesta tabela no mesmo
 commit que adiciona o `page.tsx` — não é opcional.
@@ -37,7 +37,8 @@ autorização do desenvolvedor (ver `CLAUDE.md`).
 /reports  /reports/sales  /reports/categories  /reports/attributes
 /reports/profit  /reports/abc
 /settings  /settings/branding  /settings/store-data  /settings/units
-/settings/users  /settings/roles  /settings/audit  /settings/notifications
+/settings/users  /settings/roles  /settings/audit  /settings/fiscal
+/settings/notifications
 /settings/subscription  /settings/subscription/change
 /settings/subscription/annual  /settings/subscription/cancel
 /settings/subscription/invoice  /settings/billing  /settings/credits

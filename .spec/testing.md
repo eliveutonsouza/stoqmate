@@ -7,7 +7,13 @@
 `annualSavings`, `colorHex`, `isColorValue`, `variantLabel`, `useNavigate`,
 mais 2 smoke tests de primitivo (`Modal`, `Field`), mais `animate`/`clamp`
 de `src/features/landing/hero-film-engine.jsx` (puros, mesmo critério —
-ver exceção pontual abaixo). Esse é o código do repo com lógica de negócio
+ver exceção pontual abaixo), mais `can`/`areaFor`/`whoCanReach`/
+`auditRoutes` de `src/lib/permissions.js` — RBAC é lógica de negócio real,
+mesma categoria de `planEconomics`. `auditRoutes` roda contra
+`listRoutes()` (`e2e/route-list.ts`) e falha o teste se alguma rota real
+ficar sem área (`missing`) ou alguma área apontar pra rota que não existe
+(`phantom`) — é o guard-rail de cobertura total que o próprio
+`permissions.js` exige. Esse é o código do repo com lógica de negócio
 ou matemática real — o resto é composição apresentacional sobre dado
 mockado. Arquivo de teste fica colocado ao lado do fonte
 (`*.test.ts`/`*.test.tsx`), nunca numa pasta `test/` separada.
@@ -16,7 +22,7 @@ mockado. Arquivo de teste fica colocado ao lado do fonte
 - `e2e/all-routes-smoke.spec.ts` — deriva a lista de rotas andando por
   `src/app` em busca de `page.tsx` (nunca hardcoded — um script assim já
   apodreceu uma vez durante a restruturação anterior) e confere HTTP 200 +
-  zero `console.error` em cada uma das 110 rotas.
+  zero `console.error` em cada uma das 111 rotas.
 - 7 specs de jornada: `landing-to-pricing`, `signup`, `login`,
   `dashboard-nav`, `product-catalog`, `pos-sale`, `settings-page`.
 - `hero-film.spec.ts` — cobertura específica do filme do hero

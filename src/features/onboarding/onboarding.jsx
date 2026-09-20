@@ -8,6 +8,7 @@ import { OnbStep1 } from '@/features/onboarding/onb-step1';
 import { OnbStep2 } from '@/features/onboarding/onb-step2';
 import { OnbStep3 } from '@/features/onboarding/onb-step3';
 import { OnbStep4 } from '@/features/onboarding/onb-step4';
+import { OnbStepFiscal } from '@/features/onboarding/onb-step-fiscal';
 import { OnbStep5 } from '@/features/onboarding/onb-step5';
 
 export function Onboarding() {
@@ -25,7 +26,8 @@ export function Onboarding() {
     { n: 2, label: 'Logo' },
     { n: 3, label: 'Cor principal' },
     { n: 4, label: 'O que você vende' },
-    { n: 5, label: 'Revisão' },
+    { n: 5, label: 'Emissão fiscal' },
+    { n: 6, label: 'Revisão' },
   ];
 
   const canAdvance = step === 1 ? data.name.trim().length >= 3 : step === 4 ? data.cats.length > 0 : true;
@@ -89,14 +91,15 @@ export function Onboarding() {
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: '56px 40px' }}>
           <div style={{ width: '100%', maxWidth: 560 }}>
             <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-text)', marginBottom: 10 }}>
-              PASSO {step} DE 5
+              PASSO {step} DE {steps.length}
             </div>
 
             {step === 1 && <OnbStep1 data={data} set={set} />}
             {step === 2 && <OnbStep2 data={data} set={set} />}
             {step === 3 && <OnbStep3 data={data} set={set} />}
             {step === 4 && <OnbStep4 data={data} set={set} />}
-            {step === 5 && <OnbStep5 data={data} goTo={setStep} />}
+            {step === 5 && <OnbStepFiscal data={data} set={set} />}
+            {step === 6 && <OnbStep5 data={data} goTo={setStep} />}
           </div>
         </div>
 
@@ -110,8 +113,8 @@ export function Onboarding() {
             <I.ChevronLeft size={13} /> Voltar
           </button>
           <div style={{ flex: 1 }}></div>
-          {step === 4 && <button onClick={() => setStep(5)} className="btn btn-ghost">Configurar depois</button>}
-          {step < 5 ? (
+          {(step === 4 || step === 5) && <button onClick={() => setStep(step + 1)} className="btn btn-ghost">Configurar depois</button>}
+          {step < 6 ? (
             <button onClick={() => canAdvance && setStep(step + 1)} className="btn btn-primary btn-lg" disabled={!canAdvance}
               style={{ opacity: canAdvance ? 1 : 0.45, cursor: canAdvance ? 'pointer' : 'not-allowed' }}>
               Continuar <I.ArrowRight size={13} />
