@@ -1,11 +1,18 @@
 "use client";
 
+import dynamic from 'next/dynamic';
 import { SECTION } from '@/features/landing/section';
 import { AIChip } from '@/features/ai/ai-chip';
 import { Lead } from '@/features/landing/lead';
 import { I } from '@/components/icons';
-import { ShowcaseFrame } from '@/components/ui/showcase-frame';
-import { DashboardStore } from '@/features/dashboard/dashboard-store';
+
+// O filme (motor + coreografia + 4 screenshots) só carrega no cliente —
+// não entra no HTML estático nem no bundle inicial da rota. Mesmo padrão
+// já usado pro CommandPalette (ver .spec/quality-gates.md).
+const HeroFilm = dynamic(
+  () => import('@/features/landing/hero-film').then((m) => m.HeroFilm),
+  { ssr: false, loading: () => <div style={{ width: 634, height: 356, borderRadius: 14, background: '#0A0907' }} /> }
+);
 
 export function LandingHero({ navigate }) {
   return (
@@ -54,9 +61,7 @@ export function LandingHero({ navigate }) {
         </div>
 
         <div className="lp-shot">
-          <ShowcaseFrame eager url="bonsucesso.stoqmate.com.br/dashboard" width={1380} height={880} scale={0.42}>
-            <DashboardStore navigate={() => {}} />
-          </ShowcaseFrame>
+          <HeroFilm />
         </div>
       </div>
     </section>
