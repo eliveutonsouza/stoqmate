@@ -25,6 +25,17 @@ async function planIdForPrice(priceId: string | undefined): Promise<string | nul
   return data?.id ?? null;
 }
 
+// Stripe status -> tenants.status (enum trial|active|past_due|canceled).
+// Estados intermediários do Stripe sem equivalente direto (incomplete,
+// incomplete_expired, unpaid) não mexem no status do tenant — mapear pra
+// um dos 4 seria inventar um significado que o Stripe não deu.
+function tenantStatusFor(stripeStatus: Stripe.Subscription.Status): string | null {
+  const map: Partial<Record<Stripe.Subscription.Status, string>> = {
+    trialing: "trial", active: "active", past_due: "past_due", canceled: "canceled",
+  };
+  return map[stripeStatus] ?? null;
+}
+
 async function syncSubscription(sub: Stripe.Subscription) {
   const tenantId = await tenantIdForCustomer(sub.customer as string);
   if (!tenantId) {
@@ -50,6 +61,9 @@ async function syncSubscription(sub: Stripe.Subscription) {
     updated_at: new Date().toISOString(),
   }, { onConflict: "stripe_subscription_id" });
 
+  const newStatus = tenantStatusFor(sub.status);
+  if (newStatus) await supabase.from("tenants").update({ status: newStatus }).eq("id", tenantId);
+
   if (planId && (sub.status === "active" || sub.status === "trialing")) {
     const { data: tenant } = await supabase.from("tenants").select("plan_id").eq("id", tenantId).maybeSingle();
     await supabase.from("tenants").update({ plan_id: planId }).eq("id", tenantId);
@@ -59,6 +73,9 @@ async function syncSubscription(sub: Stripe.Subscription) {
     if (tenant && tenant.plan_id !== planId) {
       const renewsAt = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
       await supabase.rpc("fn_ai_apply_plan_change", { p_tenant_id: tenantId, p_plan_id: planId, p_renews_at: renewsAt });
+      await supabase.from("tenant_lifecycle_events").insert({
+        tenant_id: tenantId, event_type: "plan_change", from_plan_id: tenant.plan_id, to_plan_id: planId,
+      });
     }
   }
 }
@@ -94,6 +111,11 @@ Deno.serve(async (req) => {
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         await supabase.from("subscriptions").update({ status: "canceled", updated_at: new Date().toISOString() }).eq("stripe_subscription_id", sub.id);
+        const tenantId = await tenantIdForCustomer(sub.customer as string);
+        if (tenantId) {
+          await supabase.from("tenants").update({ status: "canceled" }).eq("id", tenantId);
+          await supabase.from("tenant_lifecycle_events").insert({ tenant_id: tenantId, event_type: "canceled" });
+        }
         break;
       }
       case "invoice.paid":

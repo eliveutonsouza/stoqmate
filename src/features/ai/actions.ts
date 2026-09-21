@@ -27,6 +27,7 @@ async function runAiOp({
   const { error: debitError } = await supabase.rpc("fn_ai_debit_credits", { p_op_id: opId });
   if (debitError) throw new Error(debitError.message);
 
+  const startedAt = Date.now();
   try {
     const result = await aiCompleteJSON({ system, prompt, maxTokens });
     await supabase.rpc("fn_write_ai_usage", {
@@ -36,6 +37,7 @@ async function runAiOp({
       p_tokens_out: result.tokensOut,
       p_cost_usd: null,
       p_status: "ok",
+      p_latency_ms: Date.now() - startedAt,
     });
     return result.data;
   } catch (err) {
@@ -49,6 +51,7 @@ async function runAiOp({
       p_cost_usd: null,
       p_status: "error",
       p_error_message: message,
+      p_latency_ms: Date.now() - startedAt,
     });
     throw err;
   }
@@ -94,6 +97,7 @@ export async function askInventoryAction(question: string) {
     metric?: "count" | "sumSale" | "sumStock" | null;
   };
   let spec: FilterSpec;
+  const startedAt = Date.now();
   try {
     const result = await aiCompleteJSON({
       system: "Você traduz perguntas em português sobre estoque numa especificação de consulta JSON. Você NUNCA calcula nem conta — apenas descreve o filtro. Quem executa é o sistema.",
@@ -125,14 +129,14 @@ Devolva JSON com a especificação. Nada de contagens ou valores calculados.
     spec = result.data as FilterSpec;
     await supabase.rpc("fn_write_ai_usage", {
       p_op_id: "ask", p_model: result.model, p_tokens_in: result.tokensIn, p_tokens_out: result.tokensOut,
-      p_cost_usd: null, p_status: "ok",
+      p_cost_usd: null, p_status: "ok", p_latency_ms: Date.now() - startedAt,
     });
   } catch (err) {
     await supabase.rpc("fn_ai_refund_credits", { p_op_id: "ask" });
     const message = err instanceof Error ? err.message : String(err);
     await supabase.rpc("fn_write_ai_usage", {
       p_op_id: "ask", p_model: "claude-haiku-4-5-20251001", p_tokens_in: null, p_tokens_out: null,
-      p_cost_usd: null, p_status: "error", p_error_message: message,
+      p_cost_usd: null, p_status: "error", p_error_message: message, p_latency_ms: Date.now() - startedAt,
     });
     throw err;
   }
