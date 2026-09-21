@@ -28,9 +28,9 @@ export async function loadTenantDetail(tenantId: string) {
   await requireStaff();
   const admin = createServiceRoleClient();
   const [{ data: tenant }, { data: stores }, { data: storeUsers }, { data: auditLog }, { count: skuCount }] = await Promise.all([
-    admin.from("tenants").select("id, name, cnpj, plan_id, created_at").eq("id", tenantId).maybeSingle(),
+    admin.from("tenants").select("id, name, cnpj, plan_id, status, legal_name, segment, city, state, trial_ends_at, created_at").eq("id", tenantId).maybeSingle(),
     admin.from("stores").select("id, name, type").eq("tenant_id", tenantId).order("name"),
-    admin.from("store_users").select("user_id, role, status, created_at").eq("tenant_id", tenantId),
+    admin.from("store_users").select("user_id, role, status, joined_at").eq("tenant_id", tenantId),
     admin.from("audit_log").select("id, kind, message, scope, created_at, created_by").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(50),
     admin.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
   ]);
@@ -38,14 +38,17 @@ export async function loadTenantDetail(tenantId: string) {
 
   const userIds = (storeUsers ?? []).map((u) => u.user_id);
   const [{ data: profiles }, { data: authUsers }] = await Promise.all([
-    userIds.length ? admin.from("profiles").select("id, full_name").in("id", userIds) : Promise.resolve({ data: [] }),
+    userIds.length ? admin.from("profiles").select("id, full_name, phone").in("id", userIds) : Promise.resolve({ data: [] }),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
+  const phoneById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.phone || ""]));
   const emailById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, u.email]));
+  const owner = (storeUsers ?? []).find((u) => u.role === "proprietario");
 
   return {
     tenant,
+    owner: owner ? { name: nameById[owner.user_id] || "", email: emailById[owner.user_id] || "", phone: phoneById[owner.user_id] || "" } : null,
     stores: stores ?? [],
     users: (storeUsers ?? []).map((u) => ({ ...u, name: nameById[u.user_id] || "Usuário", email: emailById[u.user_id] || "" })),
     auditLog: (auditLog ?? []).map((a) => ({ ...a, who: nameById[a.created_by ?? ""] || emailById[a.created_by ?? ""] || "—" })),

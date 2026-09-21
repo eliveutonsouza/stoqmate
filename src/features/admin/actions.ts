@@ -65,6 +65,50 @@ export async function invitePlatformStaffAction(input: { email: string; name: st
   return { ok: true };
 }
 
+export async function createTenantAction(input: {
+  name: string; subdomain: string; cnpj: string; planId: string;
+  legalName: string; segment: string; city: string; state: string;
+  ownerName: string; ownerEmail: string;
+}) {
+  const supabase = await requireStaff();
+
+  const admin = createServiceRoleClient();
+  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(input.ownerEmail, {
+    data: { full_name: input.ownerName },
+  });
+  if (inviteErr) return { error: inviteErr.message };
+
+  const { data: tenantId, error } = await supabase.rpc("fn_platform_create_tenant", {
+    p_name: input.name, p_subdomain: input.subdomain, p_cnpj: input.cnpj || null, p_plan_id: input.planId,
+    p_legal_name: input.legalName || null, p_segment: input.segment || null, p_city: input.city || null, p_state: input.state || null,
+    p_owner_user_id: invited.user.id, p_owner_full_name: input.ownerName,
+  });
+  if (error) {
+    // A criação do tenant falhou depois de já convidar o usuário — remove o
+    // convite órfão pra não deixar uma conta sem rede nenhuma.
+    await admin.auth.admin.deleteUser(invited.user.id);
+    return { error: friendlyError(error.message) };
+  }
+
+  revalidatePath("/admin/stores");
+  return { id: tenantId as string };
+}
+
+export async function updateTenantAction(input: {
+  tenantId: string; name: string; cnpj: string; planId: string; status: string;
+  legalName: string; segment: string; city: string; state: string;
+}) {
+  const supabase = await requireStaff();
+  const { error } = await supabase.rpc("fn_platform_update_tenant", {
+    p_tenant_id: input.tenantId, p_name: input.name, p_cnpj: input.cnpj || null, p_plan_id: input.planId, p_status: input.status,
+    p_legal_name: input.legalName || null, p_segment: input.segment || null, p_city: input.city || null, p_state: input.state || null,
+  });
+  if (error) return { error: friendlyError(error.message) };
+  revalidatePath("/admin/stores");
+  revalidatePath("/admin/stores/detail");
+  return { ok: true };
+}
+
 export async function upsertPlanAction(input: {
   id: string; name: string; tagline: string; who: string; monthlyPrice: number; yearlyPrice: number | null;
   credits: number; limits: Record<string, number | string | null>; popular: boolean; active: boolean;
