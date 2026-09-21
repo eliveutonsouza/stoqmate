@@ -1,5 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { TOKEN } from "@/lib/plans";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
@@ -41,10 +42,16 @@ export async function aiCompleteJSON({
     throw new Error("A IA devolveu uma resposta que não é JSON válido.");
   }
 
+  // Mesma tabela de preço usada em src/lib/plans.js (TOKEN) — fonte única,
+  // pra admin-ai-monitoring não divergir do modelo de custo do planejamento.
+  const costUsd = (message.usage.input_tokens / 1_000_000) * TOKEN.in
+    + (message.usage.output_tokens / 1_000_000) * TOKEN.out;
+
   return {
     data,
     model: MODEL,
     tokensIn: message.usage.input_tokens,
     tokensOut: message.usage.output_tokens,
+    costUsd,
   };
 }

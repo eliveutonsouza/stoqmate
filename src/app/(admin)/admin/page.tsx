@@ -1,5 +1,7 @@
 import { DashboardAdmin } from '@/features/admin/dashboard-admin';
+import { loadAdminOverview } from '@/features/admin/queries';
 
-export default function Page() {
-  return <DashboardAdmin />;
+export default async function Page() {
+  const overview = await loadAdminOverview();
+  return <DashboardAdmin overview={overview} />;
 }

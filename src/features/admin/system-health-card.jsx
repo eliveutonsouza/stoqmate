@@ -7,7 +7,7 @@ export function SystemHealthCard() {
     { name: 'API · Admin', status: 'ok', latency: '38ms', uptime: '99.99%' },
     { name: 'Banco · Postgres', status: 'ok', latency: '12ms', uptime: '99.97%' },
     { name: 'Storage · S3', status: 'ok', latency: '88ms', uptime: '100%' },
-    { name: 'OpenAI · GPT-4o', status: 'degraded', latency: '1.8s', uptime: '99.2%' },
+    { name: 'Anthropic · Claude', status: 'degraded', latency: '1.8s', uptime: '99.2%' },
     { name: 'Stripe · Webhooks', status: 'ok', latency: '120ms', uptime: '99.95%' },
   ];
   return (

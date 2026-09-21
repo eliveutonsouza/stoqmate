@@ -35,7 +35,7 @@ async function runAiOp({
       p_model: result.model,
       p_tokens_in: result.tokensIn,
       p_tokens_out: result.tokensOut,
-      p_cost_usd: null,
+      p_cost_usd: result.costUsd,
       p_status: "ok",
       p_latency_ms: Date.now() - startedAt,
     });
@@ -129,7 +129,7 @@ Devolva JSON com a especificação. Nada de contagens ou valores calculados.
     spec = result.data as FilterSpec;
     await supabase.rpc("fn_write_ai_usage", {
       p_op_id: "ask", p_model: result.model, p_tokens_in: result.tokensIn, p_tokens_out: result.tokensOut,
-      p_cost_usd: null, p_status: "ok", p_latency_ms: Date.now() - startedAt,
+      p_cost_usd: result.costUsd, p_status: "ok", p_latency_ms: Date.now() - startedAt,
     });
   } catch (err) {
     await supabase.rpc("fn_ai_refund_credits", { p_op_id: "ask" });

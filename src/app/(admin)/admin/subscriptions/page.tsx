@@ -1,5 +1,7 @@
 import { AdminSubscriptions } from '@/features/admin/admin-subscriptions';
+import { loadSubscriptionsOverview } from '@/features/admin/queries';
 
-export default function Page() {
-  return <AdminSubscriptions />;
+export default async function Page() {
+  const overview = await loadSubscriptionsOverview();
+  return <AdminSubscriptions overview={overview} />;
 }
