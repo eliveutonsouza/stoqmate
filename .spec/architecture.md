@@ -113,9 +113,29 @@ zera todo ciclo, nunca acumula; crédito extra comprado
 webhook nunca dispara pra tenant sem assinatura, então dependeria de dois
 caminhos de código pra a mesma coisa). Troca de plano ajusta a cota na
 hora via `fn_ai_apply_plan_change()`, chamada pelo webhook do Stripe.
-`AIQuotaCard` e a tela `settings/credits` já leem esse saldo real —
-só a compra de pacote avulso continua sem processar pagamento de verdade
-(falta checkout de pagamento único do Stripe), divulgado na própria tela.
+`AIQuotaCard` e a tela `settings/credits` já leem esse saldo real, e a
+compra de pacote avulso (`credit_packs`, `credit_pack_purchases`,
+`fn_ai_credit_pack_purchase`) processa pagamento de verdade via Stripe
+Checkout (`mode: "payment"`) — idempotente contra reentrega do webhook
+por `stripe_checkout_session_id unique`.
+
+**Histórico da plataforma**: `tenant_lifecycle_events` (signup/
+plan_change/canceled/reactivated) é a fonte de coorte de retenção
+(`fn_platform_cohort_retention`), crescimento mensal
+(`fn_platform_growth_by_month`) e spark de MRR (`fn_platform_mrr_trend`)
+no console admin. O log só existe a partir de quando foi criado — meses
+anteriores aparecem zerados/vazios, não reconstruídos. Backfill de 1
+evento `signup` por tenant existente (com `occurred_at` real, não
+inventado) dá o primeiro ponto de dado.
+
+**Telas de billing órfãs, intencionalmente**: `cancel-subscription.jsx`,
+`plan-change.jsx`, `switch-to-annual.jsx`, `invoice-detail.jsx`,
+`account-cancelled.jsx`, `past-due.jsx`, `trial-ended.jsx` (todas em
+`src/features/billing/`) ficam sem rota de navegação real desde que a
+arquitetura de assinatura virou Stripe Checkout + Customer Portal —
+decisão do desenvolvedor manter os arquivos como reserva pra uma troca
+futura de ferramenta de billing, não religar nem deletar sem pedido
+explícito (ver comentário em `billing-state.js`).
 
 **Padrão de segurança que já mordeu duas vezes — checar em toda tabela
 nova**: RLS ligado + grant concedido + ZERO policy = nega tudo pro

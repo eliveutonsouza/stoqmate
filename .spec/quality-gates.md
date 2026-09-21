@@ -43,12 +43,14 @@ o código) sem autorização explícita do desenvolvedor — ver `CLAUDE.md`.
 
 ## Follow-up já registrado (não é dívida silenciosa)
 
-- **Ativo agora** (o Supabase já substituiu o mock por fetch real):
-  reauditar `src/features/**` com a skill `vercel-react-best-practices`,
-  focando em "Eliminating Waterfalls" e "Server-Side Performance" —
-  `Promise.all` nas telas com múltiplas queries, `React.cache()` onde uma
-  Server Action e a página que a chama pedem o mesmo dado na mesma
-  requisição. Não feito nesta revisão (Fase 11 foi fechamento de spec, não
-  auditoria de performance); é o próximo item de qualidade pendente.
+- Reauditoria de performance (`vercel-react-best-practices`, "Eliminating
+  Waterfalls"/"Server-Side Performance") **feita em 2026-09-21** sobre os
+  achados concretos de um levantamento amplo (não exaustivo linha a linha
+  das ~115 rotas): waterfalls corrigidos em `loadAiQuota`, `loadTenantDetail`,
+  `loadPlatformAuditLog`, `loadOpenCashSession`, `loadProductDetail`;
+  `requireStaff()` ganhou `React.cache()`; N+1 de `applyEnrichmentAction`/
+  `confirmInvoiceEntryAction` viraram lookup batelado. Não é garantia de
+  que não sobrou nenhum caso solto em telas não cobertas pelo levantamento
+  — se aparecer um novo, corrige pontual, não precisa de auditoria nova.
 - `.spec/design-system.md`: decisão de manter estilo inline + CSS utilitário
   em vez de Tailwind-first é deliberada, não pendência.

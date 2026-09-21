@@ -1,3 +1,13 @@
+// Mock deliberadamente mantido — decisão do desenvolvedor (2026-09-21).
+// Alimenta 7 telas próprias de billing (cancel-subscription, plan-change,
+// switch-to-annual, invoice-detail, account-cancelled, past-due,
+// trial-ended) que ficaram sem rota de navegação real desde que a
+// arquitetura de assinatura migrou pra Stripe Checkout + Customer Portal
+// (settings-subscription.jsx só usa createCheckoutSessionAction/
+// createPortalSessionAction — nunca navega pra cá). NÃO são código morto
+// esquecido: o dev pediu pra manter os arquivos como estão, sem religar,
+// como reserva pro dia em que trocar de ferramenta de billing e quiser
+// telas próprias de novo. Não backendizar nem deletar sem pedido explícito.
 import { PLANS } from '@/lib/plans';
 
 export const SUB = {
