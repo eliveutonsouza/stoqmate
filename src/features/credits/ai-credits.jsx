@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { CREDIT_PACKS } from '@/lib/plans';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
@@ -10,13 +9,26 @@ import { SettingsLayout } from '@/components/ui/settings-layout';
 import { CreditMeter } from '@/components/domain/credit-meter';
 import { brl } from '@/lib/format';
 import { Modal } from '@/components/ui/modal';
+import { createPackCheckoutSessionAction } from '@/features/billing/actions';
 
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-export function AICredits({ quota }) {
+export function AICredits({ quota, packs }) {
   const navigate = useNavigate();
   const [packOpen, setPackOpen] = React.useState(false);
-  const [pack, setPack] = React.useState(1);
+  const [packId, setPackId] = React.useState(packs[1]?.id ?? packs[0]?.id);
+  const [buying, setBuying] = React.useState(false);
+  const [buyError, setBuyError] = React.useState('');
+
+  const buy = () => {
+    setBuyError('');
+    setBuying(true);
+    createPackCheckoutSessionAction(packId).then((result) => {
+      setBuying(false);
+      if (result?.error) { setBuyError(result.error); return; }
+      if (result?.url) window.location.href = result.url;
+    });
+  };
 
   if (!quota) {
     return (
@@ -93,13 +105,19 @@ export function AICredits({ quota }) {
       </SettingsLayout>
 
       <Modal open={packOpen} onClose={() => setPackOpen(false)} title="Comprar créditos avulsos" desc="Créditos de pacote não expiram e só são usados depois que a cota do mês acaba." width={520}
-        footer={<><button onClick={() => setPackOpen(false)} className="btn btn-ghost">Cancelar</button><button onClick={() => setPackOpen(false)} className="btn btn-primary">Comprar · {brl(CREDIT_PACKS[pack].price)}</button></>}>
+        footer={<>
+          <button onClick={() => setPackOpen(false)} className="btn btn-ghost">Cancelar</button>
+          <button onClick={buy} disabled={buying} className="btn btn-primary">
+            {buying ? 'Abrindo…' : `Comprar · ${brl(packs.find((p) => p.id === packId)?.price ?? 0)}`}
+          </button>
+        </>}>
+        {buyError && <div style={{ marginBottom: 10, padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5 }}>{buyError}</div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {CREDIT_PACKS.map((p, i) => (
-            <button key={i} onClick={() => setPack(i)} style={{
+          {packs.map((p) => (
+            <button key={p.id} onClick={() => setPackId(p.id)} style={{
               display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 8, width: '100%', textAlign: 'left',
-              border: '1px solid ' + (pack === i ? 'var(--accent)' : 'var(--line)'),
-              background: pack === i ? 'var(--accent-soft)' : 'var(--bg-elev)',
+              border: '1px solid ' + (packId === p.id ? 'var(--accent)' : 'var(--line)'),
+              background: packId === p.id ? 'var(--accent-soft)' : 'var(--bg-elev)',
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fg)' }}>{p.credits.toLocaleString('pt-BR')} créditos</div>
@@ -109,16 +127,10 @@ export function AICredits({ quota }) {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>{brl(p.price)}</div>
-                <div style={{ fontSize: 10.5, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{brl(p.price / p.credits).replace('R$ ', 'R$ ')}/crédito</div>
+                <div style={{ fontSize: 10.5, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{brl(p.price / p.credits)}/crédito</div>
               </div>
             </button>
           ))}
-        </div>
-        <div style={{ padding: '11px 13px', background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 7, fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
-          Compra de pacote avulso ainda não processa pagamento de verdade — falta a integração de checkout
-          avulso do Stripe (TODO registrado em <code>.spec/architecture.md</code>).{' '}
-          Usa muito pacote todo mês? Subir para o <strong style={{ color: 'var(--fg)', fontWeight: 500 }}>Rede</strong> sai mais barato que dois pacotes de 500.{' '}
-          <a href="#" onClick={(e) => { e.preventDefault(); setPackOpen(false); navigate('/settings/subscription'); }}>Comparar</a>.
         </div>
       </Modal>
     </StoreShell>

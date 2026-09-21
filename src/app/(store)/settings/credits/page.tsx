@@ -1,7 +1,7 @@
 import { AICredits } from '@/features/credits/ai-credits';
-import { loadAiQuota } from '@/features/ai/queries';
+import { loadAiQuota, loadCreditPacks } from '@/features/ai/queries';
 
 export default async function Page() {
-  const quota = await loadAiQuota();
-  return <AICredits quota={quota} />;
+  const [quota, packs] = await Promise.all([loadAiQuota(), loadCreditPacks()]);
+  return <AICredits quota={quota} packs={packs} />;
 }

@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 
+export async function loadCreditPacks() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("credit_packs").select("id, credits, price").eq("active", true).order("credits");
+  return data ?? [];
+}
+
 export async function loadAiQuota() {
   const supabase = await createClient();
   const [{ data: tenant }, { data: ops }] = await Promise.all([

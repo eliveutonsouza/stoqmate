@@ -67,6 +67,32 @@ export async function createCheckoutSessionAction(input: { planId: string; cycle
   return { url: session.url };
 }
 
+export async function createPackCheckoutSessionAction(packId: string) {
+  const { supabase, error } = await requireBillingAccess();
+  if (!supabase) return { error };
+  const tenantId = await getTenantId(supabase);
+
+  const admin = createServiceRoleClient();
+  const { data: pack } = await admin.from("credit_packs").select("*").eq("id", packId).eq("active", true).maybeSingle();
+  if (!pack) return { error: "Pacote não encontrado." };
+  if (!pack.stripe_price_id) return { error: "Este pacote não tem preço configurado no Stripe." };
+
+  const customerId = await ensureStripeCustomer(tenantId);
+  const origin = await siteOrigin();
+
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer: customerId,
+    line_items: [{ price: pack.stripe_price_id, quantity: 1 }],
+    success_url: `${origin}/settings/credits?checkout=success`,
+    cancel_url: `${origin}/settings/credits?checkout=cancelled`,
+    metadata: { tenant_id: tenantId, pack_id: packId },
+  });
+
+  return { url: session.url };
+}
+
 export async function createPortalSessionAction() {
   const { supabase, error } = await requireBillingAccess();
   if (!supabase) return { error };

@@ -100,6 +100,13 @@ Deno.serve(async (req) => {
         if (session.subscription) {
           const sub = await stripe.subscriptions.retrieve(session.subscription as string);
           await syncSubscription(sub);
+        } else if (session.mode === "payment" && session.metadata?.pack_id) {
+          // Compra de pacote avulso de crédito de IA — fn_ai_credit_pack_purchase
+          // é idempotente (unique em stripe_checkout_session_id), então uma
+          // reentrega do mesmo evento não credita em dobro.
+          await supabase.rpc("fn_ai_credit_pack_purchase", {
+            p_tenant_id: session.metadata.tenant_id, p_pack_id: session.metadata.pack_id, p_stripe_checkout_session_id: session.id,
+          });
         }
         break;
       }
