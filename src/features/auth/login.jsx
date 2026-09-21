@@ -7,7 +7,7 @@ import { AuthTestimonial } from '@/features/auth/auth-testimonial';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { I } from '@/components/icons';
-import { signInAction } from '@/features/auth/actions';
+import { signInAction, startGoogleSignInAction } from '@/features/auth/actions';
 
 export function Login() {
   const navigate = useNavigate();
@@ -21,6 +21,15 @@ export function Login() {
     startTransition(async () => {
       const result = await signInAction({ email, password });
       if (result?.error) setError(result.error);
+    });
+  };
+
+  const google = () => {
+    setError('');
+    startTransition(async () => {
+      const result = await startGoogleSignInAction();
+      if (result?.error) { setError(result.error); return; }
+      window.location.href = result.url;
     });
   };
 
@@ -56,8 +65,7 @@ export function Login() {
           <span style={{ fontSize: 11, color: 'var(--fg-soft)' }}>ou</span>
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }}></div>
         </div>
-        {/* TODO (deferido): habilitar quando houver Client ID/Secret do Google Cloud (OAuth) */}
-        <button disabled title="Em breve" className="btn btn-outline btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: 0.55, cursor: 'not-allowed' }}>Entrar com Google</button>
+        <button onClick={google} disabled={pending} className="btn btn-outline btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>Entrar com Google</button>
         <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login/admin'); }} style={{
           fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 8,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,

@@ -1,6 +1,6 @@
 # Rotas — contrato congelado
 
-Fonte da verdade: `src/app/**/page.tsx`. 111 rotas em 5 route groups. Rota
+Fonte da verdade: `src/app/**/page.tsx`. 112 rotas em 5 route groups. Rota
 nova entra nesta tabela no mesmo commit que adiciona o `page.tsx` — não é
 opcional.
 
@@ -21,7 +21,14 @@ autorização do desenvolvedor (ver `CLAUDE.md`).
 ## `(auth)` — público, fluxo de conta
 
 `/signup`, `/login`, `/login/admin`, `/forgot-password`, `/reset-password`,
-`/invite`, `/checkout`, `/onboarding`, `/verify-email`, `/trial-ended`
+`/invite`, `/checkout`, `/onboarding`, `/verify-email`, `/trial-ended`,
+`/complete-signup`
+
+`/complete-signup` é a única rota de `(auth)` que **exige sessão** e por isso
+fica fora de `OPEN_ROUTES` (todas as outras são públicas). Existe porque o
+login com Google entrega um usuário autenticado sem tenant — o OAuth não
+coleta nome da loja, CNPJ nem plano, que `fn_complete_signup` exige. Quem já
+tem tenant é redirecionado pra `/dashboard` pelo próprio `page.tsx`.
 
 ## `(store)` — autenticado, `StoreShell`
 
@@ -68,9 +75,11 @@ reserva o path literal `/404` pra própria máquina de erro), `/error`,
 
 ## Route Handlers técnicos (não contam nas 111 rotas — não são `page.tsx`)
 
-`src/app/auth/callback/route.ts` — troca o `code` de um link de email
-(reset de senha, e futuramente OAuth do Google) por uma sessão via cookie.
-Nunca renderiza UI, só redireciona; fora de qualquer route group.
+`src/app/auth/callback/route.ts` — troca o `code` de um link de email (reset
+de senha) ou do OAuth do Google por uma sessão via cookie. Nunca renderiza
+UI, só redireciona; fora de qualquer route group. Depois da troca, manda pra
+`/complete-signup` quem está sem tenant e não é staff da plataforma (staff
+legitimamente não tem tenant, então fica de fora da regra).
 
 ## Regras
 

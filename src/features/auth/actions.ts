@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { authEmailOrigin } from "@/lib/site-origin";
 
 function slugify(name: string) {
   const base = name
@@ -51,6 +52,47 @@ export async function signUpAction(input: {
       return { error: "Este email já tem uma loja configurada. Faça login." };
     }
     return { error: rpcError.message };
+  }
+
+  redirect("/onboarding");
+}
+
+export async function startGoogleSignInAction() {
+  const supabase = await createClient();
+  const origin = await authEmailOrigin();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback` },
+  });
+  if (error || !data?.url) return { error: "Não foi possível iniciar o login com Google." };
+  return { url: data.url };
+}
+
+// O login com Google entrega só um usuário autenticado — nome da loja, CNPJ e
+// plano não existem nesse fluxo, então o tenant ainda não foi criado.
+// `/auth/callback` manda pra cá quem chega sem tenant; aqui o cadastro fecha.
+export async function completeGoogleSignupAction(input: {
+  storeName: string;
+  cnpj: string;
+  planId: string;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada. Entre de novo." };
+
+  const meta = user.user_metadata ?? {};
+  const fullName = meta.full_name || meta.name || user.email?.split("@")[0] || "";
+
+  const { error } = await supabase.rpc("fn_complete_signup", {
+    p_full_name: fullName,
+    p_store_name: input.storeName,
+    p_subdomain: slugify(input.storeName),
+    p_cnpj: input.cnpj || null,
+    p_plan_id: input.planId,
+  });
+  if (error) {
+    if (error.message.includes("already has a tenant")) redirect("/dashboard");
+    return { error: error.message };
   }
 
   redirect("/onboarding");
@@ -106,8 +148,9 @@ export async function signOutAction() {
 
 export async function forgotPasswordAction(input: { email: string }) {
   const supabase = await createClient();
+  const origin = await authEmailOrigin();
   await supabase.auth.resetPasswordForEmail(input.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/reset-password`,
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
   });
   // Sempre retorna sucesso, mesmo se o email não existir — não vaza quem tem conta.
   return { ok: true };

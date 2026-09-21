@@ -9,10 +9,20 @@ import { OPEN_ROUTES } from "@/lib/permissions";
 // exige platform_staff, checado abaixo.
 const ADMIN_PREFIX = "/admin";
 
+// Aberta no RBAC (nenhum perfil é barrado) mas exige sessão: é onde quem
+// entrou pelo Google termina o cadastro, e sem usuário logado não há o que
+// completar. Por isso sai da lista de bypass mesmo estando em OPEN_ROUTES.
+const NEEDS_SESSION = ["/complete-signup"];
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (OPEN_ROUTES.includes(pathname) || pathname === "/login/admin" || pathname.startsWith("/auth/callback")) {
+  const isPublic =
+    (OPEN_ROUTES.includes(pathname) && !NEEDS_SESSION.includes(pathname)) ||
+    pathname === "/login/admin" ||
+    pathname.startsWith("/auth/callback");
+
+  if (isPublic) {
     return NextResponse.next();
   }
 
