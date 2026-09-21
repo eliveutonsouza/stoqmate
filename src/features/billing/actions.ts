@@ -1,22 +1,15 @@
 "use server";
 
-import { headers } from "next/headers";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getStripe } from "@/lib/stripe";
+import { siteOrigin } from "@/lib/site-origin";
 
 async function requireBillingAccess() {
   const supabase = await createClient();
   const { data: allowed } = await supabase.rpc("has_access", { p_area: "billing", p_min_level: 2 });
   if (!allowed) return { supabase: null, error: "Seu perfil não tem permissão para gerenciar a assinatura." };
   return { supabase, error: null };
-}
-
-async function siteOrigin() {
-  const h = await headers();
-  const host = h.get("host");
-  const proto = host?.includes("localhost") ? "http" : "https";
-  return `${proto}://${host}`;
 }
 
 async function ensureStripeCustomer(tenantId: string) {

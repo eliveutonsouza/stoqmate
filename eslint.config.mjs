@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Artefato do `storybook build` (gate 5). Sem isso, rodar o gate na ordem
+    // storybook→eslint faz o lint varrer bundle minificado e falhar.
+    "storybook-static/**",
     // Edge Functions rodam em Deno, runtime e convenções de lint próprias
     // (import npm:, globais Deno.*) — fora do escopo deste config Next.js.
     "supabase/functions/**",
