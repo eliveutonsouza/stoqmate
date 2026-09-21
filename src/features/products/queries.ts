@@ -32,7 +32,9 @@ export async function loadProduct(id: string) {
   return data ?? null;
 }
 
-export async function loadProductDetail(id: string, storeId: string) {
+// Sem dependência de storeId (só usado depois, na hora de exibir) — deixa o
+// chamador buscar isto em paralelo com a loja atual em vez de encadear.
+export async function loadProductDetail(id: string) {
   const supabase = await createClient();
   const product = await loadProduct(id);
   if (!product) return null;
@@ -64,12 +66,24 @@ export async function loadProductDetail(id: string, storeId: string) {
 
   return {
     product: { ...product, category: { ...product.category, category_attributes: categoryAttributes ?? [] } },
-    stockByStore: (balances ?? []).map((b) => ({ ...b, current: b.store_id === storeId })),
-    currentStock: (balances ?? []).find((b) => b.store_id === storeId)?.qty ?? 0,
-    siblings: (siblings ?? []).map((s) => ({
-      ...s,
-      stock: s.stock_balances.find((b) => b.store_id === storeId)?.qty ?? 0,
-    })),
+    balances: balances ?? [],
+    siblings: siblings ?? [],
     movements: (movements ?? []).map((m) => ({ ...m, byName: nameById[m.created_by ?? ""] || "Usuário" })),
+  };
+}
+
+// Aplica a loja atual sobre o resultado de loadProductDetail — pura, sem
+// I/O, então pode rodar depois que loadStores() e loadProductDetail()
+// já tiverem resolvido em paralelo.
+export function shapeProductDetailForStore(detail: NonNullable<Awaited<ReturnType<typeof loadProductDetail>>>, storeId: string) {
+  return {
+    product: detail.product,
+    stockByStore: detail.balances.map((b) => ({ ...b, current: b.store_id === storeId })),
+    currentStock: detail.balances.find((b) => b.store_id === storeId)?.qty ?? 0,
+    siblings: detail.siblings.map((s) => ({
+      ...s,
+      stock: (s.stock_balances as { store_id: string; qty: number }[]).find((b) => b.store_id === storeId)?.qty ?? 0,
+    })),
+    movements: detail.movements,
   };
 }

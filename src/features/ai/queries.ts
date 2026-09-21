@@ -2,10 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function loadAiQuota() {
   const supabase = await createClient();
-  const { data: tenant } = await supabase
-    .from("tenants")
-    .select("plan_id, ai_credit_plan_balance, ai_credit_extra_balance, ai_credit_renews_at, plan:plans(name, credits)")
-    .single();
+  const [{ data: tenant }, { data: ops }] = await Promise.all([
+    supabase
+      .from("tenants")
+      .select("plan_id, ai_credit_plan_balance, ai_credit_extra_balance, ai_credit_renews_at, plan:plans(name, credits)")
+      .single(),
+    supabase.from("ai_ops").select("id, label, credits"),
+  ]);
   if (!tenant) return null;
 
   const plan = tenant.plan as unknown as { name: string; credits: number } | null;
@@ -19,7 +22,6 @@ export async function loadAiQuota() {
     .eq("status", "ok")
     .gte("created_at", cycleStart.toISOString());
 
-  const { data: ops } = await supabase.from("ai_ops").select("id, label, credits");
   const opById = Object.fromEntries((ops ?? []).map((o) => [o.id, o]));
 
   const runsByOp = new Map<string, number>();

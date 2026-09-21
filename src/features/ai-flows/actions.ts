@@ -7,11 +7,18 @@ export async function applyEnrichmentAction(items: { sku: string; filled: Record
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
 
+  const { data: products } = await supabase
+    .from("products")
+    .select("id, sku, attrs")
+    .eq("tenant_id", tenantId)
+    .in("sku", items.map((i) => i.sku));
+  const productBySku = Object.fromEntries((products ?? []).map((p) => [p.sku, p]));
+
   for (const item of items) {
     const values = Object.fromEntries(Object.entries(item.filled).filter(([, v]) => v));
     if (Object.keys(values).length === 0) continue;
 
-    const { data: product } = await supabase.from("products").select("id, attrs").eq("tenant_id", tenantId).eq("sku", item.sku).maybeSingle();
+    const product = productBySku[item.sku];
     if (!product) continue;
 
     const { error } = await supabase
@@ -47,16 +54,25 @@ export async function confirmInvoiceEntryAction(input: {
   const tenantId = await getTenantId(supabase);
   const notes = input.invoiceRef ? `Entrada por leitura de nota — NF ${input.invoiceRef}` : "Entrada por leitura de nota";
 
+  const existingSkus = input.items.filter((i) => i.match === "existing").map((i) => i.sku);
+  const [{ data: existingProducts }, { data: categories }] = await Promise.all([
+    existingSkus.length
+      ? supabase.from("products").select("id, sku").eq("tenant_id", tenantId).in("sku", existingSkus)
+      : Promise.resolve({ data: [] }),
+    supabase.from("categories").select("id, name").eq("tenant_id", tenantId),
+  ]);
+  const productIdBySku = Object.fromEntries((existingProducts ?? []).map((p) => [p.sku, p.id]));
+  const categoryIdByName = Object.fromEntries((categories ?? []).map((c) => [c.name.toLowerCase(), c.id]));
+
   for (const item of input.items) {
     let productId: string | null = null;
 
     if (item.match === "existing") {
-      const { data: product } = await supabase.from("products").select("id").eq("tenant_id", tenantId).eq("sku", item.sku).maybeSingle();
-      if (!product) return { error: `SKU ${item.sku} não encontrado no catálogo.` };
-      productId = product.id;
+      productId = productIdBySku[item.sku] ?? null;
+      if (!productId) return { error: `SKU ${item.sku} não encontrado no catálogo.` };
     } else {
-      const { data: category } = await supabase.from("categories").select("id").eq("tenant_id", tenantId).ilike("name", item.category).maybeSingle();
-      if (!category) return { error: `Categoria "${item.category}" não existe — cadastre-a antes de confirmar.` };
+      const categoryId = categoryIdByName[item.category.toLowerCase()];
+      if (!categoryId) return { error: `Categoria "${item.category}" não existe — cadastre-a antes de confirmar.` };
 
       // A nota só traz custo — preço de venda nasce igual ao custo (margem
       // 0%) até o lojista ajustar no catálogo; evita gravar sale_price
@@ -64,7 +80,7 @@ export async function confirmInvoiceEntryAction(input: {
       const { data: created, error: createError } = await supabase
         .from("products")
         .insert({
-          tenant_id: tenantId, category_id: category.id, sku: item.sku, brand: "", name: item.productName,
+          tenant_id: tenantId, category_id: categoryId, sku: item.sku, brand: "", name: item.productName,
           attrs: item.attributes, cost_price: item.unitCost, sale_price: item.unitCost, min_stock: 0,
         })
         .select("id")

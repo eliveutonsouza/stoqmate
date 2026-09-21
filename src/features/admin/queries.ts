@@ -1,12 +1,15 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
-export async function requireStaff() {
+// cache() dedupe a checagem is_platform_staff quando uma página admin chama
+// 2+ funções deste arquivo na mesma requisição (ex.: admin/users/page.tsx).
+export const requireStaff = cache(async () => {
   const supabase = await createClient();
   const { data: isStaff } = await supabase.rpc("is_platform_staff");
   if (!isStaff) throw new Error("not authorized");
   return supabase;
-}
+});
 
 export async function loadTenantsOverview() {
   await requireStaff();
@@ -24,7 +27,7 @@ export async function loadTenantsOverview() {
 export async function loadTenantDetail(tenantId: string) {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: tenant }, { data: stores }, { data: storeUsers }, { data: auditLog }, { data: skuCount }] = await Promise.all([
+  const [{ data: tenant }, { data: stores }, { data: storeUsers }, { data: auditLog }, { count: skuCount }] = await Promise.all([
     admin.from("tenants").select("id, name, cnpj, plan_id, created_at").eq("id", tenantId).maybeSingle(),
     admin.from("stores").select("id, name, type").eq("tenant_id", tenantId).order("name"),
     admin.from("store_users").select("user_id, role, status, created_at").eq("tenant_id", tenantId),
@@ -34,10 +37,11 @@ export async function loadTenantDetail(tenantId: string) {
   if (!tenant) return null;
 
   const userIds = (storeUsers ?? []).map((u) => u.user_id);
-  const { data: profiles } = userIds.length ? await admin.from("profiles").select("id, full_name").in("id", userIds) : { data: [] };
+  const [{ data: profiles }, { data: authUsers }] = await Promise.all([
+    userIds.length ? admin.from("profiles").select("id, full_name").in("id", userIds) : Promise.resolve({ data: [] }),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
+  ]);
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
-
-  const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const emailById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, u.email]));
 
   return {
@@ -45,7 +49,7 @@ export async function loadTenantDetail(tenantId: string) {
     stores: stores ?? [],
     users: (storeUsers ?? []).map((u) => ({ ...u, name: nameById[u.user_id] || "Usuário", email: emailById[u.user_id] || "" })),
     auditLog: (auditLog ?? []).map((a) => ({ ...a, who: nameById[a.created_by ?? ""] || emailById[a.created_by ?? ""] || "—" })),
-    skuCount: skuCount?.length ?? 0,
+    skuCount: skuCount ?? 0,
   };
 }
 
@@ -65,14 +69,16 @@ export async function loadPlatformStaff() {
 export async function loadPlatformAuditLog() {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const { data: entries } = await admin
-    .from("audit_log")
-    .select("id, kind, message, target_type, target_id, created_by, created_at, tenant_id")
-    .eq("scope", "platform")
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const [{ data: entries }, { data: authUsers }] = await Promise.all([
+    admin
+      .from("audit_log")
+      .select("id, kind, message, target_type, target_id, created_by, created_at, tenant_id")
+      .eq("scope", "platform")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    admin.auth.admin.listUsers({ perPage: 1000 }),
+  ]);
 
-  const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const emailById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, u.email]));
   const tenantIds = [...new Set((entries ?? []).map((e) => e.tenant_id))];
   const { data: tenants } = tenantIds.length ? await admin.from("tenants").select("id, name").in("id", tenantIds) : { data: [] };

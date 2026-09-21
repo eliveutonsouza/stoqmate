@@ -10,11 +10,18 @@ export async function loadOpenCashSession(storeId: string) {
     .maybeSingle();
   if (!session) return null;
 
-  const { data: movements } = await supabase
-    .from("cash_session_movements")
-    .select("id, kind, amount, note, created_at, created_by")
-    .eq("session_id", session.id)
-    .order("created_at");
+  const [{ data: movements }, { data: sales }] = await Promise.all([
+    supabase
+      .from("cash_session_movements")
+      .select("id, kind, amount, note, created_at, created_by")
+      .eq("session_id", session.id)
+      .order("created_at"),
+    supabase
+      .from("sales")
+      .select("id, total, discount_amount, payment_method")
+      .eq("store_id", storeId)
+      .gte("created_at", session.opened_at),
+  ]);
 
   const userIds = Array.from(
     new Set([session.created_by, ...(movements ?? []).map((m) => m.created_by)].filter(Boolean)),
@@ -23,12 +30,6 @@ export async function loadOpenCashSession(storeId: string) {
     ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
     : { data: [] };
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
-
-  const { data: sales } = await supabase
-    .from("sales")
-    .select("id, total, discount_amount, payment_method")
-    .eq("store_id", storeId)
-    .gte("created_at", session.opened_at);
   const salesSummary = {
     count: sales?.length ?? 0,
     total: (sales ?? []).reduce((s, sale) => s + sale.total, 0),
