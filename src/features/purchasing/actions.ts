@@ -41,12 +41,15 @@ export async function createPurchaseOrderAction(input: {
 
 export async function receivePurchaseOrderAction(input: {
   orderId: string;
-  items: { orderItemId: string; qtyReceived: number }[];
+  items: { orderItemId: string; qtyReceived: number; unitCost?: number }[];
 }) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_purchase_order_receive", {
     p_order_id: input.orderId,
-    p_items: input.items.map((i) => ({ order_item_id: i.orderItemId, qty_received: i.qtyReceived })),
+    p_items: input.items.map((i) => ({
+      order_item_id: i.orderItemId, qty_received: i.qtyReceived,
+      ...(i.unitCost !== undefined ? { unit_cost: i.unitCost } : {}),
+    })),
   });
   if (error) return { error: friendlyError(error.message) };
   revalidatePath("/purchase-orders");

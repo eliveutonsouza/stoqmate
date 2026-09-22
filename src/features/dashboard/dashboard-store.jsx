@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
 import { MetricsRow } from '@/components/domain/metrics-row';
-import { MOCK } from '@/lib/mock';
+import { brl } from '@/lib/format';
 import { SalesChartCard } from '@/features/dashboard/sales-chart-card';
 import { QuickActionsCard } from '@/features/dashboard/quick-actions-card';
 import { CategoryMixCard } from '@/features/dashboard/category-mix-card';
@@ -15,49 +15,73 @@ import { TopProductsCard } from '@/features/dashboard/top-products-card';
 import { LowStockCard } from '@/features/dashboard/low-stock-card';
 import { RecentMovementsCard } from '@/features/dashboard/recent-movements-card';
 
-export function DashboardStore() {
+const pct = (n) => (n === null || n === undefined ? null : `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`);
+
+export function DashboardStore({
+  storeName, storeCount, date, metrics, salesSeries, byCategory, topProducts,
+  lowStockCount, lowStockItems, storeBalances, movements,
+}) {
   const navigate = useNavigate();
+
+  const metricsRow = [
+    {
+      label: 'Receita (30 dias)', value: brl(metrics.revenue),
+      delta: pct(metrics.revenueDelta), trend: metrics.revenueDelta > 0 ? 'up' : metrics.revenueDelta < 0 ? 'down' : null,
+      sub: `${metrics.saleCount} venda${metrics.saleCount === 1 ? '' : 's'} registrada${metrics.saleCount === 1 ? '' : 's'}`,
+      spark: metrics.revenueSpark,
+    },
+    {
+      label: 'Unidades vendidas', value: metrics.units.toLocaleString('pt-BR'),
+      delta: pct(metrics.unitsDelta), trend: metrics.unitsDelta > 0 ? 'up' : metrics.unitsDelta < 0 ? 'down' : null,
+      sub: 'Últimos 30 dias',
+    },
+    {
+      label: 'Itens em estoque', value: metrics.totalQty.toLocaleString('pt-BR'),
+      sub: `${metrics.skuCount} SKUs em ${metrics.categoriesActive} categorias`,
+    },
+    {
+      label: 'Giro de estoque', value: metrics.turnover !== null ? `${metrics.turnover.toFixed(1)}×` : '—',
+      sub: 'Custo vendido ÷ valor em estoque, 30 dias',
+    },
+  ];
+
   return (
     <StoreShell
-      route="/dashboard" breadcrumb={['Loja Centro', 'Dashboard']} navigate={navigate}
+      route="/dashboard" breadcrumb={[storeName, 'Dashboard']} navigate={navigate}
       headerActions={(
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--fg-muted)' }}>
           <span className="pulse"></span>
-          <span>Sincronizado · 14h42</span>
+          <span>Sincronizado</span>
         </div>
       )}
     >
       <PageHeader
         title="Visão geral"
-        sub="Sexta, 18 de setembro de 2026 · 1.688 SKUs em 6 categorias"
+        sub={`${date} · ${metrics.skuCount} SKUs em ${metrics.categoriesActive} categorias${storeCount > 1 ? ` · ${storeCount} unidades` : ''}`}
         actions={(
-          <>
-            <button className="btn btn-outline btn-sm"><I.Download size={13} /> Exportar</button>
-            <button className="btn btn-outline btn-sm"><I.Filter size={13} /> Últimos 30 dias <I.ChevronDown size={12} /></button>
-            <button onClick={() => navigate('/stock/sale')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova venda</button>
-          </>
+          <button onClick={() => navigate('/stock/sale')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova venda</button>
         )}
       />
 
       <Page gap={20}>
-        <MetricsRow metrics={MOCK.metrics} />
+        <MetricsRow metrics={metricsRow} />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
-          <SalesChartCard />
+          <SalesChartCard salesSeries={salesSeries} revenue={metrics.revenue} delta={metrics.revenueDelta} />
           <QuickActionsCard navigate={navigate} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <CategoryMixCard navigate={navigate} />
-          <StoreBalanceCard navigate={navigate} />
+          <CategoryMixCard navigate={navigate} byCategory={byCategory} />
+          <StoreBalanceCard navigate={navigate} storeBalances={storeBalances} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
-          <TopProductsCard navigate={navigate} />
-          <LowStockCard navigate={navigate} />
+          <TopProductsCard navigate={navigate} topProducts={topProducts} />
+          <LowStockCard navigate={navigate} items={lowStockItems} count={lowStockCount} />
         </div>
 
-        <RecentMovementsCard navigate={navigate} />
+        <RecentMovementsCard navigate={navigate} movements={movements} />
       </Page>
     </StoreShell>
   );

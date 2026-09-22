@@ -46,3 +46,74 @@ export async function cancelInviteAction(inviteId: string) {
   revalidatePath("/settings/users");
   return { ok: true };
 }
+
+export async function updateProfileAction(input: { fullName: string; phone: string; avatarUrl: string | null }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: input.fullName, phone: input.phone || null, avatar_url: input.avatarUrl })
+    .eq("id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function changePasswordAction(input: { currentPassword: string; newPassword: string }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Sessão expirada." };
+  if (input.newPassword.length < 8) return { error: "A nova senha precisa ter pelo menos 8 caracteres." };
+
+  const { error: checkError } = await supabase.auth.signInWithPassword({ email: user.email, password: input.currentPassword });
+  if (checkError) return { error: "Senha atual incorreta." };
+
+  const { error } = await supabase.auth.updateUser({ password: input.newPassword });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function enrollMfaAction() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
+  if (error) return { error: error.message };
+  return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
+}
+
+export async function verifyMfaAction(input: { factorId: string; code: string }) {
+  const supabase = await createClient();
+  const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: input.factorId });
+  if (challengeError) return { error: challengeError.message };
+  const { error } = await supabase.auth.mfa.verify({ factorId: input.factorId, challengeId: challenge.id, code: input.code });
+  if (error) return { error: "Código inválido." };
+  revalidatePath("/profile");
+  return { ok: true };
+}
+
+export async function unenrollMfaAction(factorId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.mfa.unenroll({ factorId });
+  if (error) return { error: error.message };
+  revalidatePath("/profile");
+  return { ok: true };
+}
+
+export async function uploadAvatarAction(formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada." };
+
+  const path = `${user.id}/${crypto.randomUUID()}-${file.name}`;
+  const { error } = await supabase.storage.from("avatars").upload(path, file);
+  if (error) return { error: error.message };
+
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  return { url: data.publicUrl };
+}

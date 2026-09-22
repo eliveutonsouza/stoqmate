@@ -1,5 +1,26 @@
 import { createClient, getTenantId } from "@/lib/supabase/server";
 
+export async function loadProfile() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [{ data: profile }, { data: factors }] = await Promise.all([
+    supabase.from("profiles").select("full_name, phone, avatar_url").eq("id", user.id).maybeSingle(),
+    supabase.auth.mfa.listFactors(),
+  ]);
+
+  const verifiedFactor = (factors?.totp ?? []).find((f) => f.status === "verified");
+  return {
+    email: user.email ?? "",
+    fullName: profile?.full_name ?? "",
+    phone: profile?.phone ?? "",
+    avatarUrl: profile?.avatar_url ?? null,
+    mfaEnabled: !!verifiedFactor,
+    mfaFactorId: verifiedFactor?.id ?? null,
+  };
+}
+
 export async function loadTeam() {
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);

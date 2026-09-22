@@ -7,10 +7,15 @@ export async function createSupplierAction(input: {
   name: string;
   cnpj: string;
   phone: string;
+  whatsapp?: string;
   email: string;
+  salesRep?: string;
+  address?: string;
   categoryIds: string[];
   brands: string;
   leadTimeDays: number | null;
+  minOrderValue?: number | null;
+  paymentTerms?: string;
   notes: string;
 }) {
   const supabase = await createClient();
@@ -23,9 +28,14 @@ export async function createSupplierAction(input: {
       name: input.name,
       cnpj: input.cnpj || null,
       phone: input.phone || null,
+      whatsapp: input.whatsapp || null,
       order_email: input.email || null,
+      sales_rep: input.salesRep || null,
+      address: input.address ? { full: input.address } : null,
       brands: input.brands ? input.brands.split(",").map((b) => b.trim()).filter(Boolean) : [],
       lead_time_days: input.leadTimeDays,
+      min_order_value: input.minOrderValue ?? null,
+      payment_terms: input.paymentTerms || null,
       notes: input.notes || null,
     })
     .select("id")
@@ -50,6 +60,56 @@ export async function createSupplierAction(input: {
   return { id: supplier.id as string };
 }
 
+export async function updateSupplierAction(input: {
+  id: string;
+  name: string;
+  cnpj: string;
+  phone: string;
+  whatsapp?: string;
+  email: string;
+  salesRep?: string;
+  address?: string;
+  categoryIds: string[];
+  brands: string;
+  leadTimeDays: number | null;
+  minOrderValue?: number | null;
+  paymentTerms?: string;
+  notes: string;
+}) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("suppliers")
+    .update({
+      name: input.name,
+      cnpj: input.cnpj || null,
+      phone: input.phone || null,
+      whatsapp: input.whatsapp || null,
+      order_email: input.email || null,
+      sales_rep: input.salesRep || null,
+      address: input.address ? { full: input.address } : null,
+      brands: input.brands ? input.brands.split(",").map((b) => b.trim()).filter(Boolean) : [],
+      lead_time_days: input.leadTimeDays,
+      min_order_value: input.minOrderValue ?? null,
+      payment_terms: input.paymentTerms || null,
+      notes: input.notes || null,
+    })
+    .eq("id", input.id);
+  if (error) return { error: error.message };
+
+  await supabase.from("supplier_categories").delete().eq("supplier_id", input.id);
+  if (input.categoryIds.length) {
+    const { error: catError } = await supabase
+      .from("supplier_categories")
+      .insert(input.categoryIds.map((categoryId) => ({ supplier_id: input.id, category_id: categoryId })));
+    if (catError) return { error: catError.message };
+  }
+
+  revalidatePath("/suppliers");
+  revalidatePath("/suppliers/detail");
+  return { id: input.id };
+}
+
 export async function createLocationAction(input: {
   storeId: string;
   code: string;
@@ -67,4 +127,38 @@ export async function createLocationAction(input: {
 
   revalidatePath("/shelves");
   return { id: location.id as string };
+}
+
+export async function updateLocationAction(input: {
+  id: string;
+  code: string;
+  description: string;
+  categoryIds: string[];
+}) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("locations")
+    .update({ code: input.code.toUpperCase(), description: input.description || null })
+    .eq("id", input.id);
+  if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : error.message };
+
+  await supabase.from("location_categories").delete().eq("location_id", input.id);
+  if (input.categoryIds.length) {
+    const { error: catError } = await supabase
+      .from("location_categories")
+      .insert(input.categoryIds.map((categoryId) => ({ location_id: input.id, category_id: categoryId })));
+    if (catError) return { error: catError.message };
+  }
+
+  revalidatePath("/shelves");
+  return { id: input.id };
+}
+
+export async function deleteLocationAction(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("locations").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/shelves");
+  return { ok: true };
 }

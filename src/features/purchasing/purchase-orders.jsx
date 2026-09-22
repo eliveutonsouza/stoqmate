@@ -248,7 +248,12 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
                             : <span className="badge badge-info">Enviado</span>}
                         </td>
                         <td>
-                          {o.status === 'sent' && <button onClick={() => openReceive(o)} className="btn btn-outline btn-sm">Receber</button>}
+                          {o.status === 'sent' && (
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button onClick={() => openReceive(o)} className="btn btn-outline btn-sm">Receber</button>
+                              <button onClick={() => navigate(`/stock/receive/match?id=${o.id}`)} className="btn btn-ghost btn-sm">Conferir nota</button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );

@@ -7,24 +7,24 @@ import { Page } from '@/components/ui/page-container';
 import { I } from '@/components/icons';
 import { EmptyState } from '@/components/ui/empty-state';
 
-export function FirstRun() {
+export function FirstRun({ status }) {
   const navigate = useNavigate();
   const steps = [
-    { done: true, t: 'Loja criada', d: 'Bonsucesso Varejo · Loja Centro', r: '/settings/store-data' },
-    { done: true, t: 'Categorias escolhidas', d: '2 categorias com 4 atributos', r: '/categories' },
-    { done: false, t: 'Cadastrar os produtos', d: 'Importe sua planilha ou cadastre um a um', r: '/products/import', primary: true },
-    { done: false, t: 'Cadastrar fornecedores', d: 'Para vincular às entradas de compra', r: '/suppliers/new' },
-    { done: false, t: 'Criar os locais de estoque', d: 'Prateleiras, gôndolas, depósito', r: '/shelves/new' },
-    { done: false, t: 'Convidar a equipe', d: 'Vendedores registram venda sem ver relatórios', r: '/settings/users' },
-    { done: false, t: 'Abrir o caixa', d: 'Primeiro turno no balcão', r: '/cash' },
+    { done: true, t: 'Loja criada', d: 'Sua rede já está configurada', r: '/settings/store-data' },
+    { done: status.hasCategories, t: 'Categorias escolhidas', d: 'Esquema de atributos por linha de produto', r: '/categories' },
+    { done: status.hasProducts, t: 'Cadastrar os produtos', d: 'Importe sua planilha ou cadastre um a um', r: '/products/import', primary: !status.hasProducts },
+    { done: status.hasSuppliers, t: 'Cadastrar fornecedores', d: 'Para vincular às entradas de compra', r: '/suppliers/new' },
+    { done: status.hasLocations, t: 'Criar os locais de estoque', d: 'Prateleiras, gôndolas, depósito', r: '/shelves/new' },
+    { done: status.hasTeam, t: 'Convidar a equipe', d: 'Vendedores registram venda sem ver relatórios', r: '/settings/users' },
+    { done: status.hasCashSession, t: 'Abrir o caixa', d: 'Primeiro turno no balcão', r: '/cash' },
   ];
-  const done = steps.filter(s => s.done).length;
+  const done = steps.filter((s) => s.done).length;
 
   return (
     <StoreShell route="/first-run" breadcrumb={['Primeiros passos']} navigate={navigate}>
       <PageHeader
         title="Vamos colocar sua loja de pé"
-        sub="Você apagou os dados de exemplo. O app fica assim até o catálogo entrar — nada aqui é erro."
+        sub="Alguns passos ainda não foram concluídos. O app fica assim até o catálogo entrar — nada aqui é erro."
         actions={<button onClick={() => navigate('/help')} className="btn btn-outline btn-sm">Central de ajuda</button>}
       />
       <Page gap={20} width={1060}>
@@ -32,7 +32,7 @@ export function FirstRun() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{done} de {steps.length} passos concluídos</div>
-              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>Leva cerca de 40 minutos, e dá para parar no meio.</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>Dá para parar no meio e voltar depois.</div>
             </div>
             <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{Math.round((done / steps.length) * 100)}%</span>
           </div>
@@ -73,7 +73,7 @@ export function FirstRun() {
             {[
               { i: <I.Box size={18} />, t: 'Catálogo vazio', d: 'Nenhum produto cadastrado. Importe uma planilha ou cadastre o primeiro à mão.', a: 'Importar planilha', r: '/products/import' },
               { i: <I.Activity size={18} />, t: 'Sem movimentações', d: 'O histórico começa na primeira entrada de compra ou venda registrada.', a: 'Registrar entrada', r: '/stock/entry' },
-              { i: <I.Chart size={18} />, t: 'Relatórios sem base', d: 'Os relatórios precisam de pelo menos 7 dias de vendas para ter o que comparar.', a: 'Entendi', r: '/reports' },
+              { i: <I.Chart size={18} />, t: 'Relatórios sem base', d: 'Os relatórios precisam de pelo menos 7 dias de vendas para ter o que comparar.', a: 'Ver relatórios', r: '/reports' },
             ].map(e => (
               <div key={e.t} className="card" style={{ overflow: 'hidden' }}>
                 <EmptyState icon={e.i} title={e.t} desc={e.d}
@@ -82,20 +82,7 @@ export function FirstRun() {
             ))}
           </div>
         </div>
-
-        <div className="card" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ color: 'var(--fg-muted)', flexShrink: 0 }}><I.Sparkle size={17} /></span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em' }}>Quer os dados de exemplo de volta?</div>
-            <div style={{ fontSize: 12.5, color: 'var(--fg-muted)', marginTop: 3, lineHeight: 1.5 }}>
-              Recriamos catálogo, fornecedores, locais e 30 dias de histórico nas suas categorias, para você explorar antes de começar de verdade.
-            </div>
-          </div>
-          <button className="btn btn-outline btn-sm">Recriar dados de exemplo</button>
-        </div>
       </Page>
     </StoreShell>
   );
 }
-
-// === /help ===

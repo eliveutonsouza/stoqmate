@@ -18,10 +18,12 @@ export function MetricsRow({ metrics }) {
           <div style={{ fontSize: 12, color: 'var(--fg-muted)', letterSpacing: '-0.005em' }}>{m.label}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums' }}>{m.value}</span>
-            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: m.trend === 'up' ? 'var(--success)' : 'var(--danger)' }}>{m.delta}</span>
+            {m.delta && (
+              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: m.trend === 'up' ? 'var(--success)' : 'var(--danger)' }}>{m.delta}</span>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
-            <Sparkline data={m.spark} color={m.trend === 'up' ? 'var(--success)' : 'var(--danger)'} width={60} height={18} />
+            {m.spark?.length > 1 && <Sparkline data={m.spark} color={m.trend === 'up' ? 'var(--success)' : m.trend === 'down' ? 'var(--danger)' : 'var(--fg-muted)'} width={60} height={18} />}
             <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.sub}</span>
           </div>
         </div>

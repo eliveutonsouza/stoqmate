@@ -1,5 +1,28 @@
 import { createClient } from "@/lib/supabase/server";
 
+export async function loadFirstRunStatus() {
+  const supabase = await createClient();
+  const [
+    { count: categoryCount }, { count: productCount }, { count: supplierCount },
+    { count: locationCount }, { count: teamCount }, { count: cashSessionCount },
+  ] = await Promise.all([
+    supabase.from("categories").select("id", { count: "exact", head: true }),
+    supabase.from("products").select("id", { count: "exact", head: true }),
+    supabase.from("suppliers").select("id", { count: "exact", head: true }),
+    supabase.from("locations").select("id", { count: "exact", head: true }),
+    supabase.from("store_users").select("id", { count: "exact", head: true }),
+    supabase.from("cash_sessions").select("id", { count: "exact", head: true }),
+  ]);
+  return {
+    hasCategories: (categoryCount ?? 0) > 0,
+    hasProducts: (productCount ?? 0) > 0,
+    hasSuppliers: (supplierCount ?? 0) > 0,
+    hasLocations: (locationCount ?? 0) > 0,
+    hasTeam: (teamCount ?? 0) > 1,
+    hasCashSession: (cashSessionCount ?? 0) > 0,
+  };
+}
+
 export async function loadCustomers() {
   const supabase = await createClient();
   const [{ data: customers }, { data: stats }] = await Promise.all([

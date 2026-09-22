@@ -54,7 +54,7 @@ export function Shelves({ initialLocations, products, stores }) {
         sub={`${locations.length} posiç${locations.length === 1 ? 'ão' : 'ões'} cadastrada${locations.length === 1 ? '' : 's'}`}
         actions={(
           <>
-            <button className="btn btn-outline btn-sm"><I.QR size={13} /> Imprimir etiquetas</button>
+            <button onClick={() => navigate('/labels')} className="btn btn-outline btn-sm"><I.QR size={13} /> Imprimir etiquetas</button>
             <button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Novo local</button>
           </>
         )}

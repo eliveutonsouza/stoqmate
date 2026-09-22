@@ -1,34 +1,32 @@
 "use client";
 
-import * as React from 'react';
 import { MiniAreaChart } from '@/components/domain/mini-area-chart';
-import { MOCK } from '@/lib/mock';
+import { brl } from '@/lib/format';
 
-export function SalesChartCard() {
-  const [range, setRange] = React.useState('30d');
+export function SalesChartCard({ salesSeries, revenue, delta }) {
   return (
     <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
         <div>
           <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Receita por dia</h3>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Todas as categorias desta unidade.</p>
-        </div>
-        <div style={{ display: 'flex', background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 6, padding: 2 }}>
-          {['7d', '30d', '90d'].map(k => (
-            <button key={k} onClick={() => setRange(k)} style={{
-              background: range === k ? 'var(--bg-elev)' : 'transparent',
-              border: 'none', borderRadius: 4, padding: '3px 10px',
-              fontSize: 11, fontWeight: 500, color: 'var(--fg)',
-              boxShadow: range === k ? 'var(--shadow-xs)' : 'none',
-            }}>{k}</button>
-          ))}
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Últimos 30 dias, todas as categorias.</p>
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 14 }}>
-        <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums' }}>R$ 412.680</span>
-        <span style={{ fontSize: 12, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>+12,4% vs período anterior</span>
+        <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums' }}>{brl(revenue)}</span>
+        {delta !== null && (
+          <span style={{ fontSize: 12, color: delta >= 0 ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-mono)' }}>
+            {delta >= 0 ? '+' : ''}{delta.toFixed(1)}% vs período anterior
+          </span>
+        )}
       </div>
-      <MiniAreaChart data={MOCK.salesSeries} height={180} />
+      {salesSeries.length > 1 ? (
+        <MiniAreaChart data={salesSeries} height={180} />
+      ) : (
+        <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-muted)', fontSize: 12.5 }}>
+          Sem vendas suficientes no período pra montar o gráfico.
+        </div>
+      )}
     </div>
   );
 }

@@ -85,13 +85,14 @@ export function StockHistory({ movements }) {
                     <th className="num">Qtd</th>
                     <th className="num">Custo un.</th>
                     <th>Motivo</th>
+                    <th style={{ width: 40 }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((m) => {
                     const t = MOVEMENT_TYPES[m.kind] ?? MOVEMENT_TYPES.adjustment;
                     return (
-                      <tr key={m.id}>
+                      <tr key={m.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/stock/movement?id=${m.id}`)}>
                         <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)' }}>
                           {new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </td>
@@ -117,6 +118,7 @@ export function StockHistory({ movements }) {
                           {m.unit_cost ? brl(m.unit_cost) : '—'}
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.reason ?? '—'}</td>
+                        <td><I.ChevronRight size={13} style={{ color: 'var(--fg-faint)' }} /></td>
                       </tr>
                     );
                   })}

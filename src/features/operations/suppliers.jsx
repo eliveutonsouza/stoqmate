@@ -91,7 +91,7 @@ export function Suppliers({ initialSuppliers, categories }) {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <StoreAvatar name={s.name} />
-                          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/suppliers/detail'); }} style={{ fontSize: 13, fontWeight: 500 }}>{s.name}</a>
+                          <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/suppliers/detail?id=${s.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{s.name}</a>
                         </div>
                       </td>
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{s.cnpj ?? '—'}</td>
@@ -104,7 +104,7 @@ export function Suppliers({ initialSuppliers, categories }) {
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{(s.brands || []).join(', ') || '—'}</td>
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{s.lead_time_days ? `${s.lead_time_days}d` : '—'}</td>
-                      <td><button className="btn btn-ghost btn-icon btn-sm"><I.More size={13} /></button></td>
+                      <td><button onClick={() => navigate(`/suppliers/edit?id=${s.id}`)} className="btn btn-ghost btn-sm">Editar</button></td>
                     </tr>
                   ))}
                 </tbody>
