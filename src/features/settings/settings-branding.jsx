@@ -10,46 +10,80 @@ import { Field } from '@/components/ui/field';
 import { ONB_COLORS } from '@/features/onboarding/onb-colors';
 import { I } from '@/components/icons';
 import { TextInput } from '@/components/ui/text-input';
+import { updateBrandingAction, uploadBrandingLogoAction } from '@/features/settings/actions';
 
-export function SettingsBranding() {
+export function SettingsBranding({ branding }) {
   const navigate = useNavigate();
-  const [color, setColor] = React.useState('#E94B1C');
-  const [logo, setLogo] = React.useState(true);
+  const [color, setColor] = React.useState(branding.brandColor);
+  const [logoFile, setLogoFile] = React.useState(null);
+  const [logoPreview, setLogoPreview] = React.useState(branding.logoUrl);
+  const [error, setError] = React.useState('');
+  const [saved, setSaved] = React.useState(false);
+  const [pending, startTransition] = React.useTransition();
+
+  const onFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
+  const save = () => {
+    setError(''); setSaved(false);
+    startTransition(async () => {
+      let logoUrl = branding.logoUrl;
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append('file', logoFile);
+        const uploadResult = await uploadBrandingLogoAction(formData);
+        if (uploadResult?.error) { setError(uploadResult.error); return; }
+        logoUrl = uploadResult.url;
+      }
+      const result = await updateBrandingAction({ logoUrl, brandColor: color });
+      if (result?.error) { setError(result.error); return; }
+      setSaved(true);
+    });
+  };
+
   return (
     <StoreShell route="/settings/branding" breadcrumb={['Configurações', 'Branding']} navigate={navigate}>
       <PageHeader title="Configurações" sub="Identidade visual, dados da empresa, equipe e assinatura." />
       <SettingsLayout route="/settings/branding" navigate={navigate}>
         <FormCard title="Logo da loja" desc="Aparece no painel, nos relatórios exportados e nas etiquetas de estoque." cols={1}
-          footer={<><button className="btn btn-ghost">Descartar</button><button className="btn btn-primary">Salvar alterações</button></>}>
-          {logo ? (
+          footer={<button onClick={save} disabled={pending} className="btn btn-primary">{pending ? 'Salvando…' : 'Salvar alterações'}</button>}>
+          {logoPreview ? (
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div className="placeholder-stripes" style={{ width: 84, height: 84, borderRadius: 8, border: '1px solid var(--line)', flexShrink: 0 }}>logo</div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoPreview} alt="" style={{ width: 84, height: 84, borderRadius: 8, border: '1px solid var(--line)', objectFit: 'contain', flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>logo-bonsucesso.svg</div>
-                <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', marginTop: 3 }}>SVG · 18 KB · 512×512</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{logoFile?.name ?? 'Logo atual'}</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                  <button className="btn btn-outline btn-sm">Substituir</button>
-                  <button onClick={() => setLogo(false)} className="btn btn-ghost btn-sm">Remover</button>
+                  <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
+                    Substituir
+                    <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={onFileChange} style={{ display: 'none' }} />
+                  </label>
+                  <button onClick={() => { setLogoFile(null); setLogoPreview(null); }} className="btn btn-ghost btn-sm">Remover</button>
                 </div>
               </div>
             </div>
           ) : (
-            <div onClick={() => setLogo(true)} style={{
-              border: '1.5px dashed var(--line-strong)', borderRadius: 10,
+            <label style={{
+              display: 'block', border: '1.5px dashed var(--line-strong)', borderRadius: 10,
               padding: '28px 24px', textAlign: 'center', background: 'var(--bg-sunken)', cursor: 'pointer',
             }}>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>Arraste o logo aqui</div>
+              <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={onFileChange} style={{ display: 'none' }} />
+              <div style={{ fontSize: 13, fontWeight: 500 }}>Escolher logo</div>
               <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 8, fontFamily: 'var(--font-mono)' }}>PNG · SVG · até 2 MB</div>
-            </div>
+            </label>
           )}
         </FormCard>
 
-        <FormCard title="Cor principal" desc="Os tons secundários para tema claro e escuro são gerados automaticamente." cols={1}
-          footer={<><button className="btn btn-ghost">Descartar</button><button className="btn btn-primary">Salvar alterações</button></>}>
+        <FormCard title="Cor principal" desc="Usada em destaques do painel." cols={1}
+          footer={<button onClick={save} disabled={pending} className="btn btn-primary">{pending ? 'Salvando…' : 'Salvar alterações'}</button>}>
           <Field label="Cor da marca">
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {ONB_COLORS.map(c => {
-                const active = color === c;
+                const active = color.toLowerCase() === c.toLowerCase();
                 return (
                   <button key={c} onClick={() => setColor(c)} style={{
                     width: 34, height: 34, borderRadius: 7, background: c,
@@ -64,24 +98,15 @@ export function SettingsBranding() {
           <Field label="Hexadecimal">
             <TextInput mono value={color.toUpperCase()} onChange={(e) => setColor(e.target.value)} style={{ width: 130 }} />
           </Field>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 9 }}>Tons gerados</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {[8, 16, 32, 60, 100].map(p => (
-                <div key={p} style={{ flex: 1 }}>
-                  <div style={{ height: 34, borderRadius: 6, background: `color-mix(in srgb, ${color} ${p}%, var(--bg-elev))`, border: '1px solid var(--line)' }}></div>
-                  <div style={{ fontSize: 10, color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', textAlign: 'center', marginTop: 4 }}>{p}%</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {error && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 10 }}>{error}</div>}
+          {saved && <div style={{ fontSize: 12, color: 'var(--success)', marginTop: 10 }}>Branding atualizado.</div>}
         </FormCard>
 
         <FormCard title="Pré-visualização" desc="Como o painel fica com esta cor." cols={1}>
           <div style={{ border: '1px solid var(--line)', borderRadius: 10, overflow: 'hidden' }}>
             <div style={{ padding: '11px 14px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-sunken)' }}>
               <div style={{ width: 20, height: 20, borderRadius: 5, background: color }}></div>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Bonsucesso Varejo</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{branding.name}</span>
               <div style={{ flex: 1 }}></div>
               <div style={{ background: `color-mix(in srgb, ${color} 84%, #000)`, color: '#fff', padding: '4px 10px', borderRadius: 5, fontSize: 11, fontWeight: 500 }}>Nova venda</div>
             </div>

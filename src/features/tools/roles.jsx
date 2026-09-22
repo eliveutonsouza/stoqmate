@@ -7,10 +7,6 @@ import { PageHeader } from '@/components/layout/page-header';
 import { SettingsLayout } from '@/components/ui/settings-layout';
 import { I } from '@/components/icons';
 import { ACCESS, AREAS, COVERED_COUNT, ROLES, STAFF, TENANT_AREAS } from '@/lib/permissions';
-import { FormCard } from '@/components/ui/form-card';
-import { Field } from '@/components/ui/field';
-import { TextInput } from '@/components/ui/text-input';
-import { SelectInput } from '@/components/ui/select-input';
 
 const DOT = {
   none: ['—', 'var(--fg-faint)', 'transparent'],
@@ -136,22 +132,6 @@ export function Roles() {
             })}
           </div>
         </div>
-
-        <FormCard title="Regras adicionais" desc="Valem para todos os perfis, além da matriz acima." cols={2}
-          footer={<button className="btn btn-primary">Salvar alterações</button>}>
-          <Field label="Desconto máximo sem aprovação" span={1} hint="Acima disso, exige um Gestor Financeiro.">
-            <TextInput mono defaultValue="20" suffix="%" />
-          </Field>
-          <Field label="Ajuste de inventário sem aprovação" span={1} hint="Divergências acima disso notificam o proprietário.">
-            <TextInput mono prefix="R$" defaultValue="200,00" />
-          </Field>
-          <Field label="Vendedor vê custo e margem?" span={1} hint="A matriz já nega a área de custo; isto controla a coluna no catálogo.">
-            <SelectInput value="Não" onChange={() => {}} options={['Não', 'Sim']} />
-          </Field>
-          <Field label="Vendedor pode operar em outras unidades?" span={1}>
-            <SelectInput value="Apenas consulta de saldo" onChange={() => {}} options={['Não', 'Apenas consulta de saldo', 'Sim']} />
-          </Field>
-        </FormCard>
       </SettingsLayout>
     </StoreShell>
   );

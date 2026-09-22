@@ -29,7 +29,7 @@ export function PastDue() {
           ))}
         </div>
 
-        <BillingBanner tone={s.tone} title={s.t} desc={s.d} action="Atualizar pagamento" onAction={() => navigate('/settings/billing')} secondary="Ver fatura" onSecondary={() => navigate('/settings/subscription/invoice')} />
+        <BillingBanner tone={s.tone} title={s.t} desc={s.d} action="Atualizar pagamento" onAction={() => navigate('/settings/subscription')} secondary="Ver fatura" onSecondary={() => navigate('/settings/subscription/invoice')} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 300px', gap: 16, alignItems: 'start' }}>
           <div className="card" style={{ padding: 20 }}>
@@ -44,7 +44,7 @@ export function PastDue() {
                 ['Usar outro cartão', 'Master •••• 8810 está cadastrado', 'outline'],
                 ['Descer para o Balcão', `${brl(PLANS[0].monthly * SUB.units)}/mês · a diferença já vira crédito`, 'outline'],
               ].map(([t, d, kind]) => (
-                <button key={t} onClick={() => navigate(kind === 'primary' ? '/settings/billing' : '/settings/subscription/change')} className={'btn btn-' + kind} style={{ justifyContent: 'flex-start', width: '100%', height: 'auto', padding: '11px 13px', textAlign: 'left' }}>
+                <button key={t} onClick={() => navigate(kind === 'primary' ? '/settings/subscription' : '/settings/subscription/change')} className={'btn btn-' + kind} style={{ justifyContent: 'flex-start', width: '100%', height: 'auto', padding: '11px 13px', textAlign: 'left' }}>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{t}</span>
                     <span style={{ fontSize: 11.5, opacity: 0.75, fontWeight: 400, lineHeight: 1.4 }}>{d}</span>

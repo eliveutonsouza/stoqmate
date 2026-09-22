@@ -106,7 +106,7 @@ export const AREAS = [
     id: 'billing', name: 'Assinatura e cobrança',
     why: 'Só quem paga muda o plano, o cartão ou cancela.',
     routes: ['/settings/subscription', '/settings/subscription/change', '/settings/subscription/annual',
-      '/settings/subscription/cancel', '/settings/subscription/invoice', '/settings/billing', '/settings/credits',
+      '/settings/subscription/cancel', '/settings/subscription/invoice', '/settings/credits',
       '/billing/past-due', '/limit-reached', '/ai/credits-empty', '/account/cancelled'],
     access: { vendedor: 'none', estoquista: 'none', financeiro: 'edit', proprietario: 'full' },
   },

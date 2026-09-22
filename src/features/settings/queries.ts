@@ -1,5 +1,23 @@
 import { createClient, getTenantId } from "@/lib/supabase/server";
 
+export async function loadFiscalMode() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("tenants").select("fiscal_mode").single();
+  return data?.fiscal_mode ?? "later";
+}
+
+export async function loadCompanyData() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("tenants").select("name, cnpj").single();
+  return { name: data?.name ?? "", cnpj: data?.cnpj ?? "" };
+}
+
+export async function loadBranding() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("tenants").select("name, logo_url, brand_color").single();
+  return { name: data?.name ?? "", logoUrl: data?.logo_url ?? null, brandColor: data?.brand_color ?? "#E94B1C" };
+}
+
 export async function loadProfile() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

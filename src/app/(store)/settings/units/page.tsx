@@ -1,5 +1,7 @@
 import { NetworkUnits } from '@/features/network-admin/network-units';
+import { loadNetworkUnits } from '@/features/network-admin/units-queries';
 
-export default function Page() {
-  return <NetworkUnits />;
+export default async function Page() {
+  const data = await loadNetworkUnits();
+  return <NetworkUnits {...data} />;
 }

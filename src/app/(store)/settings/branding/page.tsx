@@ -1,5 +1,7 @@
 import { SettingsBranding } from '@/features/settings/settings-branding';
+import { loadBranding } from '@/features/settings/queries';
 
-export default function Page() {
-  return <SettingsBranding />;
+export default async function Page() {
+  const branding = await loadBranding();
+  return <SettingsBranding branding={branding} />;
 }

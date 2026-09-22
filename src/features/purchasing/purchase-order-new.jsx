@@ -18,15 +18,15 @@ import { brl } from '@/lib/format';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { createPurchaseOrderAction } from '@/features/purchasing/actions';
 
-export function PurchaseOrderNew({ stores, storeId, suppliers, supplierId, suggestions }) {
+export function PurchaseOrderNew({ stores, storeId, suppliers, supplierId, suggestions, qtyOverrides = {} }) {
   const navigate = useNavigate();
   const supplier = suppliers.find((s) => s.id === supplierId);
   const initialLines = React.useMemo(
-    () => suggestions.filter((r) => r.supplier_id === supplierId && r.suggest_qty > 0),
-    [suggestions, supplierId],
+    () => suggestions.filter((r) => r.supplier_id === supplierId && (r.suggest_qty > 0 || qtyOverrides[r.product_id] > 0)),
+    [suggestions, supplierId, qtyOverrides],
   );
   const [lines, setLines] = React.useState(initialLines);
-  const [qty, setQty] = React.useState(() => initialLines.map((l) => l.suggest_qty));
+  const [qty, setQty] = React.useState(() => initialLines.map((l) => qtyOverrides[l.product_id] ?? l.suggest_qty));
   const [notes, setNotes] = React.useState('');
   const [freight, setFreight] = React.useState(0);
   const [error, setError] = React.useState('');

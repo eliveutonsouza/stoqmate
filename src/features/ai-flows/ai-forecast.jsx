@@ -36,6 +36,17 @@ export function AIForecast({ base }) {
 
   const decide = (sku, v) => setDecided(d => ({ ...d, [sku]: v }));
 
+  const applyAccepted = () => {
+    const accepted = base
+      .map((p) => ({ p, r: result.find((x) => x.sku === p.sku) }))
+      .filter(({ p, r }) => r && decided[p.sku] === 'accept');
+    if (accepted.length === 0) return;
+    const supplierId = accepted[0].p.supplier_id;
+    const sameSupplier = accepted.filter(({ p }) => p.supplier_id === supplierId);
+    const prefill = sameSupplier.map(({ p, r }) => `${p.product_id}:${Math.round(r.suggested)}`).join(',');
+    navigate(`/purchase-orders/new?supplier=${supplierId}&prefill=${encodeURIComponent(prefill)}`);
+  };
+
   if (base.length === 0) {
     return (
       <StoreShell route="/ai/forecast" breadcrumb={['IA', 'Previsão de demanda']} navigate={navigate}>
@@ -153,7 +164,7 @@ export function AIForecast({ base }) {
               <span style={{ fontSize: 12.5, color: 'var(--fg-muted)', flex: 1, lineHeight: 1.5 }}>
                 As quantidades aceitas substituem a sugestão na tela de reposição e entram no pedido de compra.
               </span>
-              <button onClick={() => navigate('/purchase-orders')} className="btn btn-primary btn-sm">
+              <button onClick={applyAccepted} disabled={Object.values(decided).filter(v => v === 'accept').length === 0} className="btn btn-primary btn-sm">
                 Aplicar {Object.values(decided).filter(v => v === 'accept').length} e abrir reposição
               </button>
             </div>

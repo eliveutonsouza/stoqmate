@@ -47,6 +47,67 @@ export async function cancelInviteAction(inviteId: string) {
   return { ok: true };
 }
 
+export async function updateFiscalModeAction(mode: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fn_update_fiscal_mode", { p_mode: mode });
+  if (error) {
+    if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para mudar a configuração fiscal." };
+    return { error: error.message };
+  }
+  revalidatePath("/settings/fiscal");
+  return { ok: true };
+}
+
+export async function updateCompanyDataAction(input: { name: string; cnpj: string }) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fn_update_company_data", { p_name: input.name, p_cnpj: input.cnpj });
+  if (error) {
+    if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para mudar os dados da empresa." };
+    return { error: error.message };
+  }
+  revalidatePath("/settings/store-data");
+  return { ok: true };
+}
+
+export async function requestAccountDeletionAction() {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fn_request_account_deletion");
+  if (error) {
+    if (error.message.includes("not authorized")) return { error: "Só o proprietário pode excluir a conta." };
+    return { error: error.message };
+  }
+  await supabase.auth.signOut();
+  return { ok: true };
+}
+
+export async function updateBrandingAction(input: { logoUrl: string | null; brandColor: string }) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fn_update_branding", { p_logo_url: input.logoUrl, p_brand_color: input.brandColor });
+  if (error) {
+    if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para mudar o branding." };
+    return { error: error.message };
+  }
+  revalidatePath("/settings/branding");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function uploadBrandingLogoAction(formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada." };
+  const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
+  if (!profile?.tenant_id) return { error: "Sem rede associada a esta sessão." };
+
+  const path = `${profile.tenant_id}/${crypto.randomUUID()}-${file.name}`;
+  const { error } = await supabase.storage.from("store-branding").upload(path, file);
+  if (error) return { error: error.message };
+  const { data } = supabase.storage.from("store-branding").getPublicUrl(path);
+  return { url: data.publicUrl };
+}
+
 export async function updateProfileAction(input: { fullName: string; phone: string; avatarUrl: string | null }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

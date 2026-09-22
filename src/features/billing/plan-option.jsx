@@ -32,5 +32,3 @@ export function PlanOption({ plan, selected, onSelect, current, units = 1 }) {
     </button>
   );
 }
-
-// === /settings/billing — meios de pagamento e dados fiscais ===

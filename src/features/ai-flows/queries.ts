@@ -33,6 +33,45 @@ export async function loadForecastBase(storeId: string, limit = 15) {
     .slice(0, limit);
 }
 
+// Detecção de anomalia sem IA — 2 sinais computáveis direto de dado real
+// (os outros tipos do mock original, "estoque fantasma"/"padrão de perda
+// por horário", exigiriam correlação estatística que este projeto não
+// tem infraestrutura pra calcular ainda — cortados em vez de fingidos).
+export async function loadAnomalies(storeId: string) {
+  const supabase = await createClient();
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
+
+  const [{ data: suggestions }, { data: balances }, { data: recentSales }] = await Promise.all([
+    supabase.rpc("fn_replenishment_suggestions", { p_store_id: storeId }),
+    supabase
+      .from("stock_balances")
+      .select("product_id, qty, product:products(sku, name, brand, attrs, cost_price, category:categories(id, name, icon, color))")
+      .eq("store_id", storeId),
+    supabase.from("sales").select("sale_items(product_id)").eq("store_id", storeId).gte("created_at", since.toISOString()),
+  ]);
+
+  const stockouts = (suggestions ?? [])
+    .filter((s: { stock: number; sold_30d: number }) => s.stock === 0 && s.sold_30d > 0)
+    .map((s: { product_id: string; sku: string; name: string; attrs: unknown; category: unknown; sold_30d: number; cost_price: number }) => ({
+      productId: s.product_id, sku: s.sku, name: s.name, attrs: s.attrs, category: s.category,
+      soldPerDay: s.sold_30d / 30, lossEstimate: (s.sold_30d / 30) * 7 * s.cost_price,
+    }));
+
+  const soldRecently = new Set((recentSales ?? []).flatMap((s) => (s.sale_items ?? []).map((i: { product_id: string }) => i.product_id)));
+  const deadStock = (balances ?? [])
+    .filter((b) => b.qty > 0 && !soldRecently.has(b.product_id))
+    .map((b) => ({
+      productId: b.product_id, qty: b.qty, product: b.product,
+      value: b.qty * ((b.product as unknown as { cost_price: number } | null)?.cost_price ?? 0),
+    }))
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  return { stockouts, deadStock };
+}
+
 export async function loadOcrContext() {
   const supabase = await createClient();
   const [{ data: categories }, { data: products }] = await Promise.all([

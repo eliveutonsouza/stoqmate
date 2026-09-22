@@ -1,8 +1,10 @@
 # Rotas — contrato congelado
 
-Fonte da verdade: `src/app/**/page.tsx`. 112 rotas em 5 route groups. Rota
+Fonte da verdade: `src/app/**/page.tsx`. 111 rotas em 5 route groups. Rota
 nova entra nesta tabela no mesmo commit que adiciona o `page.tsx` — não é
-opcional.
+opcional. (`/settings/billing` removida em 2026-09-21: duplicava
+`/settings/subscription`, que já usa Stripe Customer Portal real —
+autorizado pelo dev.)
 
 Até a Fase 1 do backend Supabase, todas as rotas eram SSG (100% estático,
 sem dado dinâmico). Isso mudou a partir da Fase 2: toda rota cujo
@@ -54,7 +56,7 @@ tem tenant é redirecionado pra `/dashboard` pelo próprio `page.tsx`.
 /settings/notifications
 /settings/subscription  /settings/subscription/change
 /settings/subscription/annual  /settings/subscription/cancel
-/settings/subscription/invoice  /settings/billing  /settings/credits
+/settings/subscription/invoice  /settings/credits
 /billing/past-due  /account/cancelled  /limit-reached
 ```
 

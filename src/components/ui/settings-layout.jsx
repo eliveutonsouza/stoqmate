@@ -16,7 +16,6 @@ export function SettingsLayout({ navigate, children }) {
     { r: '/settings/fiscal', l: 'Fiscal', i: <I.Book size={14} /> },
     { r: '/settings/subscription', l: 'Plano e assinatura', i: <I.Credit size={14} /> },
     { r: '/settings/credits', l: 'Créditos de IA', i: <I.Sparkle size={14} /> },
-    { r: '/settings/billing', l: 'Cobrança', i: <I.Chart size={14} /> },
     { r: '/profile', l: 'Meu perfil', i: <I.Shield size={14} /> },
   ];
   return (

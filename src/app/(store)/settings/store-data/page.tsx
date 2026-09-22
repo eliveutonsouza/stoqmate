@@ -1,5 +1,7 @@
 import { SettingsStoreData } from '@/features/settings/settings-store-data';
+import { loadCompanyData } from '@/features/settings/queries';
 
-export default function Page() {
-  return <SettingsStoreData />;
+export default async function Page() {
+  const company = await loadCompanyData();
+  return <SettingsStoreData company={company} />;
 }
