@@ -18,7 +18,7 @@ export function OnboardingComplete({ navigate, data }) {
           {data.name || 'Sua loja'} está pronta
         </h1>
         <p style={{ margin: '14px 0 0', fontSize: 15, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
-          Populamos o catálogo com dados de exemplo nas suas categorias. Seu período de teste vai até 2 de outubro de 2026.
+          Suas categorias já estão configuradas — é só cadastrar os produtos. Seu período de teste está ativo.
         </p>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 32 }}>

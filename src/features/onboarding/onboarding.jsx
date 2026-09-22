@@ -10,16 +10,19 @@ import { OnbStep3 } from '@/features/onboarding/onb-step3';
 import { OnbStep4 } from '@/features/onboarding/onb-step4';
 import { OnbStepFiscal } from '@/features/onboarding/onb-step-fiscal';
 import { OnbStep5 } from '@/features/onboarding/onb-step5';
+import { completeOnboardingAction, uploadStoreLogoAction } from '@/features/onboarding/actions';
 
 export function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = React.useState(1);
   const [data, setData] = React.useState({
-    name: '', logo: false, color: '#E94B1C',
-    cats: ['vestuario', 'eletronicos'],
+    name: '', logoFile: null, logoPreviewUrl: null, color: '#E94B1C',
+    cats: ['vestuario', 'eletronicos'], fiscal: 'later',
   });
   const set = (k, v) => setData(d => ({ ...d, [k]: v }));
   const [done, setDone] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
 
   const steps = [
     { n: 1, label: 'Nome da loja' },
@@ -31,6 +34,26 @@ export function Onboarding() {
   ];
 
   const canAdvance = step === 1 ? data.name.trim().length >= 3 : step === 4 ? data.cats.length > 0 : true;
+
+  const finish = () => {
+    setError('');
+    startTransition(async () => {
+      let logoUrl = null;
+      if (data.logoFile) {
+        const formData = new FormData();
+        formData.append('file', data.logoFile);
+        const uploadResult = await uploadStoreLogoAction(formData);
+        if (uploadResult?.error) { setError(uploadResult.error); return; }
+        logoUrl = uploadResult.url;
+      }
+      const result = await completeOnboardingAction({
+        storeName: data.name, logoUrl, brandColor: data.color,
+        categoryIds: data.cats, fiscalMode: data.fiscal,
+      });
+      if (result?.error) { setError(result.error); return; }
+      setDone(true);
+    });
+  };
 
   if (done) return <OnboardingComplete navigate={navigate} data={data} />;
 
@@ -109,6 +132,11 @@ export function Onboarding() {
           display: 'flex', alignItems: 'center', gap: 10,
           background: 'var(--bg)',
         }}>
+          {error && (
+            <div style={{ position: 'absolute', transform: 'translateY(-56px)', padding: '9px 13px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5 }}>
+              {error}
+            </div>
+          )}
           <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/signup')} className="btn btn-ghost">
             <I.ChevronLeft size={13} /> Voltar
           </button>
@@ -120,8 +148,8 @@ export function Onboarding() {
               Continuar <I.ArrowRight size={13} />
             </button>
           ) : (
-            <button onClick={() => setDone(true)} className="btn btn-primary btn-lg">
-              Concluir e entrar <I.Check size={14} stroke={2.4} />
+            <button onClick={finish} className="btn btn-primary btn-lg" disabled={pending}>
+              {pending ? 'Concluindo…' : 'Concluir e entrar'} <I.Check size={14} stroke={2.4} />
             </button>
           )}
         </div>

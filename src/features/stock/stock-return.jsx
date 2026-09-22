@@ -2,8 +2,6 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { catById } from '@/lib/mock';
-import { PICK } from '@/features/stock/pick';
 import { MovementPage } from '@/features/stock/movement-page';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { brl } from '@/lib/format';
@@ -14,58 +12,82 @@ import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { I } from '@/components/icons';
+import { stockReturnAction } from '@/features/stock/actions';
 
-export function StockReturn() {
+const REASONS = ['Desistência do cliente', 'Defeito de fabricação', 'Variação incorreta', 'Produto errado entregue', 'Arrependimento (7 dias)'];
+
+export function StockReturn({ stores }) {
   const navigate = useNavigate();
+  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const [product, setProduct] = React.useState(null);
   const [qty, setQty] = React.useState(1);
+  const [reason, setReason] = React.useState(REASONS[0]);
   const [restock, setRestock] = React.useState(true);
-  const c = catById(PICK.cat);
-  const refund = qty * PICK.sale;
+  const [notes, setNotes] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+
+  const stock = (product?.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
+  const refund = product ? qty * product.sale_price : 0;
+  const canSave = product && storeId && qty > 0;
+
+  const submit = () => {
+    setError('');
+    if (!product) { setError('Selecione um produto.'); return; }
+    startTransition(async () => {
+      const result = await stockReturnAction({ storeId, productId: product.id, qty, reason, restock, notes });
+      if (result?.error) { setError(result.error); return; }
+      navigate('/stock/history');
+    });
+  };
+
   return (
     <MovementPage
       route="/stock/return" navigate={navigate}
       title="Registrar devolução"
-      sub="O item volta ao estoque e o valor entra como estorno no relatório de vendas."
-      submitLabel="Confirmar devolução"
+      sub="O item volta ao estoque (se aplicável) e fica registrado no histórico de movimentações."
+      submitLabel={pending ? 'Confirmando…' : 'Confirmar devolução'}
+      onSubmit={submit}
+      submitDisabled={!canSave || pending}
       aside={(
         <div className="card" style={{ padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo da devolução</div>
           <SummaryRow label="Itens devolvidos" value={`${qty}`} />
-          <SummaryRow label="Valor unitário" value={brl(PICK.sale)} />
+          {product && <SummaryRow label="Valor unitário" value={brl(product.sale_price)} />}
           <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
             <SummaryRow label="Valor a estornar" value={brl(refund)} strong tone="warning" />
           </div>
-          <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
-            <SummaryRow label="Estoque antes" value={`${PICK.stock} ${c.unitPlural}`} />
-            <SummaryRow label="Estoque depois" value={`${restock ? PICK.stock + qty : PICK.stock} ${c.unitPlural}`} tone={restock ? 'success' : undefined} />
-            {!restock && <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6 }}>Item vai para avaria, sem retorno ao estoque vendável.</div>}
-          </div>
+          {product && (
+            <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
+              <SummaryRow label="Estoque antes" value={`${stock}`} />
+              <SummaryRow label="Estoque depois" value={`${restock ? stock + qty : stock}`} tone={restock ? 'success' : undefined} />
+              {!restock && <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6 }}>Item vai para avaria, sem retorno ao estoque vendável.</div>}
+            </div>
+          )}
+          {error && (
+            <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12, color: 'var(--fg)' }}>
+              {error}
+            </div>
+          )}
         </div>
       )}
     >
       <FormCard title="Produto devolvido" cols={1}>
-        <ProductPicker product={PICK} onClear={() => {}} />
+        <ProductPicker product={product} storeId={storeId} onSelect={setProduct} onClear={() => setProduct(null)} />
       </FormCard>
 
       <FormCard title="Detalhes da devolução" cols={2}>
+        <Field label="Unidade" required span={1}>
+          <SelectInput value={storeId} onChange={setStoreId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
+        </Field>
         <Field label="Quantidade" required span={1}>
-          <TextInput mono type="number" value={qty} onChange={(e) => setQty(+e.target.value || 0)} suffix={c.unit === 'unidade' ? 'un' : c.unit} />
+          <TextInput mono type="number" value={qty} onChange={(e) => setQty(+e.target.value || 0)} />
         </Field>
-        <Field label="Data da devolução" required span={1}>
-          <TextInput type="date" defaultValue="2026-09-18" />
-        </Field>
-        <Field label="Motivo" required span={2} hint="Obrigatório — alimenta o relatório de qualidade por fornecedor.">
-          <SelectInput value="Desistência do cliente" onChange={() => {}}
-            options={['Desistência do cliente', 'Defeito de fabricação', 'Variação incorreta', 'Produto errado entregue', 'Arrependimento (7 dias)']} />
-        </Field>
-        <Field label="Venda de origem" span={1}>
-          <TextInput mono defaultValue="#4198" />
-        </Field>
-        <Field label="Forma de estorno" span={1}>
-          <SelectInput value="Mesmo meio de pagamento" onChange={() => {}} options={['Mesmo meio de pagamento', 'Dinheiro', 'Crédito em loja', 'Troca por outro produto']} />
+        <Field label="Motivo" required span={2} hint="Alimenta o relatório de qualidade por fornecedor.">
+          <SelectInput value={reason} onChange={setReason} options={REASONS} />
         </Field>
         <Field label="Observações" span={2}>
-          <TextareaInput placeholder="Ex.: cliente apresentou nota fiscal, produto sem uso." />
+          <TextareaInput value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: cliente apresentou nota fiscal, produto sem uso." />
         </Field>
       </FormCard>
 
@@ -97,5 +119,3 @@ export function StockReturn() {
     </MovementPage>
   );
 }
-
-// === Adjustment ===

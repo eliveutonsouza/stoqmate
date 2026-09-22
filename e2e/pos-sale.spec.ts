@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
 
-test("POS: adicionar produto novo aparece no carrinho", async ({ page }) => {
+test("POS: adicionar produto real aparece no carrinho", async ({ page }) => {
   await page.goto("/pos");
-  await expect(page.getByText("Café em Grãos")).toHaveCount(1);
 
-  await page.locator("button").filter({ hasText: "Café em Grãos" }).first().click();
+  const firstProduct = page.getByTestId("pos-product").first();
+  await expect(firstProduct).toBeVisible();
+  await firstProduct.click();
 
-  await expect(page.getByText("Café em Grãos")).toHaveCount(2);
+  await expect(page.getByTestId("pos-cart-item")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Cobrar e finalizar" })).toBeEnabled();
 });

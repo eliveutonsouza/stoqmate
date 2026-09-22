@@ -62,3 +62,28 @@ export async function loadSaleReceipt(saleId: string) {
     .maybeSingle();
   return sale ?? null;
 }
+
+export async function loadPosData() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [{ data: stores }, { data: categories }, { data: products }, { data: openSessions }, { data: profile }] = await Promise.all([
+    supabase.from("stores").select("id, name").order("name"),
+    supabase.from("categories").select("id, name, icon, color, code").order("name"),
+    supabase
+      .from("products")
+      .select("id, sku, brand, name, attrs, sale_price, cost_price, category:categories(id, name, icon, color, code), stock_balances(store_id, qty)")
+      .order("name")
+      .limit(60),
+    supabase.from("cash_sessions").select("id, store_id").eq("status", "open"),
+    user ? supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+
+  return {
+    stores: stores ?? [],
+    categories: categories ?? [],
+    products: products ?? [],
+    cashSessionByStore: Object.fromEntries((openSessions ?? []).map((s) => [s.store_id, s.id])),
+    operatorName: profile?.full_name || user?.email || "Operador",
+  };
+}

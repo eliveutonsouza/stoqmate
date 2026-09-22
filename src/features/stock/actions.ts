@@ -14,10 +14,12 @@ function friendlyError(message: string) {
     "transferência não encontrada": "Transferência não encontrada.",
     "transferência já conferida": "Esta transferência já foi conferida.",
     "informe ao menos um item contado": "Conte pelo menos um item antes de fechar.",
+    "itens devolvido e entregue precisam ser diferentes": "Escolha um item diferente do que foi devolvido.",
   };
   for (const [key, friendly] of Object.entries(known)) {
     if (message.includes(key)) return friendly;
   }
+  if (message.includes("saldo insuficiente do item entregue")) return "Saldo insuficiente do item entregue.";
   if (message.includes("saldo insuficiente")) return "Saldo insuficiente na origem para um dos itens.";
   if (message.includes("justificativa precisa ter pelo menos 20 caracteres quando há divergência")) {
     return "Há divergência — a justificativa precisa ter pelo menos 20 caracteres.";
@@ -91,6 +93,36 @@ export async function transferReceiveAction(input: {
   revalidatePath("/stock/transfer");
   revalidatePath("/products");
   return { ok: true };
+}
+
+export async function stockExchangeAction(input: {
+  storeId: string; returnedProductId: string; deliveredProductId: string;
+  qty: number; reason: string; notes: string;
+}) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fn_stock_exchange", {
+    p_store_id: input.storeId, p_returned_product_id: input.returnedProductId,
+    p_delivered_product_id: input.deliveredProductId, p_qty: input.qty,
+    p_reason: input.reason, p_notes: input.notes || null,
+  });
+  if (error) return { error: friendlyError(error.message) };
+  revalidatePath("/stock/history");
+  revalidatePath("/products");
+  return { id: data as string };
+}
+
+export async function stockReturnAction(input: {
+  storeId: string; productId: string; qty: number; reason: string; restock: boolean; notes: string;
+}) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fn_stock_return", {
+    p_store_id: input.storeId, p_product_id: input.productId, p_qty: input.qty,
+    p_reason: input.reason, p_restock: input.restock, p_notes: input.notes || null,
+  });
+  if (error) return { error: friendlyError(error.message) };
+  revalidatePath("/stock/history");
+  revalidatePath("/products");
+  return { id: data as string };
 }
 
 export async function stockCountSubmitAction(input: {

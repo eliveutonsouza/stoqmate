@@ -13,7 +13,7 @@ const FISCAL_CHOICE = {
 export function OnbStep5({ data, goTo }) {
   const rows = [
     { step: 1, label: 'Nome da loja', value: data.name || '—' },
-    { step: 2, label: 'Logo', value: data.logo ? 'logo-bonsucesso.svg' : 'Iniciais automáticas' },
+    { step: 2, label: 'Logo', value: data.logoFile ? data.logoFile.name : 'Iniciais automáticas' },
     { step: 3, label: 'Cor principal', value: data.color.toUpperCase(), swatch: data.color },
     { step: 4, label: 'Categorias', value: data.cats.length ? data.cats.map(id => catById(id).name).join(', ') : 'Nenhuma' },
     { step: 4, label: 'Atributos', value: data.cats.length ? `${data.cats.reduce((s, id) => s + catById(id).attributes.length, 0)} configurados` : '—' },
@@ -22,7 +22,7 @@ export function OnbStep5({ data, goTo }) {
   ];
   return (
     <>
-      <OnbTitle title="Tudo certo?" desc="Confira antes de finalizar. Ao concluir, geramos um catálogo de exemplo nas categorias escolhidas — pode apagar quando quiser." />
+      <OnbTitle title="Tudo certo?" desc="Confira antes de finalizar. As categorias escolhidas ficam prontas para você cadastrar produtos." />
       <div className="card" style={{ overflow: 'hidden' }}>
         {rows.map((r, i) => (
           <div key={i} style={{
@@ -45,8 +45,8 @@ export function OnbStep5({ data, goTo }) {
       }}>
         <span style={{ color: 'var(--accent-text)', flexShrink: 0, marginTop: 1 }}><I.Sparkle size={15} /></span>
         <div style={{ fontSize: 12, color: 'var(--fg)', lineHeight: 1.55 }}>
-          <strong style={{ fontWeight: 600 }}>Catálogo de exemplo será criado:</strong> SKUs nas categorias escolhidas, 6 fornecedores,
-          10 locais de estoque e 30 dias de histórico de vendas. Use para testar relatórios e apague em Configurações › Dados da loja.
+          <strong style={{ fontWeight: 600 }}>Depois de concluir:</strong> cadastre seus produtos em Catálogo, ou importe uma planilha
+          em Catálogo › Importar produtos.
         </div>
       </div>
     </>
