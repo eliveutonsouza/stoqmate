@@ -1,6 +1,14 @@
 import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+// "É staff?" pra decidir se a conta sem tenant precisa terminar cadastro.
+// Não usa is_platform_staff(): ela exige 2FA (aal2), e logo após o login por
+// senha o staff ainda está em aal1 — cairia em /complete-signup por engano.
+export async function hasStaffRow(supabase: SupabaseClient): Promise<boolean> {
+  const { data } = await supabase.from("platform_staff").select("user_id").maybeSingle();
+  return Boolean(data);
+}
+
 export function slugify(name: string) {
   const base = name
     .toLowerCase()
