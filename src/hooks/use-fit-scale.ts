@@ -10,22 +10,24 @@ import * as React from "react";
 // Mede o ancestral [data-fit-root] (um container cuja largura não depende
 // do próprio preview — numa coluna `auto` o pai imediato tem exatamente a
 // largura da caixa, e a escala nunca voltaria a crescer). Sem ele, usa o pai.
+// `available` é a largura medida (null antes da 1ª medição), pra quem precisa
+// trocar de layout além de escalar.
 export function useFitScale(ref: React.RefObject<HTMLElement | null>, designWidth: number, maxScale: number) {
-  const [scale, setScale] = React.useState(maxScale);
+  const [available, setAvailable] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     const el = ref.current;
     const root = el?.closest<HTMLElement>("[data-fit-root]") ?? el?.parentElement;
     if (!el || !root) return;
     const measure = () => {
-      const available = root.clientWidth;
-      if (available > 0) setScale(Math.min(maxScale, available / designWidth));
+      if (root.clientWidth > 0) setAvailable(root.clientWidth);
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(root);
     return () => ro.disconnect();
-  }, [ref, designWidth, maxScale]);
+  }, [ref]);
 
-  return scale;
+  const scale = available == null ? maxScale : Math.min(maxScale, available / designWidth);
+  return { scale, available };
 }

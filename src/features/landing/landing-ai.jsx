@@ -45,7 +45,7 @@ export function LandingAI({ navigate }) {
 
           <div className="lp-shot">
             <ShowcaseFrame order={4} url="stoqmate.com.br/ai/queue" width={1380} height={880} scale={0.42}>
-              <AIQueue navigate={() => {}} />
+              <AIQueue enrichCount={14} forecastCount={9} anomalyCount={3} />
             </ShowcaseFrame>
           </div>
         </div>

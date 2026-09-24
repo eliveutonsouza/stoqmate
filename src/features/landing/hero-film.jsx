@@ -49,7 +49,7 @@ export function HeroFilm() {
   const ref = React.useRef(null);
   const reducedMotion = useReducedMotion();
   const inView = useInView(ref);
-  const scale = useFitScale(ref, STAGE_W, MAX_SCALE);
+  const { scale } = useFitScale(ref, STAGE_W, MAX_SCALE);
 
   return (
     <div
