@@ -179,14 +179,14 @@ export function ImportWizard({ stores, categories }) {
 
         {step === 2 && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+            <div className="g4 kpi-strip">
               {[
                 { l: 'Linhas no arquivo', v: `${records.length}` },
                 { l: 'Produtos novos', v: `${newCount}`, tone: 'success' },
                 { l: 'SKUs já existentes', v: `${updateCount}`, s: onDuplicate === 'update' ? 'serão atualizados' : 'serão ignorados' },
                 { l: 'Linhas com erro', v: `${errorRows.length}`, tone: errorRows.length ? 'danger' : undefined, s: 'serão ignoradas' },
               ].map((m, i) => (
-                <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ padding: '16px 18px' }}>
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
                   <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4, color: m.tone === 'success' ? 'var(--success)' : m.tone === 'danger' ? 'var(--danger)' : 'var(--fg)' }}>{m.v}</div>
                   {m.s && <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{m.s}</div>}
@@ -209,7 +209,7 @@ export function ImportWizard({ stores, categories }) {
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Linhas com erro</h3>
                   <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Corrija no arquivo e reimporte, ou siga sem elas.</p>
                 </div>
-                <table className="table">
+                <div className="table-scroll"><table className="table">
                   <thead><tr><th>SKU</th><th>Nome</th><th>Problema</th></tr></thead>
                   <tbody>
                     {errorRows.slice(0, 10).map((r, i) => (
@@ -220,7 +220,7 @@ export function ImportWizard({ stores, categories }) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
                 {errorRows.length > 10 && (
                   <div style={{ padding: '10px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--fg-muted)' }}>
                     +{errorRows.length - 10} outras linhas com erro
@@ -234,7 +234,7 @@ export function ImportWizard({ stores, categories }) {
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Pré-visualização</h3>
                 <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Primeiras linhas válidas que serão gravadas.</p>
               </div>
-              <table className="table">
+              <div className="table-scroll"><table className="table">
                 <thead><tr><th>SKU</th><th>Produto</th><th>Categoria</th><th className="num">Custo</th><th className="num">Venda</th><th className="num">Saldo inicial</th><th></th></tr></thead>
                 <tbody>
                   {validRows.slice(0, 8).map((r, i) => (
@@ -249,7 +249,7 @@ export function ImportWizard({ stores, categories }) {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           </>
         )}
@@ -263,7 +263,7 @@ export function ImportWizard({ stores, categories }) {
             <p style={{ margin: '12px 0 0', fontSize: 14, color: 'var(--fg-muted)', maxWidth: 460, lineHeight: 1.55 }}>
               {result.created} novos e {result.updated} atualizados. {result.errors.length > 0 ? `${result.errors.length} linhas rejeitadas pelo servidor.` : ''}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 28, width: '100%', maxWidth: 620 }}>
+            <div className="g3" style={{ gap: 12, marginTop: 28, width: '100%', maxWidth: 620 }}>
               {[['Produtos novos', result.created], ['Atualizados', result.updated], ['Ignorados', result.skipped]].map(([k, v]) => (
                 <div key={k} className="card" style={{ padding: 14 }}>
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{k}</div>

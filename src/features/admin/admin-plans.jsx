@@ -20,7 +20,7 @@ export function AdminPlans({ plans }) {
         actions={<button onClick={() => navigate('/admin/plans/new')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Criar plano</button>}
       />
       <Page>
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           {plans.length === 0 ? (
             <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhum plano cadastrado ainda.</div>
           ) : (

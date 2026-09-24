@@ -44,7 +44,7 @@ export function Roles() {
             </div>
             <button onClick={() => navigate('/settings/users')} className="btn btn-ghost btn-sm">Ver usuários <I.ChevronRight size={12} /></button>
           </div>
-          <table className="table">
+          <div className="table-scroll"><table className="table">
             <thead>
               <tr>
                 <th style={{ width: '38%' }}>Área</th>
@@ -83,7 +83,7 @@ export function Roles() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <div style={{ padding: '11px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', fontSize: 11.5, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
             <strong style={{ color: 'var(--fg)', fontWeight: 500 }}>Para o desenvolvimento:</strong> esconder o item de menu não é permissão.
             Toda rota desta tabela precisa da mesma checagem na API — senão o vendedor chega no relatório de lucratividade digitando o endereço.
@@ -116,7 +116,7 @@ export function Roles() {
               }}>{k === 'view' ? 'Consegue abrir' : 'Consegue alterar'}</button>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <div className="g4" style={{ gap: 12 }}>
             {ROLES.map(r => {
               const ok = TENANT_AREAS.filter(a => ACCESS[a.access[r.id] || 'none'] >= ACCESS[level]);
               return (

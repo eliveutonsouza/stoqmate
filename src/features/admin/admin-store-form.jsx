@@ -78,7 +78,7 @@ export function AdminStoreForm({ mode = 'new', plans, detail }) {
           : 'Criar um inquilino manualmente. Normalmente isso acontece pelo autosserviço no site.'}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             {error && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5 }}>{error}</div>}
 
@@ -123,7 +123,7 @@ export function AdminStoreForm({ mode = 'new', plans, detail }) {
 
             <FormCard title="Plano e assinatura" cols={1}>
               <Field label="Plano" required>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${plans.length}, 1fr)`, gap: 8 }}>
+                <div className={plans.length === 1 ? undefined : `g${Math.min(plans.length, 5)}`} style={{ gap: 8 }}>
                   {plans.map((p) => {
                     const on = planId === p.id;
                     return (
@@ -175,7 +175,7 @@ export function AdminStoreForm({ mode = 'new', plans, detail }) {
             )}
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo</div>
               <SummaryRow label="Plano" value={plan?.name ?? '—'} />

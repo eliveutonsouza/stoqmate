@@ -84,7 +84,7 @@ export function GlobalSearch() {
 
   return (
     <StoreShell route="/search" breadcrumb={['Busca']} navigate={navigate}>
-      <div style={{ padding: '22px 28px 0' }}>
+      <div className="page-pad" style={{ paddingTop: 22, paddingBottom: 0 }}>
         <div style={{ position: 'relative', maxWidth: 620 }}>
           <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }}>
             <I.Search size={16} />
@@ -112,7 +112,7 @@ export function GlobalSearch() {
         {ai.state === 'running' && <AIThinking label={`Respondendo "${asked}"`} detail="Consultando catálogo, saldos e receita por categoria da rede." />}
         {ai.state === 'error' && <AIError message={ai.error} onRetry={ask} />}
         {ai.state === 'done' && ai.data && (
-          <div className="card" style={{ overflow: 'hidden', borderColor: 'var(--accent)' }}>
+          <div className="card table-scroll" style={{ borderColor: 'var(--accent)' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', background: 'var(--accent-soft)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
                 <AIChip label="Resposta da IA" size="md" />

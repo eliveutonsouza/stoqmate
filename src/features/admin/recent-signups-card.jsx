@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/domain/status-badge';
 
 export function RecentSignupsCard({ navigate, signups }) {
   return (
-    <div className="card" style={{ overflow: 'hidden' }}>
+    <div className="card table-scroll">
       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Cadastros recentes</h3>

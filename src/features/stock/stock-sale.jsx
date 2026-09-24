@@ -99,7 +99,7 @@ export function StockSale({ stores, cashSessionByStore }) {
       <Page>
         <MovementNav route="/stock/sale" navigate={navigate} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '340px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
               <ProductPicker product={null} storeId={storeId} onSelect={addItem} />
@@ -123,7 +123,7 @@ export function StockSale({ stores, cashSessionByStore }) {
                   desc="Busque um produto acima para começar o atendimento."
                 />
               ) : (
-                <table className="table">
+                <div className="table-scroll"><table className="table">
                   <thead>
                     <tr>
                       <th>Produto</th><th>Variação</th>
@@ -175,7 +175,7 @@ export function StockSale({ stores, cashSessionByStore }) {
                       );
                     })}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </div>
 
@@ -207,7 +207,7 @@ export function StockSale({ stores, cashSessionByStore }) {
             </FormCard>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo</div>
               <SummaryRow label={`${units} ${units === 1 ? 'unidade' : 'unidades'}`} value={brl(gross)} />

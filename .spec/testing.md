@@ -33,6 +33,18 @@ mockado. Arquivo de teste fica colocado ao lado do fonte
   há comportamento condicional de verdade (reduced-motion vs. animado) que
   vale a pena travar, ao contrário de uma tela apresentacional comum.
 
+- **Responsividade** (projetos `mobile` = Pixel 7 e `tablet` = 820px no
+  `playwright.config.ts`, além do desktop):
+  - `responsive.spec.ts` passa por todas as rotas (mesma lista do smoke)
+    e falha se algum elemento passar da largura da viewport fora de um
+    scroller horizontal legítimo (`.table-scroll`, abas).
+    `document.scrollWidth` NÃO serve de critério: o shell do app rola
+    dentro de `[data-content-area]`, então a página nunca "rola pro
+    lado" mesmo com coluna espremida ou cortada por `overflow: hidden`.
+  - `mobile-nav.spec.ts`: drawer do app (abre, Esc, fecha ao navegar) e
+    hamburger público.
+  - `src/hooks/use-media-query.test.ts` cobre o hook de breakpoint.
+
 Roda contra o build de produção (`webServer` do `playwright.config.ts` faz
 `npm run build && npm run start`), não `next dev` — pega regressão que só
 aparece no SSG.

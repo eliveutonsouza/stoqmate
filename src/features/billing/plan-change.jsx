@@ -26,7 +26,7 @@ export function PlanChange() {
     <StoreShell route="/settings/subscription" breadcrumb={['Configurações', 'Assinatura', 'Trocar de plano']} navigate={navigate}>
       <PageHeader title="Trocar de plano" sub={`Hoje: ${cur.name} · ${SUB.units} lojas · ${brl(subTotal())}/mês`} />
       <Page width={980}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 20, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px', gap: 20, alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {PLANS.map(p => (
               <PlanOption key={p.id} plan={p} units={SUB.units} current={p.id === cur.id} selected={p.id === target} onSelect={() => setTarget(p.id)} />
@@ -40,7 +40,7 @@ export function PlanChange() {
             </div>
           </div>
 
-          <div className="card" style={{ padding: 18, position: 'sticky', top: 20 }}>
+          <div className="card" data-sticky style={{ padding: 18, position: 'sticky', top: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 12 }}>Resumo da troca</div>
             <SummaryRow label="Plano atual" value={`${cur.name} · ${brl(subTotal())}`} />
             <SummaryRow label="Novo plano" value={`${next.name} · ${brl(next.monthly * SUB.units)}`} />

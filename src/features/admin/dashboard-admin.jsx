@@ -29,7 +29,7 @@ export function DashboardAdmin({ overview }) {
                 { l: 'ARR projetado', v: brl(currentMrr * 12), s: 'MRR atual × 12' },
                 { l: 'Redes na plataforma', v: `${tenantCount}` },
               ].map((m, i) => (
-                <div key={i} style={{ padding: '16px 18px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ padding: '16px 18px' }}>
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
                   <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 6 }}>{m.v}</div>
                   {m.s && <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 4 }}>{m.s}</div>}

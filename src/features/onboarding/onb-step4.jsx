@@ -12,7 +12,7 @@ export function OnbStep4({ data, set }) {
         title="O que você vende?"
         desc="Cada categoria vem com um esquema de atributos e uma unidade de medida pré-configurados. Dá para editar tudo depois — e criar categorias do zero."
       />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      <div className="g2" style={{ gap: 8 }}>
         {MOCK.categories.map(c => {
           const on = data.cats.includes(c.id);
           const CIco = I[c.icon] || I.Box;

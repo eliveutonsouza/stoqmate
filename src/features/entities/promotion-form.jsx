@@ -74,7 +74,7 @@ function PromotionCreateForm({ categories }) {
         sub="Altera o preço de venda aparente durante a vigência. O preço de compra e a margem histórica não são afetados."
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="Identificação" cols={1}>
               <Field label="Nome da promoção" required hint="Aparece no relatório de descontos e no histórico da venda.">
@@ -164,7 +164,7 @@ function PromotionCreateForm({ categories }) {
             </FormCard>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {scope === 'product' && original > 0 && (
               <div className="card" style={{ padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Impacto</div>
@@ -231,7 +231,7 @@ function PromotionView({ promotion }) {
     <StoreShell route="/promotions/edit" breadcrumb={['Promoções', promotion.name]} navigate={navigate}>
       <PageHeader title={promotion.name} sub="Preço promocional aplicado durante a vigência." />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <FormCard title="Detalhes" cols={2}>
             <Field label="Abrangência" span={1}>
               <TextInput disabled value={

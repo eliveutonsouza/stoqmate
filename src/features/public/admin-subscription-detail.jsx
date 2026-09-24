@@ -43,7 +43,7 @@ export function AdminSubscriptionDetail({ detail }) {
         )}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g5 kpi-strip">
           {[
             { l: 'Status', badge: sub?.status ?? tenant.status },
             { l: 'MRR', v: brl(mrr) },
@@ -51,7 +51,7 @@ export function AdminSubscriptionDetail({ detail }) {
             { l: 'Próxima cobrança', v: sub ? (sub.cancel_at_period_end ? `cancela em ${fmtDate(sub.current_period_end)}` : fmtDate(sub.current_period_end)) : '—' },
             { l: 'LTV acumulado', v: brl(ltv), tone: 'success' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 4 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               {m.badge ? <div style={{ marginTop: 7 }}><StatusBadge status={m.badge} /></div> : (
                 <div style={{
@@ -63,7 +63,7 @@ export function AdminSubscriptionDetail({ detail }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 16, alignItems: 'start' }}>
+        <div className="split-2" style={{ '--a': '1fr', '--b': '1.4fr', gap: 16, alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
@@ -78,14 +78,14 @@ export function AdminSubscriptionDetail({ detail }) {
               ].map(([k, v, mono], i, arr) => (
                 <div key={k} style={{ display: 'flex', gap: 12, padding: '10px 18px', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
                   <span style={{ fontSize: 12, color: 'var(--fg-muted)', width: 128, flexShrink: 0 }}>{k}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, fontFamily: mono ? 'var(--font-mono)' : undefined }}>{v}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, fontFamily: mono ? 'var(--font-mono)' : undefined, minWidth: 0, overflowWrap: 'anywhere' }}>{v}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Faturas</h3>

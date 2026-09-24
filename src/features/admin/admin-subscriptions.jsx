@@ -24,7 +24,7 @@ export function AdminSubscriptions({ overview }) {
         sub={`${rows.length} rede(s) · ${brl(kpis.mrr)} de MRR · ${kpis.pastDueCount} inadimplente(s)`}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g5 kpi-strip">
           {[
             { l: 'MRR', v: brl(kpis.mrr) },
             { l: 'ARR projetado', v: brl(kpis.arr), s: 'MRR atual × 12' },
@@ -32,7 +32,7 @@ export function AdminSubscriptions({ overview }) {
             { l: 'Inadimplência', v: brl(kpis.pastDueTotal), s: `${kpis.pastDueCount} assinatura(s)`, tone: kpis.pastDueCount ? 'down' : undefined },
             { l: 'Conversão de trial', v: kpis.trialConversionPct == null ? '—' : `${kpis.trialConversionPct}%`, s: kpis.trialConversionPct == null ? 'nenhum trial concluído ainda' : 'trials já concluídos' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 4 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
               <div style={{ fontSize: 10, marginTop: 2, color: m.tone === 'up' ? 'var(--success)' : m.tone === 'down' ? 'var(--danger)' : 'var(--fg-soft)', fontFamily: m.tone ? 'var(--font-mono)' : undefined }}>{m.s}</div>
@@ -42,7 +42,7 @@ export function AdminSubscriptions({ overview }) {
 
         <Toolbar placeholder="Buscar rede…" right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{rows.length} rede(s)</span>} />
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <table className="table">
             <thead>
               <tr>

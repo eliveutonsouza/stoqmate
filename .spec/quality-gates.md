@@ -12,7 +12,9 @@ Portões inegociáveis antes de considerar qualquer mudança pronta:
    acumulador mutado em `.map()` vira `reduce`).
 2. `next build` passa limpo — build de produção, não só `next dev`.
 3. `npx vitest run` verde.
-4. `npx playwright test` verde.
+4. `npx playwright test` verde — nos 3 tamanhos (desktop, `mobile`,
+   `tablet`). Tela nova ou mexida não pode estourar a largura no celular
+   (`responsive.spec.ts`).
 5. `npx storybook build` sai sem erro (as ~40 stories do design system
    continuam montando).
 6. `supabase db push` sai limpo contra o projeto Supabase do dev antes de

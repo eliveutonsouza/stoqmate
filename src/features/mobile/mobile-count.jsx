@@ -46,9 +46,9 @@ export function MobileCount({ stores, locations }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#E7E4DD', padding: '24px 20px 40px' }}>
+    <div className="phone-page" style={{ minHeight: '100vh', background: '#E7E4DD' }}>
       <div style={{ maxWidth: PHONE_W * PHONE_SCALE + 40, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+        <div className="phone-page-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.015em', color: '#16140F' }}>Conferência no celular</div>
             <div style={{ fontSize: 12.5, color: '#5C574F', marginTop: 3 }}>Contagem cega — o saldo do sistema só aparece no fechamento.</div>
@@ -57,7 +57,7 @@ export function MobileCount({ stores, locations }) {
           <button onClick={() => navigate('/stock')} style={{ height: 26, padding: '0 9px', borderRadius: 5, fontSize: 12, fontWeight: 500, fontFamily: 'inherit', background: 'transparent', color: '#5C574F', border: '1px solid transparent', cursor: 'pointer' }}>Sair</button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div className="phone-page-head" style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
           <select value={storeId} onChange={(e) => { setStoreId(e.target.value); setLocationId(''); }} style={{ height: 34, borderRadius: 8, border: '1px solid #C9C4BA', padding: '0 10px', fontSize: 12.5 }}>
             {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
@@ -68,10 +68,10 @@ export function MobileCount({ stores, locations }) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div>
+          <div className="phone-bleed-item">
             <PhoneFrame>
               {step === 'scan' && (
-                <div style={{ padding: '64px 18px 48px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', color: '#F6F3EC' }}>
+                <div style={{ padding: 'var(--phone-pad, 64px 18px 48px)', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', color: '#F6F3EC' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                     <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'rgba(246,243,236,0.6)' }}>{rows.length} contados</span>
                   </div>
@@ -88,7 +88,7 @@ export function MobileCount({ stores, locations }) {
               )}
 
               {step === 'count' && active && (
-                <div style={{ padding: '64px 18px 48px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', color: '#F6F3EC' }}>
+                <div style={{ padding: 'var(--phone-pad, 64px 18px 48px)', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', color: '#F6F3EC' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: 12, borderRadius: 12, marginBottom: 18, background: 'rgba(255,255,255,0.07)' }}>
                     <ProductThumb category={active.category} brand={active.brand} attrs={active.attrs} size={38} />
                     <div style={{ minWidth: 0, flex: 1 }}>
@@ -121,7 +121,7 @@ export function MobileCount({ stores, locations }) {
               )}
 
               {step === 'list' && (
-                <div style={{ padding: '64px 18px 48px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', color: '#F6F3EC' }}>
+                <div style={{ padding: 'var(--phone-pad, 64px 18px 48px)', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', color: '#F6F3EC' }}>
                   <div style={{ fontSize: 11, color: 'rgba(246,243,236,0.55)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Contados nesta sessão</div>
                   <div className="no-bars" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {rows.map((r, i) => (

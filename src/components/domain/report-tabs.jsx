@@ -9,7 +9,7 @@ const REPORT_TABS = [
 
 export function ReportTabs({ route, navigate }) {
   return (
-    <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 8, alignSelf: 'flex-start' }}>
+    <div className="no-bars" style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 8, alignSelf: 'flex-start', maxWidth: '100%', overflowX: 'auto' }}>
       {REPORT_TABS.map(t => {
         const active = route === t.r;
         return (

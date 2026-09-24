@@ -36,14 +36,14 @@ export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems
         )}
       />
       <Page gap={20}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g4 kpi-strip">
           {[
             { l: 'Itens em estoque', v: overview.total_qty.toLocaleString('pt-BR'), s: 'toda a rede' },
             { l: 'Valor de custo', v: brl(overview.total_cost_value), s: 'a preço de custo' },
             { l: 'SKUs em ruptura', v: `${overview.rupture_count}`, s: 'saldo zerado', tone: overview.rupture_count > 0 ? 'danger' : undefined },
             { l: 'SKUs em alerta', v: `${overview.low_stock_count}`, s: 'abaixo do mínimo', tone: overview.low_stock_count > 0 ? 'warning' : undefined },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{
                 fontSize: 22, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4,
@@ -56,14 +56,14 @@ export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems
 
         <div>
           <div className="section-h"><h3>Registrar movimentação</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <div className="g3" style={{ gap: 10 }}>
             {flows.map(f => (
               <HubCard key={f.r} icon={f.i} title={f.t} desc={f.d} accent onClick={() => navigate(f.r)} meta={[['30 dias', `${flowCounts[f.k] ?? 0}`]]} />
             ))}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>
+        <div className="split-2" style={{ '--a': '1.2fr', '--b': '1fr', alignItems: 'stretch' }}>
           <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
               <div>

@@ -21,7 +21,7 @@ export function TrialEnded() {
           Escolha um plano para o balcão voltar a funcionar hoje.
         </p>
 
-        <div className="card" style={{ padding: 18, margin: '26px 0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div className="card g4" style={{ padding: 18, margin: '26px 0', gap: 16 }}>
           {[
             ['312', 'SKUs cadastrados'], ['184', 'vendas registradas'],
             ['9', 'notas lidas pela IA'], ['R$ 2.140', 'em ruptura evitada'],
@@ -33,7 +33,7 @@ export function TrialEnded() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        <div className="g3" style={{ gap: 12 }}>
           {PLANS.map(p => <PlanOption key={p.id} plan={p} selected={plan === p.id} onSelect={() => setPlan(p.id)} />)}
         </div>
 

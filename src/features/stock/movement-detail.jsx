@@ -54,7 +54,7 @@ export function MovementDetail({ movement: m }) {
         )}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid var(--line)' }}>
@@ -105,7 +105,7 @@ export function MovementDetail({ movement: m }) {
             </div>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {(m.unit_price || m.unit_cost) && (
               <div className="card" style={{ padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Financeiro</div>

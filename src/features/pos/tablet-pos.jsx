@@ -25,6 +25,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
   const [discountPct, setDiscountPct] = React.useState(0);
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
+  const cartRef = React.useRef(null);
 
   const term = query.trim().toLowerCase();
   const shown = products.filter((p) => {
@@ -69,9 +70,9 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#E7E4DD', padding: 24, display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 1024 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+    <div className="pos-page">
+      <div className="pos-wrap" style={{ width: '100%', maxWidth: 1024 }}>
+        <div className="pos-preview-bar" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
           <span style={{ fontSize: 12, color: '#5C574F' }}>Modo balcão · tablet 1024 × 768 · alvos de toque de 56 px</span>
           <div style={{ flex: 1 }}></div>
           <button onClick={() => navigate('/stock/sale')} style={{ height: 26, padding: '0 9px', borderRadius: 5, fontSize: 12, fontWeight: 500, fontFamily: 'inherit', background: '#fff', color: '#16140F', border: '1px solid #C9C4BA', cursor: 'pointer' }}>Abrir versão desktop</button>
@@ -79,17 +80,11 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
         </div>
 
         {/* Tablet bezel */}
-        <div style={{
-          background: '#1c1a16', borderRadius: 26, padding: 14,
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.14), 0 24px 56px rgba(20,18,13,0.30)',
-        }}>
-          <div style={{
-            background: 'var(--bg)', borderRadius: 14, overflow: 'hidden',
-            height: 768, display: 'grid', gridTemplateColumns: '1fr 372px',
-          }}>
+        <div className="pos-bezel">
+          <div className="pos-screen">
             {/* LEFT: catalogue */}
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: '1px solid var(--line)' }}>
-              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="pos-catalog" style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, borderRight: '1px solid var(--line)' }}>
+              <div className="pos-head" style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <I.Brand size={24} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.012em' }}>{stores.find((s) => s.id === storeId)?.name || 'Loja'}</div>
@@ -104,6 +99,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                 <button onClick={() => navigate('/cash')} className="btn btn-outline" style={{ height: 40 }}>
                   <I.Credit size={15} /> Caixa
                 </button>
+                <button onClick={() => navigate('/dashboard')} className="btn btn-ghost pos-touch-only" style={{ height: 40 }}>Sair</button>
               </div>
 
               <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)' }}>
@@ -135,11 +131,11 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                 </div>
               </div>
 
-              <div className="no-bars" style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+              <div className="no-bars" data-pos-scroll style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
                 {shown.length === 0 ? (
                   <div style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>Nenhum produto encontrado.</div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  <div className="pos-products">
                     {shown.map(p => (
                       <button key={p.id} data-testid="pos-product" onClick={() => add(p)} style={{
                         display: 'flex', flexDirection: 'column', gap: 0, textAlign: 'left',
@@ -163,7 +159,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
             </div>
 
             {/* RIGHT: cart + payment */}
-            <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-elev)', minWidth: 0 }}>
+            <div ref={cartRef} className="pos-cart" style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-elev)', minWidth: 0, minHeight: 0 }}>
               <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>Atendimento</div>
@@ -175,7 +171,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                 <button onClick={() => setCart([])} className="btn btn-ghost" style={{ height: 40 }}>Limpar</button>
               </div>
 
-              <div className="no-bars" style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+              <div className="no-bars" data-pos-scroll style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
                 {cart.length === 0 ? (
                   <div style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13, lineHeight: 1.6 }}>
                     Toque num produto<br/>ou bipe o código de barras.
@@ -257,6 +253,16 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="pos-jump">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{cart.length} {cart.length === 1 ? 'item' : 'itens'} · {units} un</div>
+          <div style={{ fontSize: 18, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{brl(net)}</div>
+        </div>
+        <button onClick={() => cartRef.current?.scrollIntoView({ behavior: 'smooth' })} className="btn btn-primary" style={{ height: 44 }}>
+          Ver carrinho
+        </button>
       </div>
     </div>
   );

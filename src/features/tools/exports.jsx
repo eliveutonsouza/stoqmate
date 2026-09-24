@@ -50,7 +50,7 @@ export function Exports() {
         )}
         <div>
           <div className="section-h"><h3>Exportar agora</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div className="g3" style={{ gap: 12 }}>
             {CARDS.map((c) => (
               <HubCard key={c.kind} icon={c.i} title={c.t} desc={pendingKind === c.kind ? 'Gerando…' : c.d} accent
                 meta={[['Formato', 'CSV']]} onClick={() => download(c.kind)} />

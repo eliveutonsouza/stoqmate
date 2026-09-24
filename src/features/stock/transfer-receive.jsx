@@ -98,7 +98,7 @@ function TransferReceiveForm({ transfer, navigate }) {
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
@@ -110,7 +110,7 @@ function TransferReceiveForm({ transfer, navigate }) {
                   <I.Check size={12} /> Conferir tudo como enviado
                 </button>
               </div>
-              <table className="table">
+              <div className="table-scroll"><table className="table">
                 <thead>
                   <tr>
                     <th>Produto</th><th>Categoria</th><th>Variação</th>
@@ -147,7 +147,7 @@ function TransferReceiveForm({ transfer, navigate }) {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             </div>
 
             {hasDivergence && (
@@ -168,7 +168,7 @@ function TransferReceiveForm({ transfer, navigate }) {
             )}
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo da conferência</div>
               <SummaryRow label="SKUs na remessa" value={`${lines.length}`} />

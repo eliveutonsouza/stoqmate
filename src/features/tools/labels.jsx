@@ -77,10 +77,10 @@ export function Labels() {
         )}
       />
       <Page>
-        <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 16, alignItems: 'start' }}>
+        <div className="no-print split-aside" style={{ '--aside': '340px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="Modelo" cols={1}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              <div className="g2" style={{ gap: 8 }}>
                 {TEMPLATES.map(t => {
                   const on = template === t.k;
                   return (
@@ -108,7 +108,7 @@ export function Labels() {
             </FormCard>
 
             <FormCard title="O que imprimir na etiqueta" cols={1}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div className="g3" style={{ gap: 8 }}>
                 {[
                   ['name', 'Nome do produto'], ['sku', 'SKU'], ['barcode', 'Código de barras'],
                   ['price', 'Preço de venda'], ['variant', 'Atributos da variação'],
@@ -132,7 +132,7 @@ export function Labels() {
                 <EmptyState icon={<I.Tag size={18} />} title="Fila vazia" desc="Busque produtos acima para adicionar." />
               ) : (
                 <>
-                  <table className="table">
+                  <div className="table-scroll"><table className="table">
                     <thead>
                       <tr><th>Produto</th><th>SKU</th><th>Variação</th><th className="num">Preço</th><th style={{ width: 90 }}>Cópias</th><th style={{ width: 30 }}></th></tr>
                     </thead>
@@ -148,7 +148,7 @@ export function Labels() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </table></div>
                   <div style={{ padding: '10px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--fg-muted)' }}>
                     {queue.length} SKUs · {totalLabels} etiquetas
                   </div>
@@ -157,7 +157,7 @@ export function Labels() {
             </div>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 12 }}>Pré-visualização</div>
               <div style={{

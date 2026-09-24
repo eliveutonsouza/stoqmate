@@ -72,10 +72,10 @@ export function EntryOCR({ stores, categories, products, quota }) {
       <Page>
         <MovementNav route="/stock/entry" navigate={navigate} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="Origem da nota" desc="Em produção: foto, PDF ou XML. Aqui, o texto da nota alimenta a mesma extração." cols={1}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div className="g3" style={{ gap: 8 }}>
                 {[
                   { i: <I.QR size={15} />, t: 'Foto da nota', d: 'Papel do fornecedor' },
                   { i: <I.Download size={15} />, t: 'PDF ou XML', d: 'DANFE eletrônica' },
@@ -113,7 +113,7 @@ export function EntryOCR({ stores, categories, products, quota }) {
             {task.state === 'error' && <AIError message={task.error} onRetry={extract} />}
 
             {rows && rows.length > 0 && (
-              <div className="card" style={{ overflow: 'hidden' }}>
+              <div className="card table-scroll">
                 <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -198,7 +198,7 @@ export function EntryOCR({ stores, categories, products, quota }) {
             )}
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo da entrada</div>
               {rows ? (

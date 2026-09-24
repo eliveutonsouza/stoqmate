@@ -40,6 +40,36 @@ classes utilitárias de `src/app/design-system.css` (`.btn`, `.card`,
 existentes — não migrar isso silenciosamente para Tailwind puro; é decisão
 de design, não bug.
 
+## Responsividade
+
+O app inteiro (site público, loja e console admin) funciona de 375px pra
+cima. Breakpoints: **1080px** (telas médias perdem colunas), **900px**
+(tablet: sidebar vira drawer, layouts com painel lateral empilham),
+**640px** (celular: grids e formulários em 1 coluna).
+
+- **Layout que muda com a largura é classe, nunca `style={{}}`.** Estilo
+  inline vence classe e não aceita media query. As classes ficam em
+  `src/app/design-system.css`, bloco "Responsividade":
+  - grids: `.g2`–`.g5`, `.kpi-strip` (faixa de KPIs; separador vem do
+    gap, nunca de `borderRight` por item);
+  - painel lateral: `.split-2`, `.split-aside`, `.split-nav`, com largura
+    via CSS var (`--aside`, `--nav`, `--a`/`--b`). Filho sticky ganha
+    `data-sticky` pra ficar estático quando empilha;
+  - tabelas: `.table-scroll` (a tabela rola; nunca `overflow: hidden`
+    cortando coluna);
+  - formulários: `.form-grid` (dentro do `FormCard`);
+  - shell: `.app-shell`/`.app-sidebar` (via `AppFrame`, em
+    `components/layout/app-frame.jsx`);
+  - helpers: `.hide-tablet`/`.show-tablet`/`.hide-mobile`/`.show-mobile`.
+- Espaçamento lateral de página: token `--page-pad` (`.page-pad`).
+- `useMediaQuery` (`src/hooks/use-media-query.ts`) só quando a
+  **estrutura** muda (ex.: `PhoneFrame` com moldura no desktop, tela cheia
+  no celular). Refluxo de layout é CSS puro.
+- Objeto de tamanho fixo escalado (preview de tela, filme do hero) usa
+  `useFitScale`: `transform: scale` sozinho não reduz a caixa de layout.
+- Telas "de dispositivo" (`/mobile/*`, `/pos`) são prévia com moldura no
+  desktop e ocupam o aparelho de verdade abaixo de 640px (PDV: até 1024px).
+
 ## Mudar essa fronteira exige autorização
 
 Mover um componente entre `ui/`/`layout/`/`domain/`/`features/`, ou decidir

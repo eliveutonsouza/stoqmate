@@ -96,7 +96,7 @@ export function ShelfForm({ mode = 'new', categories = [], stores = [], location
         </FormCard>
 
         <FormCard title="Categorias esperadas" desc="Usado para sugerir o local no cadastro de produtos." cols={1}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+          <div className="g3" style={{ gap: 6 }}>
             {categories.map((c) => (
               <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
                 <input type="checkbox" checked={categoryIds.has(c.id)} onChange={() => toggleCategory(c.id)} /> {c.name}

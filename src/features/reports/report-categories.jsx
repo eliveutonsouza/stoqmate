@@ -24,12 +24,12 @@ export function ReportCategories({ report }) {
       <Page>
         <ReportTabs route="/reports/categories" navigate={navigate} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g2 kpi-strip">
           {[
             { l: 'Categoria líder em receita', v: leaderRevenue?.name ?? '—', s: leaderRevenue ? `${((leaderRevenue.revenue / total) * 100).toFixed(1)}% do faturamento` : 'sem venda no período' },
             { l: 'Categoria líder em volume', v: leaderVolume?.name ?? '—', s: leaderVolume ? `${leaderVolume.units.toLocaleString('pt-BR')} ${leaderVolume.unit_plural} vendidas` : 'sem venda no período' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 1 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.022em', marginTop: 4 }}>{m.v}</div>
               <div style={{ fontSize: 10, marginTop: 2, color: 'var(--fg-muted)' }}>{m.s}</div>
@@ -37,7 +37,7 @@ export function ReportCategories({ report }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="g2">
           <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
             <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Participação no faturamento</h3>
             <p style={{ margin: '0 0 20px', fontSize: 12, color: 'var(--fg-muted)' }}>Do total vendido no período.</p>
@@ -64,7 +64,7 @@ export function ReportCategories({ report }) {
             )}
           </div>
 
-          <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="card table-scroll">
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Desempenho por categoria</h3>
             </div>
@@ -99,7 +99,7 @@ export function ReportCategories({ report }) {
           </div>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Top produtos da rede</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Ordenado por receita no período.</p>

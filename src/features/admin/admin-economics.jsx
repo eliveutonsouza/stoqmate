@@ -22,14 +22,14 @@ export function AdminEconomics() {
         actions={<button onClick={() => navigate('/admin/plans')} className="btn btn-outline btn-sm">Ver planos</button>}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g4 kpi-strip">
           {[
             { l: 'Custo do crédito', v: cents(CREDIT_UNIT_COST), s: `pior operação + 25% de folga` },
             { l: 'Infra por loja/mês', v: money(infraFor(PLANS[1])), s: `US$ ${INFRA_TOTAL_USD.toFixed(0)} rateados por peso em ${INFRA_STORES} lojas` },
             { l: 'Margem bruta mínima', v: Math.min(...rows.map(r => r.e.margin)).toFixed(0) + '%', s: 'no cenário P90, cota inteira usada' },
             { l: 'Margem no uso típico', v: (rows.reduce((s, r) => s + r.e.p50Margin, 0) / rows.length).toFixed(0) + '%', s: 'P50 · 45% da cota' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4, fontFamily: 'var(--font-mono)' }}>{m.v}</div>
               <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 3 }}>{m.s}</div>
@@ -37,7 +37,7 @@ export function AdminEconomics() {
           ))}
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Margem por plano</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>
@@ -88,8 +88,8 @@ export function AdminEconomics() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.35fr 1fr', gap: 16, alignItems: 'start' }}>
-          <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="split-2" style={{ '--a': '1.35fr', '--b': '1fr' }}>
+          <div className="card table-scroll">
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Custo real de cada operação de IA</h3>
               <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>
@@ -185,7 +185,7 @@ export function AdminEconomics() {
           </div>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Sensibilidade ao câmbio</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>
@@ -228,7 +228,7 @@ export function AdminEconomics() {
 
         <div className="card" style={{ padding: 20 }}>
           <h3 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Leitura do estudo</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div className="g2" style={{ gap: 18 }}>
             {[
               ['A precificação não causa prejuízo', `Com Haiku 4.5 a US$ ${TOKEN.in.toFixed(2)}/US$ ${TOKEN.out.toFixed(2)} por milhão de tokens, a operação mais cara do sistema — ler uma nota fiscal por foto — custa ${cents(AI_OPS.find(o => o.id === 'ocr').cost)}. A cota inteira do Controle custa ${money(planEconomics(PLANS[1]).aiCost)} contra ${money(PLANS[1].monthly)} de receita.`],
               ['O gargálo não é a IA, é a infra fixa', `A ${INFRA_STORES} lojas o Supabase e o resto da plataforma pesam ${money(INFRA_PER_STORE)} por loja na média — ${money(infraFor(PLANS[0]))} no Balcão e ${money(infraFor(PLANS[2]))} numa unidade de rede. Abaixo de 40 lojas esse rateio dobra e o plano de entrada aperta: ele só fecha conta com volume.`],

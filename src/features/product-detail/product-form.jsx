@@ -139,10 +139,10 @@ export function ProductForm({ categories, suppliers, locations, product }) {
         )}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 296px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '296px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="Categoria" desc="Define quais atributos o produto terá e como o estoque é contado." cols={1}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div className="g3" style={{ gap: 8 }}>
                 {cats.map((cc) => {
                   const active = catId === cc.id;
                   const CIco = I[cc.icon] || I.Box;
@@ -256,7 +256,7 @@ export function ProductForm({ categories, suppliers, locations, product }) {
             </FormCard>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 12 }}>SKU gerado</div>
               <div style={{

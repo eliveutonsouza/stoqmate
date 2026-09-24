@@ -44,13 +44,13 @@ export function NetworkUnits({ units, totalItems, totalSkus, planName, storeLimi
     <StoreShell route="/settings/units" breadcrumb={['Configurações', 'Unidades']} navigate={navigate}>
       <PageHeader title="Configurações" sub="Identidade visual, dados da empresa, unidades, equipe e assinatura." />
       <SettingsLayout route="/settings/units" navigate={navigate}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g3 kpi-strip">
           {[
             { l: 'Unidades', v: `${units.length}`, s: `${storeCount} loja${storeCount === 1 ? '' : 's'}${storeLimit ? ` de ${storeLimit}` : ''}` },
             { l: 'SKUs na rede', v: totalSkus.toLocaleString('pt-BR'), s: 'com saldo em algum local' },
             { l: 'Itens em estoque', v: totalItems.toLocaleString('pt-BR'), s: 'somando todas' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
               <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 2 }}>{m.s}</div>
@@ -58,7 +58,7 @@ export function NetworkUnits({ units, totalItems, totalSkus, planName, storeLimi
           ))}
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Unidades da rede</h3>

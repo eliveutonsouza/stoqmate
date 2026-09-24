@@ -103,7 +103,7 @@ export function Suppliers({ initialSuppliers, categories }) {
 
             {listError && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{listError}</div>}
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <table className="table">
                 <thead>
                   <tr>
@@ -152,7 +152,7 @@ export function Suppliers({ initialSuppliers, categories }) {
       <Modal open={formOpen} onClose={() => { setFormOpen(false); setF(emptyForm()); }} title="Cadastrar fornecedor" desc="Dados usados nas entradas de compra e nos relatórios de origem." width={520}
         footer={<><button onClick={() => { setFormOpen(false); setF(emptyForm()); }} className="btn btn-ghost">Cancelar</button><button onClick={submit} disabled={pending} className="btn btn-primary">{pending ? 'Salvando…' : 'Salvar fornecedor'}</button></>}>
         <Field label="Nome do fornecedor" required><TextInput value={f.name} onChange={(e) => set('name', e.target.value)} placeholder="TechDistrib Comércio Ltda." /></Field>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="g2" style={{ gap: 14 }}>
           <Field label="CNPJ" hint="Formato 00.000.000/0000-00"><TextInput mono value={f.cnpj} onChange={(e) => set('cnpj', e.target.value)} placeholder="00.000.000/0001-00" /></Field>
           <Field label="Telefone"><TextInput mono value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="(11) 4002-1100" /></Field>
         </div>

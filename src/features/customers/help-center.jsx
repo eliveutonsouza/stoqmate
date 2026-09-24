@@ -83,7 +83,7 @@ export function HelpCenter() {
 
         <div>
           <div className="section-h"><h3>Por assunto</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <div className="g4" style={{ gap: 12 }}>
             {TOPICS.map(t => {
               const Ico = I[t.i] || I.Box;
               return (
@@ -97,7 +97,7 @@ export function HelpCenter() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+        <div className="g2" style={{ gap: 12 }}>
           <HubCard icon={<I.Users size={15} />} title="Falar por email" desc={`Escreva pra ${SUPPORT_EMAIL} com sua dúvida.`} accent onClick={() => window.location.assign(`mailto:${SUPPORT_EMAIL}`)} />
           <HubCard icon={<I.Sparkle size={15} />} title="Migração assistida" desc="Peça ajuda por email pra importar seu catálogo." accent onClick={() => window.location.assign(`mailto:${SUPPORT_EMAIL}?subject=Migra%C3%A7%C3%A3o%20assistida`)} />
         </div>

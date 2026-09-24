@@ -82,10 +82,10 @@ export function BulkPricing({ suppliers, categories, brands }) {
         sub="Fornecedor aumentou? Repasse para dezenas de SKUs de uma vez, sem abrir um por um."
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="A quais produtos aplicar" cols={1}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div className="g3" style={{ gap: 8 }}>
                 {[
                   { k: 'supplier', t: 'Por fornecedor', d: 'Todos os SKUs de um fornecedor.' },
                   { k: 'category', t: 'Por categoria', d: 'Todos os SKUs de uma categoria.' },
@@ -150,7 +150,7 @@ export function BulkPricing({ suppliers, categories, brands }) {
               </Field>
             </FormCard>
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Simulação</h3>
                 <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>
@@ -205,7 +205,7 @@ export function BulkPricing({ suppliers, categories, brands }) {
             </div>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Impacto</div>
               <SummaryRow label="SKUs afetados" value={`${rows.length}`} />

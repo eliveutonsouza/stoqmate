@@ -69,7 +69,7 @@ export function FirstRun({ status }) {
 
         <div>
           <div className="section-h"><h3>Como as telas ficam sem dados</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div className="g3" style={{ gap: 12 }}>
             {[
               { i: <I.Box size={18} />, t: 'Catálogo vazio', d: 'Nenhum produto cadastrado. Importe uma planilha ou cadastre o primeiro à mão.', a: 'Importar planilha', r: '/products/import' },
               { i: <I.Activity size={18} />, t: 'Sem movimentações', d: 'O histórico começa na primeira entrada de compra ou venda registrada.', a: 'Registrar entrada', r: '/stock/entry' },

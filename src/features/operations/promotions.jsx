@@ -57,7 +57,7 @@ export function Promotions({ promotions }) {
         onTab={setTab}
       />
       <Page>
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           {rows.length === 0 ? (
             <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhuma promoção aqui.</div>
           ) : (

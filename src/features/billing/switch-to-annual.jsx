@@ -25,7 +25,7 @@ export function SwitchToAnnual() {
     <StoreShell route="/settings/subscription" breadcrumb={['Configurações', 'Assinatura', 'Mudar para anual']} navigate={navigate}>
       <PageHeader title="Mudar para o plano anual" sub={`${p.name} · ${SUB.units} lojas · hoje você paga ${brl(subTotal())} por mês`} />
       <Page width={980}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 330px', gap: 20, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '330px', gap: 20, alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="card" style={{ padding: 22, borderColor: 'var(--accent)' }}>
               <span className="badge badge-accent" style={{ marginBottom: 12 }}>{ANNUAL.freeMonths} meses grátis</span>
@@ -75,7 +75,7 @@ export function SwitchToAnnual() {
             </FormCard>
           </div>
 
-          <div className="card" style={{ padding: 18, position: 'sticky', top: 20 }}>
+          <div className="card" data-sticky style={{ padding: 18, position: 'sticky', top: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 12 }}>Resumo</div>
             <SummaryRow label={`${p.name} anual · ${SUB.units} lojas`} value={brl(s.yearly)} />
             <SummaryRow label={`Crédito dos ${daysLeft} dias pagos`} value={'− ' + brl(credit)} tone="success" />

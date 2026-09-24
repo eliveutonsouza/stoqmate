@@ -23,14 +23,14 @@ export function ReportProfit({ report, monthly }) {
       <Page>
         <ReportTabs route="/reports/profit" navigate={navigate} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g4 kpi-strip">
           {[
             { l: 'Custo dos itens vendidos', v: brl(totalBuy) },
             { l: 'Total vendido', v: brl(totalSell), s: `${report.units} unidades vendidas` },
             { l: 'Lucro bruto', v: brl(totalProfit), tone: 'up' },
             { l: 'Margem média', v: margin.toFixed(1) + '%' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4, color: m.tone === 'up' ? 'var(--success)' : 'var(--fg)' }}>{m.v}</div>
               {m.s && <div style={{ fontSize: 11, marginTop: 2, color: 'var(--fg-muted)' }}>{m.s}</div>}
@@ -66,7 +66,7 @@ export function ReportProfit({ report, monthly }) {
           </div>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Lucro por produto</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Ordenado por lucro bruto no período.</p>

@@ -54,13 +54,13 @@ export function Customers({ customers }) {
         actions={<button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Cadastrar cliente</button>}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g3 kpi-strip">
           {[
             { l: 'Clientes cadastrados', v: `${customers.length}` },
             { l: 'Total gasto (identificado)', v: brl(totalSpent) },
             { l: 'Crédito em loja aberto', v: brl(totalCredit), s: `${withCredit.length} clientes`, tone: 'warn' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
               {m.s && <div style={{ fontSize: 10.5, marginTop: 2, color: m.tone === 'warn' ? 'var(--warning)' : 'var(--fg-muted)' }}>{m.s}</div>}
@@ -71,7 +71,7 @@ export function Customers({ customers }) {
         <Toolbar placeholder="Buscar por nome, documento ou telefone…"
           right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{filtered.length} de {customers.length}</span>} />
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           {filtered.length === 0 ? (
             <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhum cliente encontrado.</div>
           ) : (

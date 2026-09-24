@@ -94,7 +94,7 @@ export function SettingsSubscription({ billing }) {
 
         <div>
           <h3 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600 }}>{subscription ? 'Trocar de plano' : 'Assinar um plano'}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div className="g3" style={{ gap: 12 }}>
             {plans.map((p) => (
               <div key={p.id} className="card" style={{ padding: 16, borderColor: p.id === currentPlanId ? 'var(--accent)' : undefined }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -119,7 +119,7 @@ export function SettingsSubscription({ billing }) {
           </div>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Histórico de faturas</h3>
           </div>

@@ -38,7 +38,7 @@ export function ProductDetail({ detail }) {
         )}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
+        <div className="split-nav" style={{ '--nav': '300px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {p.photo_url ? (
               <div onClick={() => setPhotoOpen(true)} style={{ height: 240, cursor: 'zoom-in', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--line)' }}>
@@ -73,14 +73,14 @@ export function ProductDetail({ detail }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+            <div className="g4 kpi-strip">
               {[
                 { l: 'Nesta unidade', v: `${currentStock}`, s: `${c.unit_plural} · mín. ${p.min_stock}` },
                 { l: 'Preço de compra', v: brl(p.cost_price), s: 'atual' },
                 { l: 'Preço de venda', v: brl(p.sale_price), s: 'sem promoção ativa' },
                 { l: 'Margem', v: margin.toFixed(1) + '%', s: brl(p.sale_price - p.cost_price) + ' por unidade', tone: margin > 0 ? 'success' : 'danger' },
               ].map((m, i) => (
-                <div key={i} style={{ padding: '14px 16px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ padding: '14px 16px' }}>
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
                   <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4, color: m.tone === 'success' ? 'var(--success)' : m.tone === 'danger' ? 'var(--danger)' : 'var(--fg)' }}>{m.v}</div>
                   <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 2 }}>{m.s}</div>
@@ -88,7 +88,7 @@ export function ProductDetail({ detail }) {
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="g2">
               <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
                 <div style={{ marginBottom: 16 }}>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Outras variações</h3>
@@ -163,7 +163,7 @@ export function ProductDetail({ detail }) {
               {movements.length === 0 ? (
                 <div style={{ padding: '18px', fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhuma movimentação registrada para este SKU ainda.</div>
               ) : (
-                <table className="table">
+                <div className="table-scroll"><table className="table">
                   <thead>
                     <tr><th>Data</th><th>Tipo</th><th className="num">Qtd</th><th className="num">Valor</th><th>Por</th></tr>
                   </thead>
@@ -183,7 +183,7 @@ export function ProductDetail({ detail }) {
                       );
                     })}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </div>
           </div>

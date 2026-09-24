@@ -13,7 +13,7 @@ export function SettingsHub() {
     <StoreShell route="/settings" breadcrumb={['Configurações']} navigate={navigate}>
       <PageHeader title="Configurações" sub="Identidade visual, dados da empresa, unidades, equipe e assinatura." />
       <Page gap={20}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        <div className="g3" style={{ gap: 12 }}>
           <HubCard icon={<I.Sparkle size={15} />} accent title="Branding" onClick={() => navigate('/settings/branding')}
             desc="Logo e cor principal da rede. Os tons secundários para tema claro e escuro são gerados automaticamente." />
           <HubCard icon={<I.Store size={15} />} accent title="Dados da empresa" onClick={() => navigate('/settings/store-data')}
@@ -34,7 +34,7 @@ export function SettingsHub() {
 
         <div>
           <div className="section-h"><h3>Sua conta</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div className="g3" style={{ gap: 12 }}>
             <HubCard icon={<I.Shield size={15} />} title="Meu perfil" onClick={() => navigate('/profile')}
               desc="Seus dados de acesso, senha, verificação em duas etapas e sessões ativas." />
             <HubCard icon={<I.Bell size={15} />} title="Notificações" onClick={() => navigate('/notifications')}

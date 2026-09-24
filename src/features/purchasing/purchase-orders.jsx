@@ -87,13 +87,13 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
         onTab={setFilter}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g3 kpi-strip">
           {[
             { l: 'SKUs a repor', v: `${suggestCount}`, s: `${criticalCount} sem estoque`, tone: criticalCount ? 'warning' : undefined },
             { l: 'Valor sugerido', v: brl(suggestions.filter((r) => r.suggest_qty > 0).reduce((s, r) => s + r.suggest_qty * r.cost_price, 0)), s: 'a preço de compra' },
             { l: 'Pedidos em aberto', v: `${openOrders.filter((o) => o.status === 'sent').length}`, s: 'aguardando recebimento' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
               <div style={{ fontSize: 11, marginTop: 2, color: m.tone === 'warning' ? 'var(--warning)' : 'var(--fg-muted)' }}>{m.s}</div>
@@ -114,7 +114,7 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
           {rows.length === 0 ? (
             <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhum produto precisa de reposição agora.</div>
           ) : (
-            <table className="table">
+            <div className="table-scroll"><table className="table">
               <thead>
                 <tr>
                   <th style={{ width: 36 }}>
@@ -182,7 +182,7 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           )}
           {rows.length > 0 && (
             <div style={{ padding: '10px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -198,7 +198,7 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: 16 }}>
+        <div className="split-2" style={{ '--a': '1fr', '--b': '1.3fr', alignItems: 'stretch' }}>
           <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
             <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Valor por fornecedor</h3>
             <p style={{ margin: '0 0 18px', fontSize: 12, color: 'var(--fg-muted)' }}>Da seleção atual. Verifique o pedido mínimo de cada um.</p>
@@ -229,7 +229,7 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
             {openOrders.length === 0 ? (
               <div style={{ padding: '24px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhum pedido registrado ainda.</div>
             ) : (
-              <table className="table">
+              <div className="table-scroll"><table className="table">
                 <thead>
                   <tr><th>Fornecedor</th><th className="num">Itens</th><th className="num">Valor</th><th>Criado em</th><th>Status</th><th style={{ width: 90 }}></th></tr>
                 </thead>
@@ -259,7 +259,7 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         </div>

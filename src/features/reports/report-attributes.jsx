@@ -59,14 +59,14 @@ export function ReportAttributes({ categories, categoryId, data }) {
         {cat.category_attributes.length === 0 ? (
           <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>{cat.name} não tem atributos configurados.</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cat.category_attributes.length}, minmax(0, 1fr))`, gap: 16 }}>
+          <div className={cat.category_attributes.length === 1 ? undefined : `g${Math.min(cat.category_attributes.length, 5)}`}>
             {cat.category_attributes.map((attr) => {
               const rows = data[attr.key] || [];
               const maxU = Math.max(1, ...rows.map((r) => r.units));
               const totalU = rows.reduce((s, r) => s + r.units, 0);
               const leader = rows.length ? rows.reduce((a, b) => (a.units > b.units ? a : b)) : null;
               return (
-                <div key={attr.key} className="card" style={{ overflow: 'hidden' }}>
+                <div key={attr.key} className="card table-scroll">
                   <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{attr.label}</h3>

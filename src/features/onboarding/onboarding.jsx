@@ -58,7 +58,7 @@ export function Onboarding() {
   if (done) return <OnboardingComplete navigate={navigate} data={data} />;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: '272px minmax(0, 1fr)', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <div className="split-nav" style={{ '--nav': '272px', gap: 0, alignItems: 'stretch', minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       {/* Step rail */}
       <aside style={{ background: 'var(--bg-sunken)', borderRight: '1px solid var(--line)', padding: '28px 24px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 36 }}>
@@ -111,7 +111,7 @@ export function Onboarding() {
 
       {/* Step content */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: '56px 40px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: 'clamp(24px, 6vw, 56px) var(--page-pad)' }}>
           <div style={{ width: '100%', maxWidth: 560 }}>
             <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-text)', marginBottom: 10 }}>
               PASSO {step} DE {steps.length}

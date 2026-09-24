@@ -91,14 +91,14 @@ export function AIForecast({ base }) {
 
         {result && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+            <div className="g4 kpi-strip">
               {[
                 { l: 'SKUs projetados', v: `${result.length}` },
                 { l: 'Sugestão padrão', v: `${base.reduce((s, p) => s + p.suggest_qty, 0)} un`, s: 'velocidade de 30 dias' },
                 { l: 'Sugestão da IA', v: `${result.reduce((s, r) => s + (r.suggested || 0), 0)} un`, s: 'com sazonalidade', tone: 'accent' },
                 { l: 'Confiança média', v: `${Math.round(result.reduce((s, r) => s + (r.confidence || 0), 0) / result.length)}%` },
               ].map((m, i) => (
-                <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ padding: '16px 18px' }}>
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
                   <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4, color: m.tone === 'accent' ? 'var(--accent-text)' : 'var(--fg)' }}>{m.v}</div>
                   {m.s && <div style={{ fontSize: 10.5, color: 'var(--fg-muted)', marginTop: 2 }}>{m.s}</div>}

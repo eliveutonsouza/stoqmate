@@ -30,13 +30,13 @@ export function AIAnomalies({ stockouts, deadStock }) {
         sub="Sinais calculados sobre estoque e vendas reais desta unidade — sem IA, só matemática."
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g3 kpi-strip">
           {[
             { l: 'Anomalias abertas', v: `${openCount}`, tone: openCount > 0 ? 'warn' : undefined },
             { l: 'Venda perdida estimada (7 dias)', v: brl(totalLoss), tone: totalLoss > 0 ? 'bad' : undefined },
             { l: 'Capital parado (sem venda 90d)', v: brl(totalParked), tone: totalParked > 0 ? 'warn' : undefined },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{
                 fontSize: 21, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4,

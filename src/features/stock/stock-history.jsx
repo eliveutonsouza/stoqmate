@@ -51,16 +51,13 @@ export function StockHistory({ movements }) {
           />
         ) : (
           <>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-              background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden',
-            }}>
+            <div className="g3 kpi-strip">
               {[
                 { l: 'Entradas (unidades)', v: `+${qtyIn}` },
                 { l: 'Saídas (unidades)', v: `${qtyOut}` },
                 { l: 'Transferências', v: `${transfers}` },
               ].map((s, i) => (
-                <div key={i} style={{ padding: '14px 16px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ padding: '14px 16px' }}>
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{s.l}</div>
                   <div style={{ fontSize: 18, fontWeight: 600, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', marginTop: 4 }}>{s.v}</div>
                 </div>
@@ -73,7 +70,7 @@ export function StockHistory({ movements }) {
               right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{rows.length} de {movements.length}</span>}
             />
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <table className="table">
                 <thead>
                   <tr>

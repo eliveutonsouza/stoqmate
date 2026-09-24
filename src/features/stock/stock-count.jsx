@@ -68,7 +68,7 @@ export function StockCount({ stores, locations, categories }) {
       <Page>
         <MovementNav route="/stock/adjustment" navigate={navigate} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="Escopo da contagem" cols={3}>
               <Field label="Unidade" span={1}>
@@ -106,7 +106,7 @@ export function StockCount({ stores, locations, categories }) {
               {rows.length === 0 ? (
                 <div style={{ padding: '24px 18px', fontSize: 12.5, color: 'var(--fg-muted)' }}>Busque e adicione produtos acima pra começar a contagem.</div>
               ) : (
-                <table className="table">
+                <div className="table-scroll"><table className="table">
                   <thead>
                     <tr>
                       <th>Produto</th><th>Variação</th>
@@ -152,7 +152,7 @@ export function StockCount({ stores, locations, categories }) {
                       );
                     })}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </div>
 
@@ -175,7 +175,7 @@ export function StockCount({ stores, locations, categories }) {
             )}
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resultado da sessão</div>
               <SummaryRow label="SKUs no escopo" value={`${rows.length}`} />

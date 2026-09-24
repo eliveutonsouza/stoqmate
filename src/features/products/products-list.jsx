@@ -118,7 +118,7 @@ export function ProductsList({ initialProducts, categories }) {
 
             {error && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>}
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <table className="table">
                 <thead>
                   <tr>

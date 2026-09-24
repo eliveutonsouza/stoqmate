@@ -68,7 +68,7 @@ export function Shelves({ initialLocations, products, stores }) {
             action={<button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Novo local</button>}
           />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '320px minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
+          <div className="split-nav" style={{ '--nav': '320px' }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', fontSize: 12, fontWeight: 500, color: 'var(--fg-muted)' }}>
                 Locais cadastrados
@@ -101,12 +101,12 @@ export function Shelves({ initialLocations, products, stores }) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+              <div className="g2 kpi-strip">
                 {[
                   { l: 'Local', v: selected.code, mono: true },
                   { l: 'SKUs alocados', v: selected.skus },
                 ].map((m, i) => (
-                  <div key={i} style={{ padding: '14px 16px', borderRight: i === 0 ? '1px solid var(--line)' : 'none' }}>
+                  <div key={i} style={{ padding: '14px 16px' }}>
                     <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
                     <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em', marginTop: 4, fontFamily: m.mono ? 'var(--font-mono)' : undefined, fontVariantNumeric: 'tabular-nums' }}>{m.v}</div>
                   </div>
@@ -122,7 +122,7 @@ export function Shelves({ initialLocations, products, stores }) {
                   <button onClick={() => navigate('/products/new')} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto aqui</button>
                 </div>
                 {locProducts.length > 0 ? (
-                  <table className="table">
+                  <div className="table-scroll"><table className="table">
                     <thead>
                       <tr><th>SKU</th><th>Produto</th><th>Categoria</th><th>Variação</th></tr>
                     </thead>
@@ -136,7 +136,7 @@ export function Shelves({ initialLocations, products, stores }) {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </table></div>
                 ) : (
                   <EmptyState
                     icon={<I.Grid size={18} />}

@@ -27,14 +27,14 @@ export function SalesReport({ report }) {
       <Page>
         <ReportTabs route="/reports/sales" navigate={navigate} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g4 kpi-strip">
           {[
             { l: 'Receita total', v: brl(report.revenue) },
             { l: 'Unidades vendidas', v: report.units.toLocaleString('pt-BR') },
             { l: 'Ticket médio', v: brl(ticket) },
             { l: 'Margem média', v: margin.toFixed(1) + '%' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
             </div>
@@ -52,7 +52,7 @@ export function SalesReport({ report }) {
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: 16 }}>
+        <div className="split-2" style={{ '--a': '1fr', '--b': '1.3fr', alignItems: 'stretch' }}>
           <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
             <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Receita por unidade</h3>
             <p style={{ margin: '0 0 18px', fontSize: 12, color: 'var(--fg-muted)' }}>Onde a venda foi registrada na rede.</p>
@@ -75,7 +75,7 @@ export function SalesReport({ report }) {
             )}
           </div>
 
-          <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="card table-scroll">
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Vendas por categoria</h3>
               <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Cada categoria conta na sua própria unidade de medida.</p>

@@ -38,7 +38,7 @@ export function NotificationSettings({ preferences }) {
           <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{emailOn} de {prefs.length} por email</span>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Regras de aviso</h3>

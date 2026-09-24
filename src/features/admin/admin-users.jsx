@@ -53,7 +53,7 @@ export function AdminUsers({ staff, auditLog }) {
         actions={<button onClick={() => setInviteOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Convidar administrador</button>}
       />
       <Page>
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Administradores</h3>
           </div>
@@ -96,7 +96,7 @@ export function AdminUsers({ staff, auditLog }) {
           )}
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Log de auditoria</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Ações administrativas sobre redes de clientes.</p>

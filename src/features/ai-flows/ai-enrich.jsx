@@ -74,7 +74,7 @@ export function AIEnrich({ gaps, categories, quota }) {
         actions={<button onClick={() => navigate('/ai')} className="btn btn-ghost btn-sm">Central de IA</button>}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 12,
@@ -89,7 +89,7 @@ export function AIEnrich({ gaps, categories, quota }) {
               <button onClick={() => navigate('/categories')} className="btn btn-outline btn-sm">Ver esquemas</button>
             </div>
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>SKUs com lacuna</h3>
@@ -191,7 +191,7 @@ export function AIEnrich({ gaps, categories, quota }) {
             )}
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Lote</div>
               <SummaryRow label="SKUs selecionados" value={`${picked.size}`} />

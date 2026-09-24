@@ -488,6 +488,52 @@ html, body { overflow-x: clip; }
 @media (max-width: 640px) { .modal-overlay { padding: 12px !important; align-items: flex-end !important; } }
 .modal-body-scroll { max-height: calc(100dvh - 180px); overflow-y: auto; }
 
+/* Telas "de celular" (/mobile/*): prévia com moldura no desktop, tela
+   cheia no aparelho (PhoneFrame troca a estrutura via useMediaQuery). */
+.phone-full { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.phone-full > * { flex: 1; height: auto !important; }
+.phone-page { padding: 24px 20px 40px; }
+@media (max-width: 640px) {
+  .phone-page { padding: 12px 0 0 !important; background: #16140F !important; }
+  .phone-page > div { max-width: none !important; }
+  .phone-page-head { padding: 0 16px; }
+  .phone-page-head, .phone-page-head * { color: #F6F3EC !important; }
+  .phone-page-head button { background: transparent !important; border-color: rgba(255,255,255,0.2) !important; }
+  /* Tela de celular dentro do shell do app: encosta nas bordas da página. */
+  .phone-bleed { margin: -20px calc(var(--page-pad) * -1) -48px; padding: 0 !important; gap: 0 !important; }
+  .phone-bleed-item { width: 100% !important; }
+}
+
+/* PDV de balcão: prévia com moldura de tablet no desktop; em tablet/celular
+   de verdade ocupa a tela. No celular vira coluna única com o carrinho
+   abaixo do catálogo e uma barra fixa com o total. */
+.pos-page { min-height: 100vh; background: #E7E4DD; padding: 24px; display: flex; justify-content: center; }
+.pos-bezel { background: #1c1a16; border-radius: 26px; padding: 14px; box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 24px 56px rgba(20,18,13,0.30); }
+.pos-screen { background: var(--bg); border-radius: 14px; overflow: hidden; height: 768px; display: grid; grid-template-columns: minmax(0, 1fr) 372px; }
+.pos-products { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pos-touch-only, .pos-jump { display: none !important; }
+@media (max-width: 1024px) {
+  .pos-page { padding: 0; background: var(--bg); }
+  .pos-wrap { max-width: none !important; }
+  .pos-preview-bar { display: none !important; }
+  .pos-touch-only { display: inline-flex !important; }
+  .pos-bezel { padding: 0; border-radius: 0; background: none; box-shadow: none; }
+  .pos-screen { height: 100dvh; border-radius: 0; grid-template-columns: minmax(0, 1fr) 340px; }
+}
+@media (max-width: 640px) {
+  .pos-screen { height: auto; grid-template-columns: minmax(0, 1fr); overflow: visible; padding-bottom: 72px; }
+  .pos-screen [data-pos-scroll] { overflow: visible !important; flex: none !important; }
+  .pos-catalog { border-right: none !important; }
+  .pos-cart { border-top: 1px solid var(--line); }
+  .pos-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pos-head { flex-wrap: wrap; }
+  .pos-jump {
+    display: flex !important; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    align-items: center; gap: 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--bg-elev); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0,0,0,0.08);
+  }
+}
+
 .settings-grid { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 28px; align-items: start; }
 @media (max-width: 900px) {
   .settings-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }

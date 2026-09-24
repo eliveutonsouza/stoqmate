@@ -66,20 +66,20 @@ export function AdminStoreDetail({ detail, subscription }) {
         )}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g3 kpi-strip">
           {[
             { l: 'Plano', v: PLAN_NAMES[t.plan_id] ?? t.plan_id },
             { l: 'Lojas', v: `${stores.length}` },
             { l: 'SKUs no catálogo', v: `${skuCount}` },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.02em', marginTop: 4 }}>{m.v}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="g2">
           <div className="card" style={{ overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Dados cadastrais</h3>
@@ -124,7 +124,7 @@ export function AdminStoreDetail({ detail, subscription }) {
           </div>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Usuários da rede</h3>
           </div>
@@ -147,7 +147,7 @@ export function AdminStoreDetail({ detail, subscription }) {
           )}
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Auditoria</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Inclui ações da rede e acessos de suporte.</p>

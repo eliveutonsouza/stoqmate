@@ -4,8 +4,27 @@ import { PHONE_W } from '@/features/mobile/phone-w';
 import { PHONE_SCALE } from '@/features/mobile/phone-scale';
 import { PHONE_H } from '@/features/mobile/phone-h';
 import { IOSDevice } from '@/features/mobile/ios-device';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
+// No desktop é uma prévia com moldura de iPhone. Num celular de verdade a
+// moldura some e a tela ocupa o aparelho — "celular dentro do celular" não
+// serve pra ninguém. O conteúdo usa var(--phone-pad) no lugar do recuo fixo
+// da barra de status da moldura.
 export function PhoneFrame({ children }) {
+  const onPhone = useMediaQuery('(max-width: 640px)');
+
+  if (onPhone) {
+    return (
+      <div style={{
+        '--phone-pad': '20px 16px 24px', '--phone-top': '8px',
+        minHeight: 'calc(100dvh - 52px)', display: 'flex', flexDirection: 'column',
+        background: '#16140F', color: '#F6F3EC',
+      }}>
+        <div className="phone-full">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       width: PHONE_W * PHONE_SCALE,

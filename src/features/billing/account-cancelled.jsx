@@ -24,7 +24,7 @@ export function AccountCancelled() {
           <p style={{ margin: '8px 0 18px', fontSize: 13.5, color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 560 }}>
             Nada foi apagado. Se reativar dentro de 90 dias, tudo volta exatamente como estava — catálogo, histórico, usuários e regras de aviso.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          <div className="g4" style={{ gap: 14 }}>
             {[
               ['1.688', 'SKUs preservados'], ['24 meses', 'de movimentações'],
               ['6', 'usuários congelados'], ['90 dias', 'para exportar'],
@@ -36,7 +36,7 @@ export function AccountCancelled() {
             ))}
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="g2" style={{ gap: 16 }}>
           <div className="card" style={{ padding: 18 }}>
             <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Exportar antes do prazo</div>
             <p style={{ margin: '5px 0 14px', fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.5 }}>Arquivos abertos, sem amarra: XLSX e CSV que qualquer outro sistema importa.</p>

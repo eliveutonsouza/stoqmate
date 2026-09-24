@@ -85,7 +85,7 @@ export function Categories({ initialCategories }) {
             action={<button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Nova categoria</button>}
           />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '288px minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
+          <div className="split-nav" style={{ '--nav': '288px' }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', fontSize: 12, fontWeight: 500, color: 'var(--fg-muted)' }}>
                 {categories.length} categoria{categories.length > 1 ? 's' : ''} ativa{categories.length > 1 ? 's' : ''}
@@ -117,14 +117,14 @@ export function Categories({ initialCategories }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
               {!c ? null : (
               <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+              <div className="g4 kpi-strip">
                 {[
                   { l: 'Categoria', v: c.name, icon: <Ico size={16} /> },
                   { l: 'Prefixo do SKU', v: c.code, mono: true },
                   { l: 'Unidade de medida', v: c.unit },
                   { l: 'SKUs cadastrados', v: c.skus },
                 ].map((m, i) => (
-                  <div key={i} style={{ padding: '14px 16px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+                  <div key={i} style={{ padding: '14px 16px' }}>
                     <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 4 }}>
                       {m.icon && <span style={{ color: c.color, display: 'flex' }}>{m.icon}</span>}
@@ -146,7 +146,7 @@ export function Categories({ initialCategories }) {
                     Esta categoria ainda não tem atributos — produtos dela não têm variação (cor, tamanho etc.).
                   </div>
                 ) : (
-                  <table className="table">
+                  <div className="table-scroll"><table className="table">
                     <thead>
                       <tr><th style={{ width: 36 }}>#</th><th>Atributo</th><th>Tipo</th><th>Valores cadastrados</th><th className="num">Nº</th></tr>
                     </thead>
@@ -181,7 +181,7 @@ export function Categories({ initialCategories }) {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </table></div>
                 )}
                 {c.attributes.length > 0 && (
                   <div style={{ padding: '12px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -209,7 +209,7 @@ export function Categories({ initialCategories }) {
       <Modal open={formOpen} onClose={() => { setFormOpen(false); resetForm(); }} title="Nova categoria" desc="Defina o esquema — dá pra ajustar os valores depois." width={560}
         footer={<><button onClick={() => { setFormOpen(false); resetForm(); }} className="btn btn-ghost">Cancelar</button><button onClick={submit} disabled={pending} className="btn btn-primary">{pending ? 'Criando…' : 'Criar categoria'}</button></>}>
         <Field label="Nome da categoria" required><TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Autopeças" /></Field>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+        <div className="g3" style={{ gap: 14 }}>
           <Field label="Prefixo do SKU" required hint="2-4 letras."><TextInput mono value={code} onChange={(e) => setCode(e.target.value)} placeholder="AUT" /></Field>
           <Field label="Unidade de medida" required>
             <SelectInput value={unit} onChange={setUnit} options={UNIT_OPTIONS} />

@@ -20,7 +20,7 @@ export function CreditsEmpty() {
           action="Comprar créditos" onAction={() => navigate('/settings/credits')}
           secondary="Ver consumo" onSecondary={() => navigate('/settings/credits')}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="g2">
           <div className="card" style={{ padding: 18 }}>
             <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Pausado até 01 de outubro</div>
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -51,7 +51,7 @@ export function CreditsEmpty() {
         <div className="card" style={{ padding: 18 }}>
           <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 4 }}>Retomar agora</div>
           <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--fg-muted)' }}>Os créditos entram na hora, sem esperar o ciclo virar.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <div className="g3" style={{ gap: 10 }}>
             {CREDIT_PACKS.map(p => (
               <button key={p.credits} onClick={() => navigate('/settings/credits')} style={{ padding: '13px 15px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--bg-elev)', textAlign: 'left' }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fg)' }}>{p.credits.toLocaleString('pt-BR')} créditos</div>

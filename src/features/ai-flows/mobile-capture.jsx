@@ -59,15 +59,17 @@ export function MobileCapture({ categories }) {
 
   return (
     <StoreShell route="/mobile/capture" breadcrumb={['Catálogo', 'Cadastro rápido']} navigate={navigate}>
-      <PageHeader
-        title="Cadastro rápido pelo celular"
-        sub="Tire a foto do produto e preencha o essencial — bom pra cadastrar em pé, no depósito."
-      />
+      <div className="hide-mobile">
+        <PageHeader
+          title="Cadastro rápido pelo celular"
+          sub="Tire a foto do produto e preencha o essencial — bom pra cadastrar em pé, no depósito."
+        />
+      </div>
       <Page>
-        <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap', justifyContent: 'center', padding: '8px 0 20px' }}>
-          <div>
+        <div className="phone-bleed" style={{ display: 'flex', gap: 26, flexWrap: 'wrap', justifyContent: 'center', padding: '8px 0 20px' }}>
+          <div className="phone-bleed-item">
             <PhoneFrame>
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0B0A08', paddingTop: 54, paddingBottom: 26, boxSizing: 'border-box', color: '#fff' }}>
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0B0A08', paddingTop: 'var(--phone-top, 54px)', paddingBottom: 26, boxSizing: 'border-box', color: '#fff' }}>
                 <div style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <button onClick={() => navigate('/products')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', padding: 0 }}><I.ChevronLeft size={20} /></button>
                   <span style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Novo produto</span>
@@ -131,7 +133,7 @@ export function MobileCapture({ categories }) {
           </div>
 
           {done.length > 0 && (
-            <div className="card" style={{ padding: 18, width: 280, alignSelf: 'flex-start' }}>
+            <div className="card phone-bleed-item" style={{ padding: 18, width: 280, maxWidth: '100%', alignSelf: 'flex-start' }}>
               <h4 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600 }}>Cadastrados nesta sessão</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {done.map((d, i) => (

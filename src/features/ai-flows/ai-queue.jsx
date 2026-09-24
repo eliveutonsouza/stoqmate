@@ -25,7 +25,7 @@ export function AIQueue({ enrichCount, forecastCount, anomalyCount }) {
         {cards.length === 0 ? (
           <EmptyState icon={<I.Check size={18} />} title="Nada pendente" desc="Catálogo completo, reposição em dia e sem anomalias abertas." />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div className="g3" style={{ gap: 12 }}>
             {cards.map((c) => (
               <HubCard key={c.route} icon={c.icon} title={c.title} desc={c.desc} accent onClick={() => navigate(c.route)} meta={[['Pendentes', `${c.count}`]]} />
             ))}

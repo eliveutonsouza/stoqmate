@@ -60,7 +60,7 @@ export function PurchaseOrderNew({ stores, storeId, suppliers, supplierId, sugge
         sub={supplier ? `${supplier.name} · gerado a partir da sugestão de reposição` : 'Selecione um fornecedor'}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             <FormCard title="Fornecedor e entrega" cols={2}>
               <Field label="Fornecedor" required span={1}>
@@ -92,7 +92,7 @@ export function PurchaseOrderNew({ stores, storeId, suppliers, supplierId, sugge
                   Nenhum item sugerido para este fornecedor nesta unidade.
                 </div>
               ) : (
-                <table className="table">
+                <div className="table-scroll"><table className="table">
                   <thead>
                     <tr><th>Produto</th><th>Variação</th><th className="num">Saldo</th><th style={{ width: 100 }}>Quantidade</th><th className="num">Custo un.</th><th className="num">Subtotal</th><th style={{ width: 30 }}></th></tr>
                   </thead>
@@ -119,12 +119,12 @@ export function PurchaseOrderNew({ stores, storeId, suppliers, supplierId, sugge
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </div>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo do pedido</div>
               <SummaryRow label={`${lines.length} SKUs · ${qty.reduce((a, b) => a + (b || 0), 0)} itens`} value={brl(subtotal)} />

@@ -24,7 +24,7 @@ export function AdminAIMonitoring({ monitoring }) {
                 { l: 'Tokens', v: fmtTokens(kpis.totalTokens) },
                 { l: 'Latência média', v: kpis.avgLatencyMs == null ? '—' : `${(kpis.avgLatencyMs / 1000).toFixed(1)}s`, sub: kpis.avgLatencyMs == null ? 'sem chamada medida ainda' : undefined },
               ].map((m, i) => (
-                <div key={i} style={{ padding: '14px 16px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ padding: '14px 16px' }}>
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
                   <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
                   {m.sub && <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', marginTop: 2, color: 'var(--fg-muted)' }}>{m.sub}</div>}

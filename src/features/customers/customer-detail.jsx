@@ -66,14 +66,14 @@ export function CustomerDetail({ detail }) {
         )}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g4 kpi-strip">
           {[
             { l: 'Total gasto', v: brl(spent) },
             { l: 'Ticket médio', v: brl(ticket) },
             { l: 'Compras', v: `${sales.length}`, s: sales[0] ? `última em ${new Date(sales[0].created_at).toLocaleDateString('pt-BR')}` : undefined },
             { l: 'Crédito disponível', v: brl(c.credit_balance), tone: c.credit_balance > 0 ? 'warn' : undefined },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{
                 fontSize: 19, fontWeight: 600, letterSpacing: '-0.022em', fontVariantNumeric: 'tabular-nums', marginTop: 4,
@@ -97,7 +97,7 @@ export function CustomerDetail({ detail }) {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 16, alignItems: 'start' }}>
+        <div className="split-2" style={{ '--a': '1fr', '--b': '1.4fr', gap: 16, alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
@@ -146,7 +146,7 @@ export function CustomerDetail({ detail }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Histórico de compras</h3>
               </div>

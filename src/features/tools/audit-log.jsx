@@ -25,20 +25,20 @@ export function AuditLog({ entries }) {
     <StoreShell route="/settings/audit" breadcrumb={['Configurações', 'Log de alterações']} navigate={navigate}>
       <PageHeader title="Configurações" sub="Identidade visual, dados da empresa, unidades, equipe e assinatura." />
       <SettingsLayout route="/settings/audit" navigate={navigate}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g3 kpi-strip">
           {[
             { l: 'Registros', v: `${entries.length}` },
             { l: 'Alterações de preço', v: `${priceCount}` },
             { l: 'Mudanças de esquema', v: `${schemaCount}` },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
             </div>
           ))}
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           {entries.length === 0 ? (
             <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhum registro de auditoria ainda.</div>
           ) : (

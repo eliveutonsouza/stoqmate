@@ -43,7 +43,7 @@ export function InvoiceMatch({ order = null, openOrders = null }) {
           {openOrders.length === 0 ? (
             <EmptyState icon={<I.Truck size={18} />} title="Nenhum pedido em aberto" desc="Pedidos aguardando recebimento aparecem aqui." action={<button onClick={() => navigate('/purchase-orders')} className="btn btn-primary btn-sm">Ver pedidos</button>} />
           ) : (
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <table className="table">
                 <thead><tr><th>Fornecedor</th><th>Unidade</th><th className="num">Itens</th><th>Data</th><th style={{ width: 100 }}></th></tr></thead>
                 <tbody>
@@ -147,7 +147,7 @@ function OrderMatch({ order, navigate }) {
           </div>
         )}
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ flex: 1 }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Item a item</h3>

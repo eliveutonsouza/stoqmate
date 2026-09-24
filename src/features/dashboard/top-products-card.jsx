@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 export function TopProductsCard({ navigate, topProducts }) {
   const maxSold = Math.max(1, ...topProducts.map((p) => p.units));
   return (
-    <div className="card" style={{ overflow: 'hidden' }}>
+    <div className="card table-scroll">
       <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Mais vendidos · 30 dias</h3>

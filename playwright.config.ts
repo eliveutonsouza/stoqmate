@@ -26,7 +26,21 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"], storageState: "e2e/.auth/tenant.json" },
       dependencies: ["setup"],
-      testIgnore: [/signup\.spec\.ts/, /login\.spec\.ts/, /auth\.setup\.ts/],
+      testIgnore: [/signup\.spec\.ts/, /login\.spec\.ts/, /auth\.setup\.ts/, /mobile-nav\.spec\.ts/],
+    },
+    {
+      // Responsividade: todas as rotas em celular e tablet, sem estouro de
+      // largura (responsive.spec) + drawer/hamburger (mobile-nav.spec).
+      name: "mobile",
+      use: { ...devices["Pixel 7"], storageState: "e2e/.auth/tenant.json" },
+      dependencies: ["setup"],
+      testMatch: [/responsive\.spec\.ts/, /mobile-nav\.spec\.ts/],
+    },
+    {
+      name: "tablet",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 820, height: 1180 }, hasTouch: true, storageState: "e2e/.auth/tenant.json" },
+      dependencies: ["setup"],
+      testMatch: [/responsive\.spec\.ts/],
     },
   ],
   webServer: {

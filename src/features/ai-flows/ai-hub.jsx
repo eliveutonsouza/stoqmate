@@ -25,7 +25,7 @@ export function AIHub({ quota, pendingCount }) {
         )}
       />
       <Page gap={20}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             {pendingCount > 0 && (
               <div style={{
@@ -68,7 +68,7 @@ export function AIHub({ quota, pendingCount }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 0 }}>
+          <div data-sticky style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 0 }}>
             <AIQuotaCard navigate={navigate} quota={quota} />
 
             {quota?.byFeature?.length > 0 && (

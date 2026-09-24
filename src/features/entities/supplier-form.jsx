@@ -118,7 +118,7 @@ export function SupplierForm({ mode = 'new', categories = [], supplier = null })
 
         <FormCard title="O que este fornecedor atende" desc="Filtra o fornecedor no cadastro de produtos e nas entradas." cols={1}>
           <Field label="Categorias atendidas">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <div className="g3" style={{ gap: 8 }}>
               {categories.map(c => {
                 const on = f.categoryIds.has(c.id);
                 return (

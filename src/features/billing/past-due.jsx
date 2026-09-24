@@ -22,7 +22,7 @@ export function PastDue() {
   return (
     <StoreShell route="/billing/past-due" breadcrumb={['Cobrança', 'Pagamento pendente']} navigate={navigate}>
       <Page width={920}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginRight: 4 }}>Ver o estado em:</span>
           {stages.map(x => (
             <button key={x.n} onClick={() => setStage(x.n)} className={'btn btn-sm ' + (stage === x.n ? 'btn-primary' : 'btn-outline')}>{x.l}</button>
@@ -31,7 +31,7 @@ export function PastDue() {
 
         <BillingBanner tone={s.tone} title={s.t} desc={s.d} action="Atualizar pagamento" onAction={() => navigate('/settings/subscription')} secondary="Ver fatura" onSecondary={() => navigate('/settings/subscription/invoice')} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 300px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '300px', gap: 16, alignItems: 'start' }}>
           <div className="card" style={{ padding: 20 }}>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-0.015em' }}>Resolver agora</h3>
             <p style={{ margin: '6px 0 16px', fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
@@ -44,7 +44,7 @@ export function PastDue() {
                 ['Usar outro cartão', 'Master •••• 8810 está cadastrado', 'outline'],
                 ['Descer para o Balcão', `${brl(PLANS[0].monthly * SUB.units)}/mês · a diferença já vira crédito`, 'outline'],
               ].map(([t, d, kind]) => (
-                <button key={t} onClick={() => navigate(kind === 'primary' ? '/settings/subscription' : '/settings/subscription/change')} className={'btn btn-' + kind} style={{ justifyContent: 'flex-start', width: '100%', height: 'auto', padding: '11px 13px', textAlign: 'left' }}>
+                <button key={t} onClick={() => navigate(kind === 'primary' ? '/settings/subscription' : '/settings/subscription/change')} className={'btn btn-' + kind} style={{ justifyContent: 'flex-start', width: '100%', height: 'auto', padding: '11px 13px', textAlign: 'left', whiteSpace: 'normal' }}>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{t}</span>
                     <span style={{ fontSize: 11.5, opacity: 0.75, fontWeight: 400, lineHeight: 1.4 }}>{d}</span>

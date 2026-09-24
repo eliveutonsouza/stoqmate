@@ -66,17 +66,17 @@ export function DashboardStore({
       <Page gap={20}>
         <MetricsRow metrics={metricsRow} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
+        <div className="split-2" style={{ '--a': '1.6fr', '--b': '1fr', alignItems: 'stretch' }}>
           <SalesChartCard salesSeries={salesSeries} revenue={metrics.revenue} delta={metrics.revenueDelta} />
           <QuickActionsCard navigate={navigate} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="g2">
           <CategoryMixCard navigate={navigate} byCategory={byCategory} />
           <StoreBalanceCard navigate={navigate} storeBalances={storeBalances} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
+        <div className="split-2" style={{ '--a': '1.4fr', '--b': '1fr', alignItems: 'stretch' }}>
           <TopProductsCard navigate={navigate} topProducts={topProducts} />
           <LowStockCard navigate={navigate} items={lowStockItems} count={lowStockCount} />
         </div>

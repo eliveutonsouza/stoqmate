@@ -42,13 +42,13 @@ export function SupplierDetail({ supplier: s }) {
         )}
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g3 kpi-strip">
           {[
             { l: 'Comprado (últimas compras)', v: brl(s.purchasedRecently) },
             { l: 'SKUs vinculados', v: `${s.productCount}` },
             { l: 'Prazo médio de entrega', v: s.avgLeadDays !== null ? `${s.avgLeadDays} dias` : '—', s: s.avgLeadDays !== null ? 'baseado em pedidos recebidos' : 'sem pedidos recebidos ainda' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 2 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
               {m.s && <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 2 }}>{m.s}</div>}
@@ -56,7 +56,7 @@ export function SupplierDetail({ supplier: s }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 16, alignItems: 'start' }}>
+        <div className="split-2" style={{ '--a': '1fr', '--b': '1.4fr' }}>
           <div className="card" style={{ overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Cadastro</h3>
@@ -91,7 +91,7 @@ export function SupplierDetail({ supplier: s }) {
               {s.purchases.length === 0 ? (
                 <EmptyState icon={<I.Truck size={18} />} title="Nenhuma compra ainda" desc="Pedidos deste fornecedor aparecem aqui." />
               ) : (
-                <table className="table">
+                <div className="table-scroll"><table className="table">
                   <thead>
                     <tr><th>Data</th><th className="num">Itens</th><th className="num">Valor</th><th>Status</th></tr>
                   </thead>
@@ -111,7 +111,7 @@ export function SupplierDetail({ supplier: s }) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </div>
 
@@ -122,7 +122,7 @@ export function SupplierDetail({ supplier: s }) {
               {s.products.length === 0 ? (
                 <EmptyState icon={<I.Box size={18} />} title="Nenhum SKU vinculado" desc="Vincule este fornecedor ao cadastrar ou editar um produto." />
               ) : (
-                <table className="table">
+                <div className="table-scroll"><table className="table">
                   <thead>
                     <tr><th>SKU</th><th>Produto</th><th>Variação</th><th className="num">Saldo</th><th className="num">Custo</th></tr>
                   </thead>
@@ -137,7 +137,7 @@ export function SupplierDetail({ supplier: s }) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               )}
               {s.productCount > s.products.length && (
                 <div style={{ padding: '10px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--fg-muted)' }}>

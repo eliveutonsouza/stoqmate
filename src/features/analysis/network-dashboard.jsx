@@ -25,21 +25,21 @@ export function NetworkDashboard({ revenue, margin, totalQty, ruptureCount, stor
         )}
       />
       <Page gap={20}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g4 kpi-strip">
           {[
             { l: 'Receita da rede (30d)', v: brl(revenue) },
             { l: 'Itens em estoque', v: totalQty.toLocaleString('pt-BR') },
             { l: 'Margem consolidada', v: `${margin.toFixed(1)}%` },
             { l: 'SKUs em ruptura', v: `${ruptureCount}`, tone: ruptureCount > 0 ? 'down' : undefined },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4, color: m.tone === 'down' ? 'var(--warning)' : 'var(--fg)' }}>{m.v}</div>
             </div>
           ))}
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Desempenho por unidade</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Receita dos últimos 30 dias e estoque atual.</p>
@@ -74,7 +74,7 @@ export function NetworkDashboard({ revenue, margin, totalQty, ruptureCount, stor
           </table>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Estoque desbalanceado</h3>

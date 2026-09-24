@@ -33,7 +33,7 @@ export function AdminReports({ reports }) {
     <AdminShell route="/admin/reports" breadcrumb={['Relatórios']} navigate={navigate}>
       <PageHeader title="Relatórios da plataforma" sub={`Adoção, retenção e uso agregado das ${totalTenants} rede(s)`} />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g5 kpi-strip">
           {[
             { l: 'Novas redes · 12m', v: `${totalNew}`, s: `${(totalNew / 12).toFixed(1)}/mês em média` },
             { l: 'Cancelamentos · 12m', v: `${totalCanceled}` },
@@ -41,7 +41,7 @@ export function AdminReports({ reports }) {
             { l: 'SKUs na plataforma', v: totalSkus.toLocaleString('pt-BR') },
             { l: 'Movimentações · 30d', v: totalMoves.toLocaleString('pt-BR') },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '14px 16px', borderRight: i < 4 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
               {m.s && <div style={{ fontSize: 10, marginTop: 2, color: 'var(--fg-soft)' }}>{m.s}</div>}
@@ -49,7 +49,7 @@ export function AdminReports({ reports }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="g2">
           <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
               <div>
@@ -75,7 +75,7 @@ export function AdminReports({ reports }) {
             </div>
           </div>
 
-          <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="card table-scroll">
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Retenção por coorte</h3>
               <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>% de redes ainda ativas após N meses. Célula vazia = ainda não deu tempo de medir.</p>
@@ -111,7 +111,7 @@ export function AdminReports({ reports }) {
           </div>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Uso agregado por plano</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Ajuda a identificar redes prontas para upgrade.</p>

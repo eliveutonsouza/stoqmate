@@ -111,7 +111,7 @@ export function CancelSubscription() {
             </div>
             <div className="card" style={{ padding: 18 }}>
               <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 10 }}>O que você perde ao cancelar</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="g2" style={{ gap: 10 }}>
                 {[
                   ['Histórico de movimentação', '24 meses de entradas, vendas e ajustes.'],
                   ['Previsão e reposição', 'A sugestão de compra semanal para de rodar.'],

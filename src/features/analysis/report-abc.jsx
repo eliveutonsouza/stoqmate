@@ -37,14 +37,14 @@ export function ReportABC({ rows: input, periodDays }) {
           <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhum produto com estoque ou venda ainda.</div>
         ) : (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+            <div className="g4 kpi-strip">
               {[
                 { l: 'Classe A', v: `${counts.A} produtos`, s: `70% da receita · ${brl(stockByClass[0])} em estoque`, tone: 'ok' },
                 { l: 'Classe B', v: `${counts.B} produtos`, s: `20% da receita · ${brl(stockByClass[1])} em estoque` },
                 { l: 'Classe C', v: `${counts.C} produtos`, s: `10% da receita · ${brl(stockByClass[2])} em estoque`, tone: 'warn' },
                 { l: 'Capital parado em C', v: ((stockByClass[2] / totalStock) * 100).toFixed(0) + '%', s: 'do valor total de estoque', tone: 'warn' },
               ].map((m, i) => (
-                <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ padding: '16px 18px' }}>
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
                   <div style={{
                     fontSize: 20, fontWeight: 600, letterSpacing: '-0.025em', marginTop: 4,
@@ -83,7 +83,7 @@ export function ReportABC({ rows: input, periodDays }) {
               </div>
             </div>
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Classificação e giro</h3>
                 <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>

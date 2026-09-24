@@ -68,7 +68,7 @@ export function AdminPlanForm({ mode = 'new', plan }) {
         sub="Este catálogo é o que /admin/subscriptions vai referenciar quando a assinatura (Stripe) estiver configurada."
       />
       <Page>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+        <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
             {error && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>}
 
@@ -126,7 +126,7 @@ export function AdminPlanForm({ mode = 'new', plan }) {
             </FormCard>
           </div>
 
-          <div style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Precificação</div>
               <SummaryRow label="Mensal" value={brl(monthly)} />

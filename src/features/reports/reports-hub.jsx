@@ -29,14 +29,14 @@ export function ReportsHub({ report }) {
     <StoreShell route="/reports" breadcrumb={['Relatórios']} navigate={navigate}>
       <PageHeader title="Relatórios" sub={`${fmtRange(report.range)} · toda a rede`} />
       <Page gap={20}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="g4 kpi-strip">
           {[
             { l: 'Receita do período', v: brl(report.revenue) },
             { l: 'Unidades vendidas', v: report.units.toLocaleString('pt-BR') },
             { l: 'Lucro bruto', v: brl(profit) },
             { l: 'Margem média', v: margin.toFixed(1) + '%' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 18px', borderRight: i < 3 ? '1px solid var(--line)' : 'none' }}>
+            <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
               <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.025em', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>{m.v}</div>
             </div>
@@ -45,7 +45,7 @@ export function ReportsHub({ report }) {
 
         <div>
           <div className="section-h"><h3>Relatórios disponíveis</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+          <div className="g2" style={{ gap: 12 }}>
             <HubCard icon={<I.Chart size={15} />} accent title="Vendas" onClick={() => navigate('/reports/sales')}
               desc="Receita por dia e por unidade da rede, com ticket médio."
               meta={[['Receita', brl(report.revenue)], ['Vendas', `${report.saleCount}`], ['Ticket', brl(ticket)]]} />
