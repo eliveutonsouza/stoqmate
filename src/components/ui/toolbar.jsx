@@ -5,14 +5,13 @@ import { FilterChip } from '@/components/ui/filter-chip';
 
 export function Toolbar({ placeholder, filters = [], right }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
+    <div className="toolbar-row" style={{
       padding: '8px 10px',
       background: 'var(--bg-elev)',
       border: '1px solid var(--line)',
       borderRadius: 8,
     }}>
-      <div style={{ position: 'relative', width: 272 }}>
+      <div className="toolbar-search" style={{ position: 'relative' }}>
         <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-soft)' }}>
           <I.Search size={13} />
         </span>

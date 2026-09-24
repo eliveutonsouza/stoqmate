@@ -19,8 +19,8 @@ export function SettingsLayout({ navigate, children }) {
     { r: '/profile', l: 'Meu perfil', i: <I.Shield size={14} /> },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '208px minmax(0, 1fr)', gap: 28, padding: '20px 28px 48px', alignItems: 'start' }}>
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'sticky', top: 0 }}>
+    <div className="settings-grid page-pad">
+      <nav className="settings-nav" style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'sticky', top: 0 }}>
         {items.map(it => {
           const active = pathname === it.r;
           return (
@@ -30,7 +30,7 @@ export function SettingsLayout({ navigate, children }) {
               background: active ? 'var(--bg-elev)' : 'transparent',
               border: '1px solid ' + (active ? 'var(--line)' : 'transparent'),
               color: active ? 'var(--fg)' : 'var(--fg-muted)',
-              fontSize: 13, fontWeight: active ? 500 : 400,
+              fontSize: 13, fontWeight: active ? 500 : 400, whiteSpace: 'nowrap',
             }}>
               <span style={{ color: active ? 'var(--accent-text)' : 'var(--fg-muted)', display: 'flex' }}>{it.i}</span>
               {it.l}

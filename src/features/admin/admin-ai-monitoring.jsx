@@ -1,9 +1,7 @@
 "use client";
 
 import { useNavigate } from '@/hooks/use-navigate';
-import { layoutStyles } from '@/components/layout/layout-styles';
-import { AdminSidebar } from '@/components/layout/admin-sidebar';
-import { AppHeader } from '@/components/layout/app-header';
+import { AdminShell } from '@/components/ui/admin-shell';
 import { PageHeader } from '@/components/layout/page-header';
 
 const fmtDateTime = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -15,15 +13,11 @@ export function AdminAIMonitoring({ monitoring }) {
   const maxCost = Math.max(1, ...byDay.map((d) => d.cost));
 
   return (
-    <div style={layoutStyles.appShell}>
-      <AdminSidebar route="/admin/ai-monitoring" navigate={navigate} />
-      <div style={layoutStyles.main}>
-        <AppHeader breadcrumb={['Console', 'Monitor de IA']} navigate={navigate} contextSwitch="admin" />
-        <div style={layoutStyles.content}>
+    <AdminShell breadcrumb={['Monitor de IA']} navigate={navigate}>
           <PageHeader title="Monitor de consumo de IA" sub="Anthropic Claude Haiku 4.5 · custos, tokens e latência" />
 
-          <div style={{ padding: '20px 28px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+          <div className="page-pad" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="g4 kpi-strip">
               {[
                 { l: 'Custo (últimas 500 chamadas)', v: `US$ ${kpis.totalCost.toFixed(2)}` },
                 { l: 'Requisições', v: kpis.totalRequests.toLocaleString('pt-BR') },
@@ -57,7 +51,7 @@ export function AdminAIMonitoring({ monitoring }) {
               )}
             </div>
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Custo por modelo e função</h3>
               </div>
@@ -96,7 +90,7 @@ export function AdminAIMonitoring({ monitoring }) {
               )}
             </div>
 
-            <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card table-scroll">
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Últimas chamadas</h3>
                 <p style={{ margin: '3px 0 0', fontSize: 11, color: 'var(--fg-muted)' }}>50 mais recentes, de qualquer rede.</p>
@@ -131,8 +125,6 @@ export function AdminAIMonitoring({ monitoring }) {
               )}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminShell>
   );
 }

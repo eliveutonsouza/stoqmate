@@ -1,18 +1,13 @@
 
 export const layoutStyles = {
-  appShell: {
-    display: 'grid',
-    gridTemplateColumns: 'var(--sidebar-w, 240px) 1fr',
-    height: '100vh',
-    background: 'var(--bg)',
-    color: 'var(--fg)',
-  },
   sidebar: {
     borderRight: '1px solid var(--line)',
     background: 'var(--bg-sunken)',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    flex: 1,
+    minHeight: 0,
   },
   header: {
     height: 52,

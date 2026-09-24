@@ -10,11 +10,11 @@ export function FormCard({ title, desc, children, footer, cols = 2 }) {
           {desc && <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>{desc}</p>}
         </div>
       )}
-      <div style={{ padding: 18, display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 14 }}>
+      <div className="form-grid" style={{ padding: 18, '--cols': cols }}>
         {children}
       </div>
       {footer && (
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--line)', background: 'var(--bg-sunken)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--line)', background: 'var(--bg-sunken)', display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           {footer}
         </div>
       )}

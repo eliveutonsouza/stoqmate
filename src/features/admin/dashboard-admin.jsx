@@ -1,9 +1,7 @@
 "use client";
 
 import { useNavigate } from '@/hooks/use-navigate';
-import { layoutStyles } from '@/components/layout/layout-styles';
-import { AdminSidebar } from '@/components/layout/admin-sidebar';
-import { AppHeader } from '@/components/layout/app-header';
+import { AdminShell } from '@/components/ui/admin-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
 import { brl } from '@/lib/format';
@@ -17,19 +15,15 @@ export function DashboardAdmin({ overview }) {
   const { currentMrr, mrrTrend, planDistribution, tenantCount, recentSignups } = overview;
 
   return (
-    <div style={layoutStyles.appShell}>
-      <AdminSidebar route="/admin" navigate={navigate} />
-      <div style={layoutStyles.main}>
-        <AppHeader breadcrumb={['Console', 'Overview']} navigate={navigate} contextSwitch="admin" />
-        <div style={layoutStyles.content}>
+    <AdminShell breadcrumb={['Overview']} navigate={navigate}>
           <PageHeader
             title="Console"
             sub={`Saúde da plataforma · ${tenantCount} rede(s)`}
             actions={<button onClick={() => navigate('/admin/stores/new')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova rede</button>}
           />
 
-          <div style={{ padding: '20px 28px 40px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+          <div className="page-pad" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="g3 kpi-strip">
               {[
                 { l: 'MRR atual', v: brl(currentMrr) },
                 { l: 'ARR projetado', v: brl(currentMrr * 12), s: 'MRR atual × 12' },
@@ -43,18 +37,16 @@ export function DashboardAdmin({ overview }) {
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
+            <div className="split-2" style={{ '--a': '1.4fr' }}>
               <MRRGrowthCard mrrTrend={mrrTrend} currentMrr={currentMrr} />
               <PlanDistributionCard planDistribution={planDistribution} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>
+            <div className="split-2" style={{ '--a': '1.2fr' }}>
               <RecentSignupsCard navigate={navigate} signups={recentSignups} />
               <SystemHealthCard />
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminShell>
   );
 }

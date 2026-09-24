@@ -4,20 +4,25 @@ import * as React from 'react';
 import { layoutStyles } from '@/components/layout/layout-styles';
 import { I } from '@/components/icons';
 
-export function AppHeader({ breadcrumb, actions, navigate, contextSwitch }) {
+export function AppHeader({ breadcrumb, actions, navigate, contextSwitch, onMenu, menuOpen }) {
   return (
-    <header style={layoutStyles.header}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--fg-muted)' }}>
+    <header className="app-header" style={layoutStyles.header}>
+      {onMenu && (
+        <button onClick={onMenu} className="btn btn-ghost btn-icon btn-sm show-tablet" style={{ flexShrink: 0 }}
+          aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={!!menuOpen}>
+          <I.Menu size={16} />
+        </button>
+      )}
+      <div className="app-crumb" style={{ fontSize: 13, color: 'var(--fg-muted)', flex: 1 }}>
         {breadcrumb.map((b, i) => (
           <React.Fragment key={i}>
-            {i > 0 && <span style={{ color: 'var(--fg-faint)' }}><I.ChevronRight size={12} /></span>}
+            {i > 0 && <span style={{ color: 'var(--fg-faint)', display: 'flex', flexShrink: 0 }}><I.ChevronRight size={12} /></span>}
             <span style={{ color: i === breadcrumb.length - 1 ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: i === breadcrumb.length - 1 ? 500 : 400 }}>{b}</span>
           </React.Fragment>
         ))}
       </div>
-      <div style={{ flex: 1 }}></div>
       {contextSwitch && (
-        <div style={{
+        <div className="hide-mobile" style={{
           display: 'flex', alignItems: 'center', gap: 0,
           background: 'var(--bg-sunken)', border: '1px solid var(--line)',
           borderRadius: 6, padding: 2,

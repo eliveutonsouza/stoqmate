@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { layoutStyles } from '@/components/layout/layout-styles';
+import { AppFrame } from '@/components/layout/app-frame';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { AppHeader } from '@/components/layout/app-header';
 
@@ -14,14 +14,15 @@ const CommandPalette = dynamic(
 export function AdminShell({ breadcrumb, navigate, headerActions, children }) {
   const pathname = usePathname();
   return (
-    <div style={layoutStyles.appShell}>
-      <AdminSidebar route={pathname} navigate={navigate} />
-      <div style={layoutStyles.main}>
-        <AppHeader breadcrumb={['Console', ...breadcrumb]} navigate={navigate} contextSwitch="admin" actions={headerActions} />
-        <div style={layoutStyles.content} data-content-area>{children}</div>
-      </div>
-      <CommandPalette navigate={navigate} admin />
-    </div>
+    <AppFrame
+      sidebar={<AdminSidebar route={pathname} navigate={navigate} />}
+      renderHeader={(menu) => (
+        <AppHeader breadcrumb={['Console', ...breadcrumb]} navigate={navigate} contextSwitch="admin" actions={headerActions} {...menu} />
+      )}
+      overlay={<CommandPalette navigate={navigate} admin />}
+    >
+      {children}
+    </AppFrame>
   );
 }
 

@@ -5,28 +5,28 @@ export function PageHeader({ title, sub, actions, tabs, activeTab, onTab }) {
   return (
     <div style={{
       borderBottom: tabs ? 'none' : '1px solid var(--line)',
-      padding: '22px 28px 18px',
+      padding: '22px var(--page-pad) 18px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="page-header-row" style={{ alignItems: 'flex-end' }}>
+        <div style={{ minWidth: 0 }}>
           <h1 style={{
             margin: 0, fontSize: 22, fontWeight: 600,
             letterSpacing: '-0.022em', color: 'var(--fg)',
           }}>{title}</h1>
           {sub && <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--fg-muted)' }}>{sub}</p>}
         </div>
-        {actions && <div style={{ display: 'flex', gap: 8 }}>{actions}</div>}
+        {actions && <div className="page-header-actions">{actions}</div>}
       </div>
       {tabs && (
-        <div style={{
-          display: 'flex', gap: 2, marginTop: 18, marginBottom: -19,
+        <div className="page-tabs" style={{
+          marginTop: 18, marginBottom: -19,
           borderBottom: '1px solid var(--line)',
         }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => onTab && onTab(t.id)} style={{
               background: 'transparent', border: 'none',
               padding: '8px 12px 10px',
-              fontSize: 13, fontWeight: 500,
+              fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap',
               color: activeTab === t.id ? 'var(--fg)' : 'var(--fg-muted)',
               borderBottom: activeTab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
               marginBottom: -1,
