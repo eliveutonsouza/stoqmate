@@ -5,7 +5,7 @@ import { I } from '@/components/icons';
 
 export function FeatureRow({ eyebrow, title, body, bullets, children, flip, navigate, cta }) {
   return (
-    <div className="lp-split" style={{ padding: '44px 0', borderTop: '1px solid var(--line)' }}>
+    <div className="lp-split" data-fit-root style={{ padding: '44px 0', borderTop: '1px solid var(--line)' }}>
       <div style={{ order: flip ? 2 : 1, minWidth: 0 }}>
         <Eyebrow>{eyebrow}</Eyebrow>
         <h3 className="lp-h3" style={{ margin: 0, fontWeight: 600, letterSpacing: '-0.026em', lineHeight: 1.18, maxWidth: 440, textWrap: 'pretty' }}>

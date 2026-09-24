@@ -13,11 +13,11 @@ import { FilmStage } from '@/features/landing/hero-film-engine';
 import { Film, OM_SCENES } from '@/features/landing/hero-film-scenes';
 import { SHOTS } from '@/features/landing/hero-film-pieces';
 
+import { useFitScale } from '@/hooks/use-fit-scale';
+
 const STAGE_W = 1920;
 const STAGE_H = 1080;
-const SCALE = 0.33;
-const BOX_W = Math.round(STAGE_W * SCALE);
-const BOX_H = Math.round(STAGE_H * SCALE);
+const MAX_SCALE = 0.33;
 
 function useReducedMotion() {
   // Lazy initial state reads the media query directly — safe because this
@@ -49,13 +49,14 @@ export function HeroFilm() {
   const ref = React.useRef(null);
   const reducedMotion = useReducedMotion();
   const inView = useInView(ref);
+  const scale = useFitScale(ref, STAGE_W, MAX_SCALE);
 
   return (
     <div
       ref={ref}
       data-testid="hero-film"
       style={{
-        width: BOX_W, height: BOX_H, borderRadius: 14, overflow: 'hidden',
+        width: Math.round(STAGE_W * scale), height: Math.round(STAGE_H * scale), borderRadius: 14, overflow: 'hidden',
         boxShadow: '0 40px 90px rgba(0,0,0,.35)', background: '#0A0907',
       }}
     >
@@ -71,7 +72,7 @@ export function HeroFilm() {
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       ) : (
-        <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H, transform: `scale(${SCALE})`, transformOrigin: 'top left' }}>
+        <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
           <FilmStage width={STAGE_W} height={STAGE_H} scenes={OM_SCENES} paused={!inView}>
             <Film />
           </FilmStage>

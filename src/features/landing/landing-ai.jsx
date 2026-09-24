@@ -20,7 +20,7 @@ export function LandingAI({ navigate }) {
   return (
     <section style={{ background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '76px 0' }}>
       <div style={SECTION}>
-        <div className="lp-split">
+        <div className="lp-split" data-fit-root>
           <div style={{ minWidth: 0 }}>
             <Eyebrow>Inteligência artificial</Eyebrow>
             <H2 max={520}>A IA digita por você. Quem decide é você.</H2>

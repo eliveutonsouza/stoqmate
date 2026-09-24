@@ -38,10 +38,10 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
 
   return (
     <LayoutPublic navigate={navigate} route="/signup">
-      <section style={{ maxWidth: 1020, margin: '0 auto', padding: '52px 32px 60px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 32, alignItems: 'start' }}>
+      <section style={{ maxWidth: 1020, margin: '0 auto', padding: '40px var(--page-pad) 60px' }}>
+        <div className="form-split">
           <div>
-            <h1 style={{ margin: 0, fontSize: 34, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+            <h1 style={{ margin: 0, fontSize: 'clamp(26px, 5vw, 34px)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
               Criar sua conta no Stoqmate
             </h1>
             <p style={{ margin: '12px 0 28px', fontSize: 15, color: 'var(--fg-muted)', maxWidth: 440, lineHeight: 1.55 }}>
@@ -82,7 +82,7 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
           </div>
 
           {/* Order summary */}
-          <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 18 }}>
               <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 12 }}>Escolha seu plano</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>

@@ -31,7 +31,7 @@ export function LandingCompare() {
         Sistemas de gestão para varejo custam entre R$ 149 e R$ 379 por mês no Brasil, sem nenhum recurso de IA incluído.
       </Lead>
 
-      <div className="card" style={{ overflow: 'hidden', marginTop: 32 }}>
+      <div className="card table-scroll" style={{ marginTop: 32 }}>
         <table className="table">
           <thead>
             <tr>

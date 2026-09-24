@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import { useFitScale } from '@/hooks/use-fit-scale';
 
 export const ShowcaseCtx = React.createContext(false);
 
@@ -18,8 +19,10 @@ export const ShowcaseCtx = React.createContext(false);
 // primitive that proved reliable, so the hero paints alone and the rest arrive in
 // separate short tasks rather than one long one.
 
-export function ShowcaseFrame({ children, width = 1380, height = 860, scale = 0.5, url, radius = 12, chrome = true, eager = false, order = 1 }) {
+export function ShowcaseFrame({ children, width = 1380, height = 860, scale: maxScale = 0.5, url, radius = 12, chrome = true, eager = false, order = 1 }) {
   const [mounted, setMounted] = React.useState(!!eager);
+  const boxRef = React.useRef(null);
+  const scale = useFitScale(boxRef, width, maxScale);
 
   React.useEffect(() => {
     if (mounted) return;
@@ -28,8 +31,9 @@ export function ShowcaseFrame({ children, width = 1380, height = 860, scale = 0.
   }, [mounted, order]);
 
   return (
-    <div style={{
+    <div ref={boxRef} style={{
       width: width * scale,
+      maxWidth: '100%',
       height: height * scale + (chrome ? 34 : 0),
       borderRadius: radius,
       overflow: 'hidden',

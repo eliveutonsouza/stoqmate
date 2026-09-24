@@ -11,13 +11,13 @@ import { I } from '@/components/icons';
 // já usado pro CommandPalette (ver .spec/quality-gates.md).
 const HeroFilm = dynamic(
   () => import('@/features/landing/hero-film').then((m) => m.HeroFilm),
-  { ssr: false, loading: () => <div style={{ width: 634, height: 356, borderRadius: 14, background: '#0A0907' }} /> }
+  { ssr: false, loading: () => <div style={{ width: 634, maxWidth: '100%', aspectRatio: '16 / 9', borderRadius: 14, background: '#0A0907' }} /> }
 );
 
 export function LandingHero({ navigate, trialDays }) {
   return (
     <section style={{ ...SECTION, paddingTop: 56, paddingBottom: 40 }}>
-      <div className="lp-split">
+      <div className="lp-split" data-fit-root>
         <div style={{ minWidth: 0 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,

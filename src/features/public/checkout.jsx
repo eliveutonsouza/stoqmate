@@ -27,7 +27,7 @@ export function Checkout() {
 
   return (
     <LayoutPublic navigate={navigate} route="/checkout">
-      <section style={{ maxWidth: 1020, margin: '0 auto', padding: '52px 32px 72px' }}>
+      <section style={{ maxWidth: 1020, margin: '0 auto', padding: '40px var(--page-pad) 72px' }}>
         <div style={{ marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--fg-muted)', marginBottom: 12 }}>
             <span>Conta criada</span>
@@ -44,11 +44,11 @@ export function Checkout() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 32, alignItems: 'start' }}>
+        <div className="form-split">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <FormCard title="Plano e unidades" cols={1}>
               <Field label="Plano">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
                   {PLANS.map(o => {
                     const on = plan === o.id;
                     return (
@@ -123,7 +123,7 @@ export function Checkout() {
               </div>
 
               {method === 'card' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div className="g2" style={{ gap: 14 }}>
                   <Field label="Número do cartão" required span={2}>
                     <TextInput mono placeholder="0000 0000 0000 0000" suffix="VISA" />
                   </Field>
@@ -152,7 +152,7 @@ export function Checkout() {
             </FormCard>
           </div>
 
-          <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div data-sticky style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: 18 }}>
               <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 12 }}>Resumo</div>
               <SummaryRow label={`Plano ${chosen.name} · ${units} ${units === 1 ? 'loja' : 'lojas'}`} value={brl(cycle === 'monthly' ? monthly : yearly)} />

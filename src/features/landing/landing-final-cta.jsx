@@ -7,7 +7,7 @@ export function LandingFinalCTA({ navigate, trialDays }) {
   return (
     <section style={{ ...SECTION, paddingBottom: 96 }}>
       <div style={{
-        background: 'var(--fg)', color: 'var(--bg)', borderRadius: 14, padding: '52px 44px',
+        background: 'var(--fg)', color: 'var(--bg)', borderRadius: 14, padding: 'clamp(28px, 6vw, 52px) clamp(20px, 5vw, 44px)',
       }} className="lp-cta">
         <div>
           <h2 style={{ margin: 0, fontSize: 34, fontWeight: 600, letterSpacing: '-0.032em', color: 'var(--bg)', lineHeight: 1.12 }}>

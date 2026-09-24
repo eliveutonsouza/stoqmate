@@ -48,7 +48,7 @@ export function LandingROI({ navigate, plans, trialDays }) {
   const roi = cost > 0 ? gain / cost : 0;
 
   return (
-    <section style={{ ...SECTION, padding: '76px 32px' }}>
+    <section style={{ ...SECTION, padding: '76px var(--page-pad)' }}>
       <div style={{ textAlign: 'center' }}>
         <Eyebrow>Calculadora</Eyebrow>
         <div style={{ display: 'flex', justifyContent: 'center' }}>

@@ -24,9 +24,9 @@ export function Pricing({ plans, trialDays }) {
 
   return (
     <LayoutPublic navigate={navigate} route="/pricing">
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '60px 32px 28px', textAlign: 'center' }}>
+      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '48px var(--page-pad) 28px', textAlign: 'center' }}>
         <div style={{ fontSize: 11.5, color: 'var(--accent-text)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Planos</div>
-        <h1 style={{ margin: 0, fontSize: 46, fontWeight: 600, letterSpacing: '-0.036em', lineHeight: 1.06 }}>
+        <h1 className="lp-h1" style={{ margin: 0, fontWeight: 600, letterSpacing: '-0.036em', lineHeight: 1.06 }}>
           Preço por loja.<br/>Créditos de IA inclusos.
         </h1>
         <p style={{ margin: '20px auto 0', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 560, lineHeight: 1.6 }}>
@@ -57,8 +57,8 @@ export function Pricing({ plans, trialDays }) {
         )}
       </section>
 
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '20px 32px 36px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${activePlans.length}, minmax(0, 1fr))`, gap: 14, alignItems: 'start' }}>
+      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '20px var(--page-pad) 36px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, alignItems: 'start' }}>
           {activePlans.map(p => {
             const shown = annual ? Math.round(p.yearly / 12) : p.monthly;
             return (
@@ -78,7 +78,7 @@ export function Pricing({ plans, trialDays }) {
                 <div style={{ fontSize: 14, fontWeight: 600 }}>{p.name}</div>
                 <div style={{ fontSize: 13, opacity: 0.72, marginTop: 4, minHeight: 38, lineHeight: 1.5 }}>{p.tagline}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 8 }}>
-                  <span style={{ fontSize: 38, fontWeight: 600, letterSpacing: '-0.032em', fontVariantNumeric: 'tabular-nums' }}>R$ {shown}</span>
+                  <span style={{ fontSize: 'clamp(30px, 7vw, 38px)', fontWeight: 600, letterSpacing: '-0.032em', fontVariantNumeric: 'tabular-nums' }}>R$ {shown}</span>
                   <span style={{ fontSize: 13, opacity: 0.62 }}>/loja/mês</span>
                 </div>
                 <div style={{ fontSize: 11, opacity: 0.6, marginTop: 3, fontFamily: 'var(--font-mono)', minHeight: 15 }}>
@@ -127,7 +127,7 @@ export function Pricing({ plans, trialDays }) {
       </section>
 
       {/* Credits explained — the unit the whole model rests on */}
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 32px 36px' }}>
+      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '16px var(--page-pad) 36px' }}>
         <div className="card" style={{ overflow: 'hidden' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ flex: 1 }}>
@@ -144,6 +144,7 @@ export function Pricing({ plans, trialDays }) {
           </div>
 
           {showWhy && (
+            <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>
@@ -169,6 +170,7 @@ export function Pricing({ plans, trialDays }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           <div style={{ padding: '14px 20px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
@@ -190,7 +192,7 @@ export function Pricing({ plans, trialDays }) {
       </section>
 
       {/* Full feature matrix */}
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 32px 40px' }}>
+      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '16px var(--page-pad) 40px' }}>
         <div className="card" style={{ overflow: 'hidden' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-0.014em' }}>Comparativo completo</h3>
@@ -198,6 +200,7 @@ export function Pricing({ plans, trialDays }) {
               O que é operação básica está em todos os planos. O que só existe com várias lojas sobe de tier.
             </p>
           </div>
+          <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>
@@ -230,11 +233,12 @@ export function Pricing({ plans, trialDays }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </section>
 
       {/* Market anchor */}
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 32px 40px' }}>
+      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '16px var(--page-pad) 40px' }}>
         <div className="card" style={{ padding: 22 }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-0.014em' }}>Onde isso fica no mercado</h3>
           <p style={{ margin: '5px 0 20px', fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
@@ -262,7 +266,7 @@ export function Pricing({ plans, trialDays }) {
       </section>
 
       {/* FAQ */}
-      <section style={{ maxWidth: 800, margin: '0 auto', padding: '32px 32px 72px' }}>
+      <section style={{ maxWidth: 800, margin: '0 auto', padding: '32px var(--page-pad) 72px' }}>
         <h2 style={{ margin: '0 0 22px', fontSize: 26, fontWeight: 600, letterSpacing: '-0.026em' }}>Dúvidas sobre cobrança</h2>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {[

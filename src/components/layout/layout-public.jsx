@@ -1,8 +1,14 @@
 "use client";
 
+import * as React from 'react';
 import { I } from '@/components/icons';
 
+const NAV = [{ l: 'Produto', r: '/' }, { l: 'Planos', r: '/pricing' }, { l: 'Clientes', r: null }, { l: 'Ajuda', r: '/help' }];
+
 export function LayoutPublic({ children, navigate, route }) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const go = (r) => (e) => { e.preventDefault(); setMenuOpen(false); if (r) navigate(r); };
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
@@ -11,17 +17,14 @@ export function LayoutPublic({ children, navigate, route }) {
         backdropFilter: 'saturate(150%) blur(12px)',
         borderBottom: '1px solid var(--line)',
       }}>
-        <div style={{
-          maxWidth: 1280, margin: '0 auto', padding: '0 32px',
-          height: 60, display: 'flex', alignItems: 'center', gap: 32
-        }}>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); }} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+        <div className="pub-header-row">
+          <a href="#" onClick={go('/')} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <I.Brand size={22} />
             <I.Wordmark size={15} />
           </a>
-          <nav style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
-            {[{ l: 'Produto', r: '/' }, { l: 'Planos', r: '/pricing' }, { l: 'Clientes', r: null }, { l: 'Ajuda', r: '/help' }].map(item => (
-              <a key={item.l} href="#" onClick={(e) => { e.preventDefault(); if (item.r) navigate(item.r); }} style={{
+          <nav className="pub-nav" style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
+            {NAV.map(item => (
+              <a key={item.l} href="#" onClick={go(item.r)} style={{
                 fontSize: 13,
                 color: route === item.r && item.r !== '/' ? 'var(--fg)' : 'var(--fg-muted)',
                 padding: '6px 10px', borderRadius: 6,
@@ -30,13 +33,25 @@ export function LayoutPublic({ children, navigate, route }) {
             ))}
           </nav>
           <div style={{ flex: 1 }}></div>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login'); }} className="btn btn-ghost btn-sm">Entrar</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/signup'); }} className="btn btn-primary btn-sm">Testar grátis</a>
+          <a href="#" onClick={go('/login')} className="btn btn-ghost btn-sm pub-login">Entrar</a>
+          <a href="#" onClick={go('/signup')} className="btn btn-primary btn-sm">Testar grátis</a>
+          <button onClick={() => setMenuOpen((o) => !o)} className="btn btn-ghost btn-icon btn-sm show-tablet"
+            aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen}>
+            {menuOpen ? <I.X size={16} /> : <I.Menu size={16} />}
+          </button>
         </div>
+        {menuOpen && (
+          <nav className="pub-menu">
+            {NAV.filter((item) => item.r).map(item => (
+              <a key={item.l} href="#" onClick={go(item.r)} style={{ fontSize: 14, padding: '10px 4px', color: 'var(--fg)' }}>{item.l}</a>
+            ))}
+            <a href="#" onClick={go('/login')} style={{ fontSize: 14, padding: '10px 4px', color: 'var(--fg)' }}>Entrar</a>
+          </nav>
+        )}
       </header>
       {children}
-      <footer style={{ borderTop: '1px solid var(--line)', marginTop: 80, padding: '40px 32px 28px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.4fr repeat(4, 1fr)', gap: 32 }}>
+      <footer style={{ borderTop: '1px solid var(--line)', marginTop: 80, padding: '40px var(--page-pad) 28px' }}>
+        <div className="pub-footer" style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
               <I.Brand size={22} />
