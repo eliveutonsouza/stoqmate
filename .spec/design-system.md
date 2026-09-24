@@ -61,12 +61,20 @@ cima. Breakpoints: **1080px** (telas médias perdem colunas), **900px**
   - shell: `.app-shell`/`.app-sidebar` (via `AppFrame`, em
     `components/layout/app-frame.jsx`);
   - helpers: `.hide-tablet`/`.show-tablet`/`.hide-mobile`/`.show-mobile`.
+- As regras são **container queries** (`@container app (...)`), não media
+  queries. O `body` é o container `app`, então no app vale a largura da
+  tela. Os prints da landing (`ShowcaseFrame`) abrem um container `app`
+  próprio na largura de desenho (1380px), e a tela lá dentro fica sempre
+  no layout desktop, mesmo com o visitante no celular. Regra nova de
+  responsividade do app usa `@container app`; só a landing (`.lp-*`, que
+  nunca aparece dentro de print) usa `@media`.
 - Espaçamento lateral de página: token `--page-pad` (`.page-pad`).
 - `useMediaQuery` (`src/hooks/use-media-query.ts`) só quando a
   **estrutura** muda (ex.: `PhoneFrame` com moldura no desktop, tela cheia
   no celular). Refluxo de layout é CSS puro.
 - Objeto de tamanho fixo escalado (preview de tela, filme do hero) usa
   `useFitScale`: `transform: scale` sozinho não reduz a caixa de layout.
+  O print encolhe no celular, mas mostra o desktop (decisão do produto).
 - Telas "de dispositivo" (`/mobile/*`, `/pos`) são prévia com moldura no
   desktop e ocupam o aparelho de verdade abaixo de 640px (PDV: até 1024px).
 
