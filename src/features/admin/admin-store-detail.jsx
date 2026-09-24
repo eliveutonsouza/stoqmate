@@ -17,7 +17,9 @@ import { startImpersonationAction } from '@/features/admin/actions';
 const PLAN_NAMES = { balcao: 'Balcão', controle: 'Controle', rede: 'Rede' };
 const REASONS = ['Atendimento de ticket de suporte', 'Investigação de bug reportado', 'Demonstração comercial', 'Migração de dados assistida'];
 
-export function AdminStoreDetail({ detail }) {
+const SUB_STATUS = { active: 'Ativa', trialing: 'Em trial', past_due: 'Pagamento em atraso', canceled: 'Cancelada', incomplete: 'Incompleta', unpaid: 'Não paga' };
+
+export function AdminStoreDetail({ detail, subscription }) {
   const navigate = useNavigate();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
@@ -39,6 +41,8 @@ export function AdminStoreDetail({ detail }) {
   }
 
   const { tenant: t, stores, users, auditLog, skuCount } = detail;
+  const subs = subscription?.tenant?.subscriptions ?? [];
+  const sub = subs.find((s) => s.status !== 'canceled') ?? subs[0] ?? null;
 
   const startAccess = () => {
     setError('');
@@ -96,8 +100,26 @@ export function AdminStoreDetail({ detail }) {
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Assinatura</h3>
             </div>
-            <div style={{ padding: 18, fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
-              Cobrança ainda não configurada (Stripe pendente). Plano atual: <strong style={{ color: 'var(--fg)' }}>{PLAN_NAMES[t.plan_id] ?? t.plan_id}</strong>.
+            {sub ? (
+              [
+                ['Status', SUB_STATUS[sub.status] ?? sub.status],
+                ['Ciclo', sub.cycle === 'yearly' ? 'Anual' : 'Mensal'],
+                ['Fim do período', sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('pt-BR') : '—'],
+                ['Renovação', sub.cancel_at_period_end ? 'Cancela no fim do período' : 'Automática'],
+              ].map(([k, v], i) => (
+                <div key={k} style={{ display: 'flex', gap: 12, padding: '10px 18px', borderBottom: '1px solid var(--line-soft)' }}>
+                  <span style={{ fontSize: 12, color: 'var(--fg-muted)', width: 110, flexShrink: 0 }}>{k}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: i === 0 && sub.status === 'past_due' ? 'var(--danger)' : undefined }}>{v}</span>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: 18, fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
+                Sem assinatura no Stripe.{' '}
+                {t.trial_ends_at && <>Trial {new Date(t.trial_ends_at) < new Date() ? 'encerrado em' : 'até'} <strong style={{ color: 'var(--fg)' }}>{new Date(t.trial_ends_at).toLocaleDateString('pt-BR')}</strong>.</>}
+              </div>
+            )}
+            <div style={{ padding: '10px 18px' }}>
+              <button onClick={() => navigate(`/admin/subscriptions/detail?id=${t.id}`)} className="btn btn-outline btn-sm">Ver cobrança e faturas</button>
             </div>
           </div>
         </div>

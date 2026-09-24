@@ -304,6 +304,49 @@ export async function loadAdminOverview() {
   };
 }
 
+export async function loadPlatformSettings() {
+  const supabase = await requireStaff();
+  const admin = createServiceRoleClient();
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const [{ data: settings }, { data: usage }] = await Promise.all([
+    supabase.from("platform_settings").select("trial_days, ai_spend_ceiling_usd, ai_alert_pct, updated_at").maybeSingle(),
+    admin.from("ai_usage_log").select("cost_usd").gte("created_at", monthStart.toISOString()),
+  ]);
+
+  const monthSpend = (usage ?? []).reduce((s, u) => s + Number(u.cost_usd ?? 0), 0);
+  const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+  const projection = (monthSpend / now.getUTCDate()) * daysInMonth;
+
+  // Só o modo e a presença da chave — nunca o valor.
+  const stripeKey = process.env.STRIPE_SECRET_KEY ?? "";
+  const integrations = [
+    {
+      name: "Stripe", desc: "Cobrança, assinaturas e crédito avulso",
+      connected: Boolean(stripeKey), ref: stripeKey ? (stripeKey.startsWith("sk_live") ? "modo produção" : "modo teste") : "—",
+    },
+    {
+      name: "Anthropic", desc: "Classificação de produtos, OCR de notas, previsão de demanda",
+      connected: Boolean(process.env.ANTHROPIC_API_KEY), ref: process.env.ANTHROPIC_API_KEY ? "chave configurada" : "—",
+    },
+    {
+      name: "Supabase Auth", desc: "Emails transacionais (convite, confirmação, senha)",
+      connected: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY), ref: "SMTP do projeto",
+    },
+  ];
+
+  return {
+    settings: {
+      trialDays: settings?.trial_days ?? 14,
+      aiSpendCeilingUsd: Number(settings?.ai_spend_ceiling_usd ?? 2500),
+      aiAlertPct: settings?.ai_alert_pct ?? 80,
+      updatedAt: settings?.updated_at ?? null,
+    },
+    aiMonth: { spend: monthSpend, projection },
+    integrations,
+  };
+}
+
 export async function loadPlans() {
   await requireStaff();
   const admin = createServiceRoleClient();

@@ -137,6 +137,19 @@ decisão do desenvolvedor manter os arquivos como reserva pra uma troca
 futura de ferramenta de billing, não religar nem deletar sem pedido
 explícito (ver comentário em `billing-state.js`).
 
+**Telas admin intencionalmente estáticas**: `admin-economics.jsx` é
+calculadora de precificação sobre as constantes de `lib/plans.js` (não é
+dado de tenant — não religar ao banco). `system-health-card.jsx` é
+observabilidade de infra, fora do código de produto. Em
+`/admin/settings`, só é real o que tem backend: `platform_settings`
+(duração do trial — vira o default de `tenants.trial_ends_at` via
+`fn_platform_trial_days()` —, teto e % de alerta de gasto de IA) e o
+status das integrações (lido das env vars no servidor, nunca o valor da
+chave). Branding de plataforma, retenção, tamanho de foto, tolerância de
+inadimplência, rate limit e sessão admin aparecem desabilitados com "Em
+breve" — não ganham campo no banco antes de existir código que os
+aplique.
+
 **Padrão de segurança que já mordeu duas vezes — checar em toda tabela
 nova**: RLS ligado + grant concedido + ZERO policy = nega tudo pro
 `authenticated`, **sem erro nenhum** pro client (a query simplesmente

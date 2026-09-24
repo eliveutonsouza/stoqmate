@@ -109,6 +109,25 @@ export async function updateTenantAction(input: {
   return { ok: true };
 }
 
+export async function updatePlatformSettingsAction(input: {
+  trialDays: number; aiSpendCeilingUsd: number; aiAlertPct: number;
+}) {
+  const supabase = await requireStaff();
+  if (!Number.isInteger(input.trialDays) || input.trialDays < 1 || input.trialDays > 90) {
+    return { error: "Duração do trial deve ficar entre 1 e 90 dias." };
+  }
+  if (!(input.aiSpendCeilingUsd >= 0)) return { error: "Teto de gasto inválido." };
+  if (!Number.isInteger(input.aiAlertPct) || input.aiAlertPct < 1 || input.aiAlertPct > 100) {
+    return { error: "Alerta deve ficar entre 1% e 100%." };
+  }
+  const { error } = await supabase.rpc("fn_platform_settings_update", {
+    p_trial_days: input.trialDays, p_ai_spend_ceiling_usd: input.aiSpendCeilingUsd, p_ai_alert_pct: input.aiAlertPct,
+  });
+  if (error) return { error: friendlyError(error.message) };
+  revalidatePath("/admin/settings");
+  return { ok: true };
+}
+
 export async function upsertPlanAction(input: {
   id: string; name: string; tagline: string; who: string; monthlyPrice: number; yearlyPrice: number | null;
   credits: number; limits: Record<string, number | string | null>; popular: boolean; active: boolean;
