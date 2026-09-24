@@ -48,6 +48,7 @@ export function AdminPlanForm({ mode = 'new', plan }) {
       const result = await upsertPlanAction({
         id: planId, name, tagline, who, monthlyPrice: monthly, yearlyPrice: yearly || null,
         credits, limits: {
+          ...(plan?.limits ?? {}),
           skus: limits.skus === '' ? null : Number(limits.skus),
           users: limits.users === '' ? null : Number(limits.users),
           stores: limits.stores === '' ? null : Number(limits.stores),

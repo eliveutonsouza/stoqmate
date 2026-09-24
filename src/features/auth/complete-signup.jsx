@@ -6,14 +6,14 @@ import { AuthShell } from '@/features/auth/auth-shell';
 import { AuthTestimonial } from '@/features/auth/auth-testimonial';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
-import { PLANS } from '@/lib/plans';
 import { completeGoogleSignupAction } from '@/features/auth/actions';
 
-export function CompleteSignup({ email = '' }) {
+export function CompleteSignup({ email = '', plans }) {
   const navigate = useNavigate();
+  const activePlans = plans.filter((p) => p.active);
   const [storeName, setStoreName] = React.useState('');
   const [cnpj, setCnpj] = React.useState('');
-  const [plan, setPlan] = React.useState('controle');
+  const [plan, setPlan] = React.useState(() => (activePlans.find((p) => p.popular) ?? activePlans[0])?.id);
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
@@ -44,7 +44,7 @@ export function CompleteSignup({ email = '' }) {
         <div>
           <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 12 }}>Escolha seu plano</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {PLANS.map(p => {
+            {activePlans.map(p => {
               const active = plan === p.id;
               return (
                 <button

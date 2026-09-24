@@ -15,22 +15,22 @@ import { LandingPricingTeaser } from '@/features/landing/landing-pricing-teaser'
 import { LandingFAQ } from '@/features/landing/landing-faq';
 import { LandingFinalCTA } from '@/features/landing/landing-final-cta';
 
-export function Landing() {
+export function Landing({ plans, trialDays }) {
   const navigate = useNavigate();
   return (
     <LayoutPublic navigate={navigate} route="/">
-      <LandingHero navigate={navigate} />
+      <LandingHero navigate={navigate} trialDays={trialDays} />
       <LandingProof />
       <LandingCost navigate={navigate} />
       <LandingSegments />
       <LandingFeatures navigate={navigate} />
       <LandingAI navigate={navigate} />
-      <LandingROI navigate={navigate} />
+      <LandingROI navigate={navigate} plans={plans} trialDays={trialDays} />
       <LandingCompare navigate={navigate} />
       <LandingTestimonials />
-      <LandingPricingTeaser navigate={navigate} />
+      <LandingPricingTeaser navigate={navigate} plans={plans} />
       <LandingFAQ />
-      <LandingFinalCTA navigate={navigate} />
+      <LandingFinalCTA navigate={navigate} trialDays={trialDays} />
     </LayoutPublic>
   );
 }

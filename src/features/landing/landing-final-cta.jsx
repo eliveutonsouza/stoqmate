@@ -3,7 +3,7 @@
 import { SECTION } from '@/features/landing/section';
 import { I } from '@/components/icons';
 
-export function LandingFinalCTA({ navigate }) {
+export function LandingFinalCTA({ navigate, trialDays }) {
   return (
     <section style={{ ...SECTION, paddingBottom: 96 }}>
       <div style={{
@@ -14,7 +14,7 @@ export function LandingFinalCTA({ navigate }) {
             Amanhã de manhã você já sabe<br/>o que está faltando.
           </h2>
           <p style={{ margin: '14px 0 0', fontSize: 15.5, opacity: 0.72, maxWidth: 520, lineHeight: 1.6 }}>
-            30 dias grátis, sem cartão. Importe o catálogo que você já tem e comece a operar hoje —
+            {trialDays} dias grátis, sem cartão. Importe o catálogo que você já tem e comece a operar hoje —
             se não servir, você exporta tudo e vai embora sem custo.
           </p>
           <div style={{ display: 'flex', gap: 18, marginTop: 22, fontSize: 12.5, opacity: 0.68, flexWrap: 'wrap' }}>

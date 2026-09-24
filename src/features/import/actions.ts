@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { limitKindFromError } from "@/lib/plan-limits";
 
 export async function checkExistingSkusAction(skus: string[]) {
   if (!skus.length) return { existing: [] };
@@ -29,6 +31,8 @@ export async function bulkImportProductsAction(input: {
     })),
   });
   if (error) {
+    const limit = limitKindFromError(error.message);
+    if (limit) redirect(`/limit-reached?kind=${limit}`);
     if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para importar produtos." };
     return { error: error.message };
   }

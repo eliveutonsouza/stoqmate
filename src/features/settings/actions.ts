@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { limitKindFromError } from "@/lib/plan-limits";
 
 export async function inviteTeamMemberAction(input: {
   email: string;
@@ -14,7 +16,11 @@ export async function inviteTeamMemberAction(input: {
     p_full_name: input.fullName,
     p_role: input.role,
   });
-  if (error) return { error: error.message };
+  if (error) {
+    const limit = limitKindFromError(error.message);
+    if (limit) redirect(`/limit-reached?kind=${limit}`);
+    return { error: error.message };
+  }
 
   revalidatePath("/settings/users");
   return { ok: true, token: token as string };

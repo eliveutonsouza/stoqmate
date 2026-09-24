@@ -5,11 +5,11 @@ import { SECTION } from '@/features/landing/section';
 import { Eyebrow } from '@/features/landing/eyebrow';
 import { H2 } from '@/features/landing/h2';
 import { Lead } from '@/features/landing/lead';
-import { ANNUAL, PLANS, annualSavings } from '@/lib/plans';
+import { ANNUAL, annualSavings } from '@/lib/plans';
 import { PLAN_BENEFITS } from '@/features/landing/plan-benefits';
 import { I } from '@/components/icons';
 
-export function LandingPricingTeaser({ navigate }) {
+export function LandingPricingTeaser({ navigate, plans }) {
   const [annual, setAnnual] = React.useState(false);
 
   return (
@@ -40,7 +40,7 @@ export function LandingPricingTeaser({ navigate }) {
       </div>
 
       <div className="lp-g3" style={{ maxWidth: 1000, margin: '0 auto', alignItems: 'stretch' }}>
-        {PLANS.map(p => {
+        {plans.filter((p) => p.active).map(p => {
           const s = annualSavings(p, 1);
           const shown = annual ? Math.round(p.yearly / 12) : p.monthly;
           const ben = PLAN_BENEFITS[p.id];

@@ -125,7 +125,17 @@ export async function updatePlatformSettingsAction(input: {
   });
   if (error) return { error: friendlyError(error.message) };
   revalidatePath("/admin/settings");
+  revalidatePublicPlanPages();
   return { ok: true };
+}
+
+// Landing, /pricing e /signup são ISR (revalidate = 300) e mostram preço,
+// créditos, limites e duração do trial — sem isso a edição no admin levaria
+// até 5 min pra aparecer.
+function revalidatePublicPlanPages() {
+  revalidatePath("/");
+  revalidatePath("/pricing");
+  revalidatePath("/signup");
 }
 
 export async function upsertPlanAction(input: {
@@ -140,5 +150,6 @@ export async function upsertPlanAction(input: {
   });
   if (error) return { error: friendlyError(error.message) };
   revalidatePath("/admin/plans");
+  revalidatePublicPlanPages();
   return { id: input.id };
 }

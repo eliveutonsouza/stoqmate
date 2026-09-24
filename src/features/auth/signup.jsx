@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { PLANS } from '@/lib/plans';
 import { LayoutPublic } from '@/components/layout/layout-public';
 import { FormCard } from '@/components/ui/form-card';
 import { Field } from '@/components/ui/field';
@@ -13,10 +12,12 @@ import { SummaryRow } from '@/components/ui/summary-row';
 import { brl } from '@/lib/format';
 import { signUpAction } from '@/features/auth/actions';
 
-export function Signup() {
+export function Signup({ plans, trialDays, trialEndsOn }) {
   const navigate = useNavigate();
-  const [plan, setPlan] = React.useState('controle');
-  const chosen = PLANS.find(p => p.id === plan) || PLANS[1];
+  const activePlans = plans.filter((p) => p.active);
+  const [plan, setPlan] = React.useState(() => (activePlans.find((p) => p.popular) ?? activePlans[0])?.id);
+  const chosen = activePlans.find(p => p.id === plan) || activePlans[0];
+  const firstCharge = new Date(trialEndsOn).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' });
   const [form, setForm] = React.useState({ fullName: '', phone: '', email: '', password: '', storeName: '', cnpj: '' });
   const [terms, setTerms] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -44,7 +45,7 @@ export function Signup() {
               Criar sua conta no Stoqmate
             </h1>
             <p style={{ margin: '12px 0 28px', fontSize: 15, color: 'var(--fg-muted)', maxWidth: 440, lineHeight: 1.55 }}>
-              30 dias grátis. Nenhuma cobrança agora — só pedimos o cartão no fim do período de teste.
+              {trialDays} dias grátis. Nenhuma cobrança agora — só pedimos o cartão no fim do período de teste.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -85,7 +86,7 @@ export function Signup() {
             <div className="card" style={{ padding: 18 }}>
               <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 12 }}>Escolha seu plano</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {PLANS.map(p => {
+                {activePlans.map(p => {
                   const active = plan === p.id;
                   return (
                     <button key={p.id} onClick={() => setPlan(p.id)} style={{
@@ -114,12 +115,12 @@ export function Signup() {
 
               <div style={{ borderTop: '1px solid var(--line)', marginTop: 16, paddingTop: 12 }}>
                 <SummaryRow label={`Plano ${chosen.name} · 1 loja`} value={brl(chosen.monthly)} />
-                <SummaryRow label="Teste de 30 dias" value={'− ' + brl(chosen.monthly)} tone="success" />
+                <SummaryRow label={`Teste de ${trialDays} dias`} value={'− ' + brl(chosen.monthly)} tone="success" />
                 <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
                   <SummaryRow label="Cobrado hoje" value={brl(0)} strong />
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 8, lineHeight: 1.5 }}>
-                  Primeira cobrança de {brl(chosen.monthly)} em 19 de outubro de 2026. Cancele antes disso sem custo.
+                  Primeira cobrança de {brl(chosen.monthly)} em {firstCharge}. Cancele antes disso sem custo.
                 </div>
               </div>
             </div>

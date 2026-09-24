@@ -416,7 +416,7 @@ export function Film() {
               background: C.accStrong, color: '#fff', fontSize: 26, fontWeight: 600,
               padding: '18px 38px', borderRadius: 12, letterSpacing: '-0.015em',
               boxShadow: '0 18px 44px rgba(233,75,28,.45)',
-            }}>Testar 30 dias grátis</div>
+            }}>Testar grátis</div>
             <Glass pad="16px 26px" style={{ borderRadius: 12 }}>
               <span style={{ fontSize: 22, color: 'rgba(255,255,255,.82)' }}>a partir de </span>
               <span style={{ fontSize: 26, fontWeight: 600, fontFamily: C.mono }}>R$ 89</span>

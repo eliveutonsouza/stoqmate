@@ -3,15 +3,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { authEmailOrigin } from "@/lib/site-origin";
+import { finishPendingSignup, slugify } from "@/features/auth/pending-signup";
 
-function slugify(name: string) {
-  const base = name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "")
-    .slice(0, 30);
-  return base || "loja";
+function verifyEmailPath(email: string) {
+  return `/verify-email?email=${encodeURIComponent(email)}`;
 }
 
 export async function signUpAction(input: {
@@ -23,10 +18,15 @@ export async function signUpAction(input: {
   planId: string;
 }) {
   const supabase = await createClient();
+  const origin = await authEmailOrigin();
 
-  const { error: signUpError } = await supabase.auth.signUp({
+  const { data, error: signUpError } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=/onboarding`,
+      data: { full_name: input.fullName, store_name: input.storeName, cnpj: input.cnpj || null, plan_id: input.planId },
+    },
   });
 
   if (signUpError) {
@@ -37,7 +37,12 @@ export async function signUpAction(input: {
       email: input.email,
       password: input.password,
     });
+    if (signInError?.code === "email_not_confirmed") redirect(verifyEmailPath(input.email));
     if (signInError) return { error: "Este email já está cadastrado." };
+  } else if (!data.session) {
+    // Confirmação de email ligada: o tenant nasce em /auth/callback
+    // (finishPendingSignup) quando o link do email for clicado.
+    redirect(verifyEmailPath(input.email));
   }
 
   const { error: rpcError } = await supabase.rpc("fn_complete_signup", {
@@ -100,9 +105,35 @@ export async function completeGoogleSignupAction(input: {
 
 export async function signInAction(input: { email: string; password: string }) {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(input);
+  const { data, error } = await supabase.auth.signInWithPassword(input);
+  if (error?.code === "email_not_confirmed") redirect(verifyEmailPath(input.email));
   if (error) return { error: "Email ou senha incorretos." };
+
+  // O link de confirmação aberto em outro navegador não troca o code (PKCE)
+  // e o cadastro pendente não fecha no callback — fecha aqui no 1º login.
+  const [{ data: tenantId }, { data: isStaff }] = await Promise.all([
+    supabase.rpc("auth_tenant_id"),
+    supabase.rpc("is_platform_staff"),
+  ]);
+  if (!tenantId && !isStaff) {
+    redirect((await finishPendingSignup(supabase, data.user)) ?? "/complete-signup");
+  }
   redirect("/dashboard");
+}
+
+export async function resendConfirmationAction(input: { email: string }) {
+  const supabase = await createClient();
+  const origin = await authEmailOrigin();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: input.email,
+    options: { emailRedirectTo: `${origin}/auth/callback?next=/onboarding` },
+  });
+  if (error) {
+    if (error.status === 429) return { error: "Muitas tentativas. Espere um minuto e tente de novo." };
+    return { error: "Não foi possível reenviar agora. Tente de novo em instantes." };
+  }
+  return { ok: true };
 }
 
 export async function signInAdminAction(input: { email: string; password: string; code: string }) {
@@ -171,12 +202,20 @@ export async function acceptInviteAction(input: {
   password: string;
 }) {
   const supabase = await createClient();
+  const origin = await authEmailOrigin();
 
-  const { error: signUpError } = await supabase.auth.signUp({
+  // O link de convite é compartilhado à mão, não prova posse do email — com
+  // confirmação ligada, o vínculo só acontece em /auth/callback.
+  const { data, error: signUpError } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
+      data: { full_name: input.fullName, invite_token: input.token },
+    },
   });
   if (signUpError) return { error: signUpError.message };
+  if (!data.session) redirect(verifyEmailPath(input.email));
 
   const { error: rpcError } = await supabase.rpc("fn_accept_invite", {
     p_token: input.token,

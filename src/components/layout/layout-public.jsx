@@ -31,7 +31,7 @@ export function LayoutPublic({ children, navigate, route }) {
           </nav>
           <div style={{ flex: 1 }}></div>
           <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login'); }} className="btn btn-ghost btn-sm">Entrar</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/signup'); }} className="btn btn-primary btn-sm">Testar 30 dias grátis</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/signup'); }} className="btn btn-primary btn-sm">Testar grátis</a>
         </div>
       </header>
       {children}

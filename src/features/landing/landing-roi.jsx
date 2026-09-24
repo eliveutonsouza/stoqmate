@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from 'react';
-import { PLANS } from '@/lib/plans';
 import { SECTION } from '@/features/landing/section';
 import { Eyebrow } from '@/features/landing/eyebrow';
 import { H2 } from '@/features/landing/h2';
@@ -31,7 +30,7 @@ const Slider = ({ label, value, set, min, max, step, fmt }) => (
   </div>
 );
 
-export function LandingROI({ navigate }) {
+export function LandingROI({ navigate, plans, trialDays }) {
   const [skus, setSkus] = React.useState(800);
   const [ticket, setTicket] = React.useState(180);
   const [stores, setStores] = React.useState(2);
@@ -44,7 +43,7 @@ export function LandingROI({ navigate }) {
   const laborValue = Math.round((hoursOnNotes + hoursOnCount) * 28); // R$ 28/h
   const deadStock = Math.round(skus * 0.38 * ticket * 0.55 * 0.12);  // 12% do capital classe C liberado
   const gain = rupturePerMonth + laborValue + deadStock;
-  const plan = stores > 3 ? PLANS[2] : stores > 1 ? PLANS[1] : PLANS[0];
+  const plan = stores > 3 ? plans[2] : stores > 1 ? plans[1] : plans[0];
   const cost = plan.monthly * stores;
   const roi = cost > 0 ? gain / cost : 0;
 
@@ -110,7 +109,7 @@ export function LandingROI({ navigate }) {
 
           <button onClick={() => navigate('/signup')} className="btn btn-primary btn-lg"
             style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
-            Testar 30 dias grátis <I.ArrowRight size={14} />
+            Testar {trialDays} dias grátis <I.ArrowRight size={14} />
           </button>
           <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 10, lineHeight: 1.5 }}>
             Estimativa, não promessa. Serve para você decidir se vale o teste.

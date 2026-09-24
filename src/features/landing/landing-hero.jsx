@@ -14,7 +14,7 @@ const HeroFilm = dynamic(
   { ssr: false, loading: () => <div style={{ width: 634, height: 356, borderRadius: 14, background: '#0A0907' }} /> }
 );
 
-export function LandingHero({ navigate }) {
+export function LandingHero({ navigate, trialDays }) {
   return (
     <section style={{ ...SECTION, paddingTop: 56, paddingBottom: 40 }}>
       <div className="lp-split">
@@ -44,7 +44,7 @@ export function LandingHero({ navigate }) {
 
           <div style={{ display: 'flex', gap: 10, marginTop: 30, flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/signup')} className="btn btn-primary btn-lg">
-              Testar 30 dias grátis <I.ArrowRight size={14} />
+              Testar {trialDays} dias grátis <I.ArrowRight size={14} />
             </button>
             <button onClick={() => navigate('/dashboard')} className="btn btn-outline btn-lg">
               Ver o sistema funcionando

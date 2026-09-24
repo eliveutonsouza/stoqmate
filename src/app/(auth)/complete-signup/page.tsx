@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CompleteSignup } from '@/features/auth/complete-signup';
+import { loadPublicPlans } from '@/features/public/queries';
 
 export default async function Page() {
   const supabase = await createClient();
@@ -10,5 +11,6 @@ export default async function Page() {
   const { data: tenantId } = await supabase.rpc('auth_tenant_id');
   if (tenantId) redirect('/dashboard');
 
-  return <CompleteSignup email={user.email ?? ''} />;
+  const { plans } = await loadPublicPlans();
+  return <CompleteSignup email={user.email ?? ''} plans={plans} />;
 }

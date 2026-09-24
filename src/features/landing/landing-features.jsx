@@ -19,6 +19,45 @@ const ABC_SHOWCASE_ROWS = [
   { product_id: '5', sku: 'CAS-DEC-VAS', name: 'Vaso Decorativo M', revenue: 2100, units: 30, stock_qty: 65, stock_value: 3900, category_name: 'Casa e Decoração', category_code: 'CAS', category_icon: 'Home', category_color: '#7C3AED' },
 ];
 
+const CAT_ELE = { id: 'ele', name: 'Eletrônicos', code: 'ELE', icon: 'Zap', color: '#1D4FD7' };
+const CAT_CAL = { id: 'cal', name: 'Calçados', code: 'CAL', icon: 'Footprint', color: '#B45309' };
+const CAT_VES = { id: 'ves', name: 'Vestuário', code: 'VES', icon: 'Shirt', color: '#0D9488' };
+
+// Mesma regra do ABC acima: estas telas agora recebem dado real via props
+// e quebram sem elas — a vitrine passa um exemplo fixo no mesmo formato.
+const NETWORK_SHOWCASE = {
+  revenue: 184300, margin: 38.4, totalQty: 6420, ruptureCount: 7,
+  stores: [
+    { id: 's1', name: 'Loja Centro', type: 'loja', revenue: 82400, skuCount: 412, qty: 2380 },
+    { id: 's2', name: 'Loja Shopping Norte', type: 'loja', revenue: 61900, skuCount: 388, qty: 1910 },
+    { id: 's3', name: 'Loja Bairro Sul', type: 'loja', revenue: 40000, skuCount: 301, qty: 1260 },
+    { id: 's4', name: 'CD Guarulhos', type: 'cd', revenue: 0, skuCount: 455, qty: 870 },
+  ],
+  imbalance: [
+    { productId: 'p1', product: { name: 'Fone Bluetooth ANC', brand: 'Sonora', attrs: { cor: 'Preto' }, category: CAT_ELE }, min: { qty: 0 }, max: { qty: 38 } },
+    { productId: 'p2', product: { name: 'Tênis Corrida', brand: 'Passo', attrs: { cor: 'Branco', tamanho: '41' }, category: CAT_CAL }, min: { qty: 1 }, max: { qty: 24 } },
+    { productId: 'p3', product: { name: 'Camisa Social', brand: 'Alfaiate', attrs: { cor: 'Azul', tamanho: 'M' }, category: CAT_VES }, min: { qty: 2 }, max: { qty: 19 } },
+  ],
+};
+
+const posProduct = (id, sku, brand, name, price, category, attrs, qty) => ({
+  id, sku, brand, name, sale_price: price, category, attrs, stock_balances: [{ store_id: 's1', qty }],
+});
+const POS_SHOWCASE = {
+  stores: [{ id: 's1', name: 'Loja Centro' }],
+  categories: [CAT_ELE, CAT_CAL, CAT_VES],
+  products: [
+    posProduct('p1', 'ELE-FONE-PRT', 'Sonora', 'Fone Bluetooth ANC', 289.9, CAT_ELE, { cor: 'Preto' }, 22),
+    posProduct('p2', 'ELE-CARR-65W', 'Volt', 'Carregador GaN 65W', 149.9, CAT_ELE, {}, 140),
+    posProduct('p3', 'CAL-TEN-BRC', 'Passo', 'Tênis Corrida', 349.9, CAT_CAL, { cor: 'Branco', tamanho: '41' }, 34),
+    posProduct('p4', 'VES-CAM-AZL', 'Alfaiate', 'Camisa Social', 159.9, CAT_VES, { cor: 'Azul', tamanho: 'M' }, 58),
+    posProduct('p5', 'VES-CAM-BRC', 'Alfaiate', 'Camisa Social', 159.9, CAT_VES, { cor: 'Branco', tamanho: 'G' }, 41),
+    posProduct('p6', 'CAL-SAN-MAR', 'Passo', 'Sandália Couro', 199.9, CAT_CAL, { cor: 'Marrom', tamanho: '38' }, 17),
+  ],
+  cashSessionByStore: {},
+  operatorName: 'Mariana',
+};
+
 export function LandingFeatures({ navigate }) {
   return (
     <section style={{ ...SECTION, paddingBottom: 72 }}>
@@ -39,7 +78,7 @@ export function LandingFeatures({ navigate }) {
           cta={{ l: 'Ver a visão da rede', r: '/network' }}
         >
           <ShowcaseFrame order={1} url="stoqmate.com.br/network" width={1380} height={900} scale={0.44}>
-            <NetworkDashboard navigate={() => {}} />
+            <NetworkDashboard {...NETWORK_SHOWCASE} />
           </ShowcaseFrame>
         </FeatureRow>
 
@@ -57,7 +96,7 @@ export function LandingFeatures({ navigate }) {
           cta={{ l: 'Abrir o PDV de balcão', r: '/pos' }}
         >
           <ShowcaseFrame order={2} url="stoqmate.com.br/pos" width={1380} height={900} scale={0.44} chrome={false} radius={14}>
-            <TabletPOS navigate={() => {}} />
+            <TabletPOS {...POS_SHOWCASE} />
           </ShowcaseFrame>
         </FeatureRow>
 

@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { AI_OPS, ANNUAL, CREDIT_PACKS, FEATURE_MATRIX, MARKET, PLANS } from '@/lib/plans';
+import { AI_OPS, ANNUAL, CREDIT_PACKS, FEATURE_MATRIX, MARKET } from '@/lib/plans';
 import { I } from '@/components/icons';
 import { LayoutPublic } from '@/components/layout/layout-public';
 import { AIChip } from '@/features/ai/ai-chip';
 
-export function Pricing() {
+export function Pricing({ plans, trialDays }) {
   const navigate = useNavigate();
+  const activePlans = plans.filter((p) => p.active);
   const [annual, setAnnual] = React.useState(false);
   const [showWhy, setShowWhy] = React.useState(false);
   // Tolerante a cache: se plans.js for de uma geração anterior, a página pública
@@ -29,7 +30,7 @@ export function Pricing() {
           Preço por loja.<br/>Créditos de IA inclusos.
         </h1>
         <p style={{ margin: '20px auto 0', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 560, lineHeight: 1.6 }}>
-          30 dias grátis em qualquer plano, sem cartão. Você vê quanto de IA consumiu e nunca recebe
+          {trialDays} dias grátis em qualquer plano, sem cartão. Você vê quanto de IA consumiu e nunca recebe
           cobrança automática por excedente.
         </p>
 
@@ -57,8 +58,8 @@ export function Pricing() {
       </section>
 
       <section style={{ maxWidth: 1180, margin: '0 auto', padding: '20px 32px 36px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, alignItems: 'start' }}>
-          {PLANS.map(p => {
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${activePlans.length}, minmax(0, 1fr))`, gap: 14, alignItems: 'start' }}>
+          {activePlans.map(p => {
             const shown = annual ? Math.round(p.yearly / 12) : p.monthly;
             return (
               <div key={p.id} style={{
@@ -147,7 +148,7 @@ export function Pricing() {
               <thead>
                 <tr>
                   <th>Operação</th><th className="num">Custa</th>
-                  <th className="num">Cabe no Balcão</th><th className="num">No Controle</th><th className="num">Na Rede</th>
+                  {plans.map((p) => <th key={p.id} className="num">No {p.name}</th>)}
                   <th>Por quê</th>
                 </tr>
               </thead>
@@ -158,7 +159,7 @@ export function Pricing() {
                     <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600 }}>
                       {op.credits} {op.credits === 1 ? 'crédito' : 'créditos'}
                     </td>
-                    {PLANS.map(p => (
+                    {plans.map(p => (
                       <td key={p.id} className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>
                         {Math.floor(p.credits / op.credits).toLocaleString('pt-BR')}×
                       </td>
@@ -201,7 +202,7 @@ export function Pricing() {
             <thead>
               <tr>
                 <th style={{ width: '38%' }}>Recurso</th>
-                {PLANS.map(p => (
+                {plans.map(p => (
                   <th key={p.id} style={{ textAlign: 'center', background: p.popular ? 'var(--accent-soft)' : undefined }}>
                     <span style={{ color: p.popular ? 'var(--accent-text)' : 'var(--fg-muted)', fontWeight: p.popular ? 600 : 500 }}>{p.name}</span>
                   </th>

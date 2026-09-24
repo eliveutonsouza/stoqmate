@@ -131,11 +131,30 @@ inventado) dá o primeiro ponto de dado.
 **Telas de billing órfãs, intencionalmente**: `cancel-subscription.jsx`,
 `plan-change.jsx`, `switch-to-annual.jsx`, `invoice-detail.jsx`,
 `account-cancelled.jsx`, `past-due.jsx`, `trial-ended.jsx` (todas em
-`src/features/billing/`) ficam sem rota de navegação real desde que a
+`src/features/billing/`), mais `/checkout` (`src/features/public/checkout.jsx`,
+formulário de cartão próprio que nunca cobra — lê `PLANS` estático de
+propósito), ficam sem rota de navegação real desde que a
 arquitetura de assinatura virou Stripe Checkout + Customer Portal —
 decisão do desenvolvedor manter os arquivos como reserva pra uma troca
 futura de ferramenta de billing, não religar nem deletar sem pedido
 explícito (ver comentário em `billing-state.js`).
+
+**Planos nas páginas públicas**: landing, `/pricing`, `/signup` e
+`/complete-signup` leem o catálogo real via `loadPublicPlans()`
+(`features/public/queries.ts`), com client anon sem cookies
+(`lib/supabase/public.ts`) pra landing/pricing/signup seguirem ISR
+(`revalidate = 300`, e `revalidatePath` quando o admin salva plano ou
+settings). O banco sobrescreve nome/textos/preço/créditos/limites/destaque
+sobre o `PLANS` estático, que continua dono da ordem das 3 colunas e dos
+campos que só existem lá (`FEATURE_MATRIX`, `support`, `msgs`). A copy
+de trial lê `fn_platform_trial_days()` — nunca escrever "N dias grátis"
+fixo em tela que tem dado do servidor.
+
+**Limites de plano**: `limits.users` em `fn_team_invite`,
+`limits.stores` em `fn_create_store` e `limits.skus` no trigger
+`products_sku_limit` (só SKU ativo conta). A action que recebe esse erro
+redireciona pra `/limit-reached?kind=` via `limitKindFromError`
+(`lib/plan-limits.js`).
 
 **Telas admin intencionalmente estáticas**: `admin-economics.jsx` é
 calculadora de precificação sobre as constantes de `lib/plans.js` (não é

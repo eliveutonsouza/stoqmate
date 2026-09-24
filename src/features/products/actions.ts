@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient, getTenantId } from "@/lib/supabase/server";
+import { limitKindFromError } from "@/lib/plan-limits";
 
 export async function createCategoryAction(input: {
   name: string;
@@ -89,6 +91,8 @@ export async function createProductAction(input: {
     .select("id")
     .single();
   if (error) {
+    const limit = limitKindFromError(error.message);
+    if (limit) redirect(`/limit-reached?kind=${limit}`);
     return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : error.message };
   }
 
