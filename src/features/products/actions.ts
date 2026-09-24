@@ -158,6 +158,48 @@ export async function updateProductAction(input: {
   return { id: input.id };
 }
 
+export async function setProductActiveAction(input: { id: string; active: boolean }) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("products").update({ active: input.active }).eq("id", input.id);
+  if (error) {
+    const limit = limitKindFromError(error.message);
+    if (limit) redirect(`/limit-reached?kind=${limit}`);
+    return { error: error.message };
+  }
+  revalidatePath("/products");
+  return { ok: true };
+}
+
+// Cópia sem código de barras (é único) e com SKU novo — abre direto na
+// edição pra ajustar a variação.
+export async function duplicateProductAction(id: string) {
+  const supabase = await createClient();
+  const { data: src, error: readError } = await supabase
+    .from("products")
+    .select("tenant_id, category_id, sku, brand, name, attrs, cost_price, sale_price, min_stock, supplier_id, default_location_id, notes, photo_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError || !src) return { error: "Produto não encontrado." };
+
+  const { data: taken } = await supabase.from("products").select("sku").like("sku", `${src.sku}-COPIA%`);
+  const used = new Set((taken ?? []).map((t) => t.sku));
+  let sku = `${src.sku}-COPIA`;
+  for (let n = 2; used.has(sku); n++) sku = `${src.sku}-COPIA${n}`;
+
+  const { data: copy, error } = await supabase
+    .from("products")
+    .insert({ ...src, sku, name: `${src.name} (cópia)` })
+    .select("id")
+    .single();
+  if (error) {
+    const limit = limitKindFromError(error.message);
+    if (limit) redirect(`/limit-reached?kind=${limit}`);
+    return { error: error.message };
+  }
+  revalidatePath("/products");
+  return { id: copy.id as string };
+}
+
 export async function uploadProductPhotoAction(formData: FormData) {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };

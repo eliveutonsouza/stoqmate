@@ -110,6 +110,18 @@ export async function updateSupplierAction(input: {
   return { id: input.id };
 }
 
+// Inativo some dos seletores de entrada e pedido de compra novos, mas o
+// histórico e os produtos que já apontam pra ele seguem intactos.
+export async function setSupplierActiveAction(input: { id: string; active: boolean }) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("suppliers").update({ active: input.active }).eq("id", input.id);
+  if (error) return { error: error.message };
+  revalidatePath("/suppliers");
+  revalidatePath("/stock/entry");
+  revalidatePath("/purchase-orders/new");
+  return { ok: true };
+}
+
 export async function createLocationAction(input: {
   storeId: string;
   code: string;

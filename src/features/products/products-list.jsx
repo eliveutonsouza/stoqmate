@@ -13,11 +13,38 @@ import { AttrChip } from '@/components/ui/attr-chip';
 import { variantLabel } from '@/lib/attr-colors';
 import { EmptyState } from '@/components/ui/empty-state';
 import { brl } from '@/lib/format';
+import { RowMenu } from '@/components/ui/row-menu';
+import { duplicateProductAction, setProductActiveAction } from '@/features/products/actions';
 
 export function ProductsList({ initialProducts, categories }) {
   const navigate = useNavigate();
   const [cat, setCat] = React.useState('all');
   const [selected, setSelected] = React.useState(new Set());
+  const [error, setError] = React.useState('');
+  const [, startTransition] = React.useTransition();
+
+  const runAction = (fn) => {
+    setError('');
+    startTransition(async () => {
+      const result = await fn();
+      if (result?.error) setError(result.error);
+    });
+  };
+  const rowItems = (p) => [
+    { label: 'Ver detalhe', onSelect: () => navigate(`/products/detail?id=${p.id}`) },
+    { label: 'Editar', onSelect: () => navigate(`/products/edit?id=${p.id}`) },
+    {
+      label: 'Duplicar',
+      onSelect: () => runAction(async () => {
+        const result = await duplicateProductAction(p.id);
+        if (result?.id) navigate(`/products/edit?id=${result.id}`);
+        return result;
+      }),
+    },
+    p.active
+      ? { label: 'Desativar', tone: 'danger', onSelect: () => runAction(() => setProductActiveAction({ id: p.id, active: false })) }
+      : { label: 'Reativar', onSelect: () => runAction(() => setProductActiveAction({ id: p.id, active: true })) },
+  ];
 
   const products = React.useMemo(
     () => initialProducts.map((p) => ({
@@ -89,6 +116,8 @@ export function ProductsList({ initialProducts, categories }) {
               </div>
             )}
 
+            {error && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>}
+
             <div className="card" style={{ overflow: 'hidden' }}>
               <table className="table">
                 <thead>
@@ -109,7 +138,7 @@ export function ProductsList({ initialProducts, categories }) {
                 </thead>
                 <tbody>
                   {rows.map((p, i) => (
-                    <tr key={p.id} style={{ background: selected.has(i) ? 'var(--accent-soft)' : undefined }}>
+                    <tr key={p.id} style={{ background: selected.has(i) ? 'var(--accent-soft)' : undefined, opacity: p.active ? 1 : 0.55 }}>
                       <td>
                         <input type="checkbox" checked={selected.has(i)} onChange={() => {
                           const n = new Set(selected); if (n.has(i)) n.delete(i); else n.add(i); setSelected(n);
@@ -120,7 +149,7 @@ export function ProductsList({ initialProducts, categories }) {
                           <ProductThumb category={p.category} brand={p.brand} attrs={p.attrs} size={28} />
                           <div>
                             <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/products/detail?id=${p.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</a>
-                            <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{p.brand}</div>
+                            <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{p.brand}{!p.active && ' · inativo'}</div>
                           </div>
                         </div>
                       </td>
@@ -137,7 +166,7 @@ export function ProductsList({ initialProducts, categories }) {
                         <span style={{ fontSize: 10, color: 'var(--fg-muted)', marginLeft: 4 }}>{p.category?.unit}</span>
                       </td>
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{brl(p.sale_price)}</td>
-                      <td><button className="btn btn-ghost btn-icon btn-sm"><I.More size={13} /></button></td>
+                      <td><RowMenu label={`Ações de ${p.name}`} items={rowItems(p)} /></td>
                     </tr>
                   ))}
                 </tbody>

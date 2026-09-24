@@ -7,7 +7,7 @@ export default async function Page() {
     supabase
       .from('products')
       .select(`
-        id, sku, barcode, brand, name, attrs, sale_price, cost_price, min_stock,
+        id, sku, barcode, brand, name, attrs, sale_price, cost_price, min_stock, active,
         category:categories(id, name, code, unit, unit_plural, icon, color),
         supplier:suppliers(id, name),
         location:locations(id, code),

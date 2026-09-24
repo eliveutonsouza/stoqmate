@@ -14,6 +14,7 @@ import { markNotificationsReadAction, saveNotificationPreferencesAction } from '
 const KIND = {
   out_of_stock: { tone: 'danger', icon: 'Alert' },
   low_stock: { tone: 'warning', icon: 'Alert' },
+  access_request: { tone: 'info', icon: 'Lock' },
 };
 
 function timeAgo(iso) {
@@ -47,6 +48,7 @@ export function Notifications({ notifications, preferences }) {
   const open = (n) => {
     if (!n.read_at) startTransition(async () => { await markNotificationsReadAction([n.id]); router.refresh(); });
     if (n.target_type === 'product') navigate(`/products/detail?id=${n.target_id}`);
+    if (n.target_type === 'user') navigate('/settings/users');
   };
 
   const savePrefs = () => {
@@ -61,7 +63,7 @@ export function Notifications({ notifications, preferences }) {
     <StoreShell route="/notifications" breadcrumb={['Notificações']} navigate={navigate}>
       <PageHeader
         title="Notificações"
-        sub={`${unreadCount} não lidas · alertas de estoque`}
+        sub={`${unreadCount} não lidas · alertas de estoque e pedidos de acesso`}
         actions={<button onClick={markAllRead} disabled={pending || unreadCount === 0} className="btn btn-outline btn-sm">Marcar todas como lidas</button>}
         tabs={[
           { id: 'all', label: `Todas · ${notifications.length}` },

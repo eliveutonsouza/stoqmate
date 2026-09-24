@@ -21,6 +21,7 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** @param {{ mode?: string, categories?: any[], promotion?: any }} props */
 export function PromotionForm({ mode = 'new', categories, promotion }) {
   if (mode === 'edit') return <PromotionView promotion={promotion} />;
   return <PromotionCreateForm categories={categories} />;

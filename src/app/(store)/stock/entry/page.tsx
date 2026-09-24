@@ -6,7 +6,7 @@ export default async function Page() {
   const supabase = await createClient();
   const [stores, { data: suppliers }, { data: locations }] = await Promise.all([
     loadStores(),
-    supabase.from('suppliers').select('id, name').order('name'),
+    supabase.from('suppliers').select('id, name').eq('active', true).order('name'),
     supabase.from('locations').select('id, code').order('code'),
   ]);
 

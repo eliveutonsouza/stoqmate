@@ -6,7 +6,7 @@ export default async function Page() {
   const [{ data: suppliers }, { data: categories }] = await Promise.all([
     supabase
       .from('suppliers')
-      .select('id, name, cnpj, phone, order_email, brands, lead_time_days, supplier_categories(category:categories(id, name, icon, color))')
+      .select('id, name, cnpj, phone, order_email, brands, lead_time_days, active, supplier_categories(category:categories(id, name, icon, color))')
       .order('name'),
     supabase.from('categories').select('id, name').order('name'),
   ]);

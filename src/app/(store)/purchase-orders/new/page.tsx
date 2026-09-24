@@ -10,7 +10,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   const storeId = store || stores[0]?.id || '';
   const [suggestions, { data: suppliers }] = await Promise.all([
     storeId ? loadReplenishmentSuggestions(storeId) : Promise.resolve([]),
-    supabase.from('suppliers').select('id, name, lead_time_days, min_order_value').order('name'),
+    supabase.from('suppliers').select('id, name, lead_time_days, min_order_value').eq('active', true).order('name'),
   ]);
 
   const qtyOverrides: Record<string, number> = {};

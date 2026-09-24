@@ -14,7 +14,22 @@ import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { EmptyState } from '@/components/ui/empty-state';
-import { createSupplierAction } from '@/features/operations/actions';
+import { RowMenu } from '@/components/ui/row-menu';
+import { createSupplierAction, setSupplierActiveAction } from '@/features/operations/actions';
+
+function exportCsv(suppliers) {
+  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [
+    ['Nome', 'CNPJ', 'Telefone', 'Email de pedidos', 'Marcas', 'Prazo (dias)', 'Status'],
+    ...suppliers.map((s) => [s.name, s.cnpj, s.phone, s.order_email, (s.brands || []).join(', '), s.lead_time_days, s.active ? 'Ativo' : 'Inativo']),
+  ];
+  const blob = new Blob(['﻿' + rows.map((r) => r.map(cell).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fornecedores.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 function emptyForm() {
   return { name: '', cnpj: '', phone: '', email: '', brands: '', leadTimeDays: '', notes: '', categoryIds: new Set() };
@@ -36,7 +51,16 @@ export function Suppliers({ initialSuppliers, categories }) {
     return { ...s, categoryIds: n };
   });
   const [error, setError] = React.useState('');
+  const [listError, setListError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
+
+  const setActive = (s, active) => {
+    setListError('');
+    startTransition(async () => {
+      const result = await setSupplierActiveAction({ id: s.id, active });
+      if (result?.error) setListError(result.error);
+    });
+  };
 
   const submit = () => {
     setError('');
@@ -60,7 +84,7 @@ export function Suppliers({ initialSuppliers, categories }) {
         sub={`${suppliers.length} fornecedor${suppliers.length === 1 ? '' : 'es'} cadastrado${suppliers.length === 1 ? '' : 's'}`}
         actions={(
           <>
-            <button className="btn btn-outline btn-sm"><I.Download size={13} /> Exportar</button>
+            <button onClick={() => exportCsv(suppliers)} disabled={suppliers.length === 0} className="btn btn-outline btn-sm"><I.Download size={13} /> Exportar</button>
             <button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Cadastrar fornecedor</button>
           </>
         )}
@@ -77,6 +101,8 @@ export function Suppliers({ initialSuppliers, categories }) {
           <>
             <Toolbar placeholder="Buscar por nome, CNPJ ou marca…" filters={[{ label: 'Categoria', value: 'Todas' }, { label: 'Prazo', value: 'Todos' }]} right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{suppliers.length} fornecedores</span>} />
 
+            {listError && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{listError}</div>}
+
             <div className="card" style={{ overflow: 'hidden' }}>
               <table className="table">
                 <thead>
@@ -87,11 +113,12 @@ export function Suppliers({ initialSuppliers, categories }) {
                 </thead>
                 <tbody>
                   {suppliers.map((s) => (
-                    <tr key={s.id}>
+                    <tr key={s.id} style={{ opacity: s.active ? 1 : 0.55 }}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <StoreAvatar name={s.name} />
                           <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/suppliers/detail?id=${s.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{s.name}</a>
+                          {!s.active && <span className="badge">Inativo</span>}
                         </div>
                       </td>
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{s.cnpj ?? '—'}</td>
@@ -104,7 +131,15 @@ export function Suppliers({ initialSuppliers, categories }) {
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{(s.brands || []).join(', ') || '—'}</td>
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{s.lead_time_days ? `${s.lead_time_days}d` : '—'}</td>
-                      <td><button onClick={() => navigate(`/suppliers/edit?id=${s.id}`)} className="btn btn-ghost btn-sm">Editar</button></td>
+                      <td>
+                        <RowMenu label={`Ações de ${s.name}`} items={[
+                          { label: 'Ver detalhe', onSelect: () => navigate(`/suppliers/detail?id=${s.id}`) },
+                          { label: 'Editar', onSelect: () => navigate(`/suppliers/edit?id=${s.id}`) },
+                          s.active
+                            ? { label: 'Desativar', tone: 'danger', onSelect: () => setActive(s, false) }
+                            : { label: 'Reativar', onSelect: () => setActive(s, true) },
+                        ]} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
