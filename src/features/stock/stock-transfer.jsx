@@ -11,6 +11,7 @@ import { SelectInput } from '@/components/ui/select-input';
 import { TextInput } from '@/components/ui/text-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { transferDispatchAction } from '@/features/stock/actions';
 
 const REASONS = ['Reposição por ruptura no destino', 'Balanceamento de estoque', 'Remanejamento sazonal', 'Devolução ao centro de distribuição', 'Pedido de cliente em outra loja'];
@@ -18,7 +19,8 @@ const REASONS = ['Reposição por ruptura no destino', 'Balanceamento de estoque
 export function StockTransfer({ stores }) {
   const navigate = useNavigate();
   const [product, setProduct] = React.useState(null);
-  const [originId, setOriginId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [originId, setOriginId] = React.useState(defaultStoreId);
   const [destId, setDestId] = React.useState(stores[1]?.id ?? '');
   const [qty, setQty] = React.useState(1);
   const [reason, setReason] = React.useState(REASONS[0]);

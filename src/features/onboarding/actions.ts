@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient, getTenantId } from "@/lib/supabase/server";
-import { CATEGORIES } from "@/lib/mock";
+import { CATEGORY_TEMPLATES } from "@/lib/category-templates";
 
 function friendlyError(message: string) {
   if (message.includes("not authorized")) return "Seu perfil não tem permissão para concluir a configuração.";
@@ -36,7 +36,7 @@ export async function completeOnboardingAction(input: {
   fiscalMode: string;
 }) {
   const supabase = await createClient();
-  const templates = CATEGORIES.filter((c) => input.categoryIds.includes(c.id)).map((c) => ({
+  const templates = CATEGORY_TEMPLATES.filter((c) => input.categoryIds.includes(c.id)).map((c) => ({
     name: c.name, code: c.code, icon: c.icon, color: c.color, unit: c.unit, unit_plural: c.unitPlural,
     attributes: c.attributes.map((a) => ({ key: a.key, label: a.label, type: a.type, values: a.values })),
   }));

@@ -1,12 +1,12 @@
 "use client";
 
-import { catById } from '@/lib/mock';
 import { colorHex, isColorValue } from '@/lib/attr-colors';
 
-// `category` (objeto real) tem prioridade sobre `cat` (id do mock) — mesma
-// razão do CategoryBadge: id real é uuid, não existe em src/lib/mock.js.
-export function ProductThumb({ cat, category, brand, attrs, size = 32 }) {
-  const c = category || catById(cat);
+// Produto sem categoria: visual neutro, sem inventar uma categoria.
+const NO_CATEGORY = { name: 'Sem categoria', icon: 'Box', color: 'var(--fg-soft)' };
+
+export function ProductThumb({ category, brand, attrs, size = 32 }) {
+  const c = category || NO_CATEGORY;
   const accentValue = Object.values(attrs || {}).find(isColorValue);
   return (
     <div style={{

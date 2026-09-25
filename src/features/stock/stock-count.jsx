@@ -5,6 +5,7 @@ import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { Page } from '@/components/ui/page-container';
 import { MovementNav } from '@/features/stock/movement-nav';
 import { FormCard } from '@/components/ui/form-card';
@@ -24,7 +25,8 @@ const REASONS = ['Erro de lançamento anterior', 'Furto / extravio', 'Item danif
 
 export function StockCount({ stores, locations, categories }) {
   const navigate = useNavigate();
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [locationId, setLocationId] = React.useState('');
   const [categoryId, setCategoryId] = React.useState('');
   const [rows, setRows] = React.useState([]);

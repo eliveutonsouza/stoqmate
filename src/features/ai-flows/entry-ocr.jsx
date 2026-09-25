@@ -12,6 +12,7 @@ import { Page } from '@/components/ui/page-container';
 import { MovementNav } from '@/features/stock/movement-nav';
 import { FormCard } from '@/components/ui/form-card';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { Field } from '@/components/ui/field';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { AIThinking } from '@/features/ai/ai-thinking';
@@ -29,7 +30,8 @@ export function EntryOCR({ stores, categories, products, quota }) {
   const [text, setText] = React.useState(SAMPLE_NF);
   const [rows, setRows] = React.useState(null);
   const [decided, setDecided] = React.useState({});
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [confirming, setConfirming] = React.useState(false);
   const [error, setError] = React.useState('');
   const task = useAITask();

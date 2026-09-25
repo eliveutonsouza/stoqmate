@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { OPEN_ROUTES } from "@/lib/permissions";
+import { gateStoreRoute, type SessionAccess } from "@/lib/access-gate";
 
 // Rotas públicas são exatamente OPEN_ROUTES do RBAC (marketing + auth +
 // system) — mesma fonte que o cliente já usa em can()/areaFor(), não uma
@@ -47,16 +48,42 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Redirect leva junto os cookies que o getUser() acabou de renovar.
+  const redirectTo = (path: string) => {
+    const res = NextResponse.redirect(new URL(path, request.url));
+    response.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  };
+
   if (!user) {
     const loginPath = pathname.startsWith(ADMIN_PREFIX) ? "/login/admin" : "/login";
-    return NextResponse.redirect(new URL(loginPath, request.url));
+    return redirectTo(loginPath);
   }
 
   if (pathname.startsWith(ADMIN_PREFIX)) {
     const { data: isStaff } = await supabase.rpc("is_platform_staff");
     if (!isStaff) {
-      return NextResponse.redirect(new URL("/login/admin", request.url));
+      return redirectTo("/login/admin");
     }
+    return response;
+  }
+
+  if (NEEDS_SESSION.includes(pathname)) return response;
+
+  // Perfil + assinatura valem aqui, não só no menu: digitar a URL não pula.
+  const { data: ctxRows, error: ctxError } = await supabase.rpc("fn_session_context");
+  if (ctxError) {
+    return redirectTo("/error");
+  }
+  const ctx = (ctxRows as { role: string | null; access: SessionAccess }[] | null)?.[0];
+  const access = ctx?.access ?? "no_tenant";
+  if (access === "no_tenant") {
+    const { data: isStaff } = await supabase.rpc("is_platform_staff");
+    if (isStaff) return redirectTo(ADMIN_PREFIX);
+  }
+  const target = gateStoreRoute(pathname, { role: ctx?.role ?? null, access });
+  if (target) {
+    return redirectTo(target);
   }
 
   return response;

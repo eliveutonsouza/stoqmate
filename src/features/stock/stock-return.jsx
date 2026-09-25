@@ -12,13 +12,15 @@ import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { stockReturnAction } from '@/features/stock/actions';
 
 const REASONS = ['Desistência do cliente', 'Defeito de fabricação', 'Variação incorreta', 'Produto errado entregue', 'Arrependimento (7 dias)'];
 
 export function StockReturn({ stores }) {
   const navigate = useNavigate();
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [product, setProduct] = React.useState(null);
   const [qty, setQty] = React.useState(1);
   const [reason, setReason] = React.useState(REASONS[0]);

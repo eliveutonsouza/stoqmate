@@ -12,12 +12,14 @@ import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { stockEntryAction } from '@/features/stock/actions';
 
 export function StockEntry({ stores, suppliers, locations }) {
   const navigate = useNavigate();
   const [product, setProduct] = React.useState(null);
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [qty, setQty] = React.useState(1);
   const [unit, setUnit] = React.useState(0);
   const [supplierId, setSupplierId] = React.useState('');

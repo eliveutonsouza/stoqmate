@@ -1,5 +1,6 @@
 "use client";
 
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
@@ -27,7 +28,8 @@ export function ShelfForm({ mode = 'new', categories = [], stores = [], location
   const editing = mode === 'edit';
   const [code, setCode] = React.useState(location?.code ?? '');
   const [description, setDescription] = React.useState(location?.description ?? '');
-  const [storeId, setStoreId] = React.useState(location?.store_id ?? stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(location?.store_id ?? defaultStoreId);
   const [categoryIds, setCategoryIds] = React.useState(() => new Set(location?.categoryIds ?? []));
   const toggleCategory = (id) => setCategoryIds((s) => {
     const n = new Set(s);

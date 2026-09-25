@@ -1,7 +1,7 @@
 "use client";
 
 import { OnbTitle } from '@/features/onboarding/onb-title';
-import { MOCK, catById } from '@/lib/mock';
+import { CATEGORY_TEMPLATES, templateById } from '@/lib/category-templates';
 import { I } from '@/components/icons';
 
 export function OnbStep4({ data, set }) {
@@ -13,7 +13,7 @@ export function OnbStep4({ data, set }) {
         desc="Cada categoria vem com um esquema de atributos e uma unidade de medida pré-configurados. Dá para editar tudo depois — e criar categorias do zero."
       />
       <div className="g2" style={{ gap: 8 }}>
-        {MOCK.categories.map(c => {
+        {CATEGORY_TEMPLATES.map(c => {
           const on = data.cats.includes(c.id);
           const CIco = I[c.icon] || I.Box;
           return (
@@ -47,7 +47,7 @@ export function OnbStep4({ data, set }) {
         })}
       </div>
 
-      <button style={{
+      <div style={{
         display: 'flex', alignItems: 'center', gap: 10, width: '100%',
         marginTop: 8, padding: '12px 14px',
         border: '1.5px dashed var(--line-strong)', background: 'var(--bg-sunken)',
@@ -55,12 +55,12 @@ export function OnbStep4({ data, set }) {
       }}>
         <span style={{ color: 'var(--accent-text)', display: 'flex' }}><I.Plus size={15} /></span>
         <span style={{ flex: 1 }}>
-          <span style={{ display: 'block', fontSize: 13, fontWeight: 500 }}>Criar uma categoria do zero</span>
+          <span style={{ display: 'block', fontSize: 13, fontWeight: 500 }}>Não achou o que vende?</span>
           <span style={{ display: 'block', fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>
-            Autopeças, farmácia, material de construção — você define os atributos.
+            Autopeças, farmácia, material de construção: depois de concluir, crie a categoria do zero em Catálogo › Categorias e atributos.
           </span>
         </span>
-      </button>
+      </div>
 
       <div style={{
         marginTop: 16, padding: '11px 13px',
@@ -71,7 +71,7 @@ export function OnbStep4({ data, set }) {
           ? 'Selecione ao menos uma categoria para continuar.'
           : <>Selecionadas <strong style={{ color: 'var(--fg)', fontWeight: 500 }}>{data.cats.length}</strong> categorias, com{' '}
             <strong style={{ color: 'var(--fg)', fontWeight: 500 }}>
-              {data.cats.reduce((s, id) => s + catById(id).attributes.length, 0)} atributos
+              {data.cats.reduce((s, id) => s + (templateById(id)?.attributes.length ?? 0), 0)} atributos
             </strong> no total.</>}
       </div>
     </>

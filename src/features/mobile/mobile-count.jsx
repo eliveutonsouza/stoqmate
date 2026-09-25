@@ -9,11 +9,13 @@ import { ProductThumb } from '@/components/ui/product-thumb';
 import { ProductPicker } from '@/components/ui/product-picker';
 import { variantLabel } from '@/lib/attr-colors';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { stockCountSubmitAction } from '@/features/stock/actions';
 
 export function MobileCount({ stores, locations }) {
   const navigate = useNavigate();
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const storeLocations = locations.filter((l) => l.store_id === storeId);
   const [locationId, setLocationId] = React.useState(storeLocations[0]?.id ?? '');
   const [step, setStep] = React.useState('scan');

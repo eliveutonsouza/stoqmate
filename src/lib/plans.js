@@ -1,4 +1,3 @@
-import { MOCK } from './mock';
 
 // Plan architecture and unit economics.
 //
@@ -211,40 +210,6 @@ export function planEconomics(plan) {
   const abuseHeadroom = breakEvenCredits / plan.credits;
 
   return { infra, support, gateway, whatsapp, fixed, aiCost, aiCostP50, cogs, gross, margin, p50Cost, p50Margin, breakEvenCredits, abuseHeadroom };
-}
-
-// Base instalada da plataforma — FONTE ÚNICA. Redes e lojas cobradas por plano;
-// MRR, ARR, ticket médio e o total de lojas são derivados daqui, nunca digitados.
-// Restrição respeitada: nenhum plano soma mais lojas do que seu próprio teto permite.
-export const INSTALLED_BASE = [
-  { id: 'balcao', nets: 34, units: 34 },
-  { id: 'controle', nets: 68, units: 176 },
-  { id: 'rede', nets: 25, units: 108 },
-];
-export const PLATFORM = (() => {
-  const rows = INSTALLED_BASE.map(b => {
-    const plan = PLANS.find(p => p.id === b.id);
-    return { ...b, plan, mrr: b.units * plan.monthly };
-  });
-  const nets = rows.reduce((s, r) => s + r.nets, 0);
-  const units = rows.reduce((s, r) => s + r.units, 0);
-  const mrr = rows.reduce((s, r) => s + r.mrr, 0);
-  const fmt = (n) => 'R$ ' + Math.round(n).toLocaleString('pt-BR');
-  return {
-    rows, nets, units, mrr, fmt,
-    arr: mrr * 12,
-    perNet: mrr / nets,
-    perUnit: mrr / units,
-  };
-})();
-
-// Os números da plataforma no console vêm de PLATFORM, não de strings no mock.
-if (typeof MOCK !== 'undefined' && MOCK.adminMetrics) {
-  const m = MOCK.adminMetrics;
-  m[0].value = PLATFORM.fmt(PLATFORM.mrr);
-  m[0].sub = `${PLATFORM.nets} assinaturas ativas`;
-  m[1].value = String(PLATFORM.nets);
-  m[1].sub = `${PLATFORM.units} lojas · 14 em trial`;
 }
 
 // Plano anual — o mecanismo de fidelidade. Três alavancas, todas com custo

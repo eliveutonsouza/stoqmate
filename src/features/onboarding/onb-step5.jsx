@@ -1,6 +1,6 @@
 "use client";
 
-import { catById } from '@/lib/mock';
+import { templateById } from '@/lib/category-templates';
 import { OnbTitle } from '@/features/onboarding/onb-title';
 import { I } from '@/components/icons';
 
@@ -15,9 +15,9 @@ export function OnbStep5({ data, goTo }) {
     { step: 1, label: 'Nome da loja', value: data.name || '—' },
     { step: 2, label: 'Logo', value: data.logoFile ? data.logoFile.name : 'Iniciais automáticas' },
     { step: 3, label: 'Cor principal', value: data.color.toUpperCase(), swatch: data.color },
-    { step: 4, label: 'Categorias', value: data.cats.length ? data.cats.map(id => catById(id).name).join(', ') : 'Nenhuma' },
-    { step: 4, label: 'Atributos', value: data.cats.length ? `${data.cats.reduce((s, id) => s + catById(id).attributes.length, 0)} configurados` : '—' },
-    { step: 4, label: 'Unidades de medida', value: data.cats.length ? [...new Set(data.cats.map(id => catById(id).unit))].join(', ') : '—' },
+    { step: 4, label: 'Categorias', value: data.cats.length ? data.cats.map(id => templateById(id)?.name).filter(Boolean).join(', ') : 'Nenhuma' },
+    { step: 4, label: 'Atributos', value: data.cats.length ? `${data.cats.reduce((s, id) => s + (templateById(id)?.attributes.length ?? 0), 0)} configurados` : '—' },
+    { step: 4, label: 'Unidades de medida', value: data.cats.length ? [...new Set(data.cats.map(id => templateById(id)?.unit).filter(Boolean))].join(', ') : '—' },
     { step: 5, label: 'Emissão fiscal', value: FISCAL_CHOICE[data.fiscal || 'later'] },
   ];
   return (

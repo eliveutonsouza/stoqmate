@@ -6,7 +6,6 @@ import { I } from '@/components/icons';
 import { ProductThumb } from '@/components/ui/product-thumb';
 import { variantLabel } from '@/lib/attr-colors';
 import { createClient } from '@/lib/supabase/client';
-import { catById } from '@/lib/mock';
 
 // Busca real (debounce 250ms) por sku/código de barras/marca/nome — usada
 // por toda tela de movimentação de estoque. `storeId` decide de qual loja
@@ -16,11 +15,6 @@ import { catById } from '@/lib/mock';
 // este componente (FormCard) usam overflow:hidden pra arredondar canto, o
 // que cortaria um menu posicionado normal (position:absolute) — via portal,
 // isso nunca acontece, em nenhuma tela que reusar este componente.
-//
-// Telas ainda não backendizadas (stock-return.jsx, stock-exchange.jsx,
-// promotion-form.jsx) continuam passando o shape antigo do mock
-// (`product.cat`/`product.stock`, sem onSelect) — o componente aceita os
-// dois formatos até essas telas ganharem dado real.
 export function ProductPicker({ product, onSelect, onClear, storeId }) {
   const [query, setQuery] = React.useState('');
   const [results, setResults] = React.useState([]);
@@ -62,7 +56,7 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
   }, [showMenu]);
 
   if (product) {
-    const category = product.category || (product.cat ? catById(product.cat) : null);
+    const category = product.category ?? null;
     const stock = product.stock_balances
       ? (product.stock_balances.find((b) => b.store_id === storeId)?.qty ?? 0)
       : (product.stock ?? 0);

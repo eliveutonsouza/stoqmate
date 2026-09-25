@@ -5,10 +5,11 @@ import { I } from '@/components/icons';
 
 const MENU_WIDTH = 184;
 
-// Menu "•••" de linha de tabela. position: fixed (e não absolute) porque as
-// tabelas moram dentro de .card com overflow: hidden, que cortaria o menu
-// nas últimas linhas.
-export function RowMenu({ items, label = 'Ações' }) {
+// Menu "•••" de linha de tabela; `icon` troca o gatilho para menus curtos do
+// chrome (unidade, conta). position: fixed (e não absolute) porque as tabelas
+// moram dentro de .card com overflow: hidden, que cortaria o menu nas
+// últimas linhas.
+export function RowMenu({ items, label = 'Ações', icon }) {
   const [pos, setPos] = React.useState(null);
   const buttonRef = React.useRef(null);
   const menuRef = React.useRef(null);
@@ -53,7 +54,7 @@ export function RowMenu({ items, label = 'Ações' }) {
   return (
     <>
       <button ref={buttonRef} onClick={toggle} aria-label={label} aria-haspopup="menu" aria-expanded={!!pos} className="btn btn-ghost btn-icon btn-sm">
-        <I.More size={13} />
+        {icon ?? <I.More size={13} />}
       </button>
       {pos && (
         <div ref={menuRef} role="menu" style={{

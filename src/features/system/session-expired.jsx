@@ -10,7 +10,7 @@ export function SessionExpired() {
     <SystemState
       navigate={navigate} tone="info" icon={<I.Shield size={22} />}
       title="Sua sessão expirou"
-      body="Por segurança, desconectamos depois de 12 horas sem uso. O que você estava preenchendo foi guardado como rascunho."
+      body="Por segurança, sua sessão foi encerrada. Entre de novo para continuar de onde parou."
       primary={<button onClick={() => navigate('/login')} className="btn btn-primary">Entrar de novo</button>}
     />
   );

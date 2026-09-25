@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { I } from '@/components/icons';
+import { isModifiedClick } from '@/components/layout/sidebar-item';
 
 export function SidebarGroup({ icon, label, items, route, navigate, badge }) {
   const childActive = items.some(it => it.r === route);
@@ -9,9 +10,10 @@ export function SidebarGroup({ icon, label, items, route, navigate, badge }) {
   const open = manualOpen ?? childActive;
   return (
     <div>
-      <a href="#" onClick={(e) => { e.preventDefault(); setManualOpen(!open); }} style={{
-        display: 'flex', alignItems: 'center', gap: 10,
+      <button type="button" aria-expanded={open} onClick={() => setManualOpen(!open)} style={{
+        display: 'flex', alignItems: 'center', gap: 10, width: 'calc(100% - 16px)',
         padding: '0 10px', height: 30, margin: '0 8px', borderRadius: 5,
+        border: 'none', background: 'transparent', fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer',
         color: childActive ? 'var(--fg)' : 'var(--fg-muted)',
         fontSize: 13, fontWeight: childActive ? 500 : 400,
         letterSpacing: '-0.005em',
@@ -25,13 +27,17 @@ export function SidebarGroup({ icon, label, items, route, navigate, badge }) {
         <span style={{ color: 'var(--fg-faint)', display: 'flex', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 120ms ease' }}>
           <I.ChevronRight size={12} />
         </span>
-      </a>
+      </button>
       {open && (
         <div style={{ margin: '2px 8px 2px 26px', paddingLeft: 10, borderLeft: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 1 }}>
           {items.map(it => {
             const active = route === it.r;
             return (
-              <a key={it.r} href="#" onClick={(e) => { e.preventDefault(); navigate(it.r); }} style={{
+              <a key={it.r} href={it.r} aria-current={active ? 'page' : undefined} onClick={(e) => {
+                if (isModifiedClick(e)) return;
+                e.preventDefault();
+                navigate(it.r);
+              }} style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '0 8px', height: 26, borderRadius: 4,
                 color: active ? 'var(--fg)' : 'var(--fg-muted)',

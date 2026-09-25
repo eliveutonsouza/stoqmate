@@ -6,6 +6,7 @@ import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { Page } from '@/components/ui/page-container';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { FormCard } from '@/components/ui/form-card';
 import { SelectInput } from '@/components/ui/select-input';
 import { Field } from '@/components/ui/field';
@@ -33,7 +34,8 @@ function validateRow(r, categoryCodes, seenSkus) {
 export function ImportWizard({ stores, categories }) {
   const navigate = useNavigate();
   const [step, setStep] = React.useState(1);
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [file, setFile] = React.useState(null);
   const [records, setRecords] = React.useState([]);
   const [existingSkus, setExistingSkus] = React.useState(new Set());

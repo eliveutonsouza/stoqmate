@@ -17,7 +17,7 @@ export function AdminShell({ breadcrumb, navigate, headerActions, children }) {
     <AppFrame
       sidebar={<AdminSidebar route={pathname} navigate={navigate} />}
       renderHeader={(menu) => (
-        <AppHeader breadcrumb={['Console', ...breadcrumb]} navigate={navigate} contextSwitch="admin" actions={headerActions} {...menu} />
+        <AppHeader breadcrumb={['Console', ...breadcrumb]} navigate={navigate} notifications={false} actions={headerActions} {...menu} />
       )}
       overlay={<CommandPalette navigate={navigate} admin />}
     >

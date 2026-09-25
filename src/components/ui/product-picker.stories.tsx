@@ -1,3 +1,4 @@
+import { templateById } from "@/lib/category-templates";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { ProductPicker } from "./product-picker";
 
@@ -15,7 +16,7 @@ export const Vazio: Story = {
 export const Selecionado: Story = {
   args: {
     product: {
-      sku: "ELE-FONE-PR-128", cat: "eletronicos", brand: "Foneclear",
+      sku: "ELE-FONE-PR-128", category: templateById("eletronicos"), brand: "Foneclear",
       name: "Fone Bluetooth ANC", attrs: { cor: "Preto", capacidade: "128 GB" }, stock: 42,
     },
     onClear: () => {},

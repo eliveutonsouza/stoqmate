@@ -8,6 +8,7 @@ import { brl } from '@/lib/format';
 import { FormCard } from '@/components/ui/form-card';
 import { ProductPicker } from '@/components/ui/product-picker';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
@@ -18,7 +19,8 @@ const REASONS = ['Variação incorreta', 'Cor diferente da desejada', 'Defeito d
 
 export function StockExchange({ stores }) {
   const navigate = useNavigate();
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [returned, setReturned] = React.useState(null);
   const [delivered, setDelivered] = React.useState(null);
   const [qty, setQty] = React.useState(1);

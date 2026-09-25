@@ -4,7 +4,7 @@ import * as React from 'react';
 import { layoutStyles } from '@/components/layout/layout-styles';
 import { I } from '@/components/icons';
 
-export function AppHeader({ breadcrumb, actions, navigate, contextSwitch, onMenu, menuOpen }) {
+export function AppHeader({ breadcrumb, actions, navigate, contextSwitch, onMenu, menuOpen, unread = 0, notifications = true }) {
   return (
     <header className="app-header" style={layoutStyles.header}>
       {onMenu && (
@@ -48,10 +48,11 @@ export function AppHeader({ breadcrumb, actions, navigate, contextSwitch, onMenu
         </div>
       )}
       {actions}
-      <button onClick={() => navigate('/notifications')} className="btn btn-ghost btn-icon btn-sm" title="Notificações" style={{ position: 'relative' }}>
+      {notifications && <button onClick={() => navigate('/notifications')} className="btn btn-ghost btn-icon btn-sm" title="Notificações"
+        aria-label={unread > 0 ? `Notificações (${unread} não lidas)` : 'Notificações'} style={{ position: 'relative' }}>
         <I.Bell size={14} />
-        <span style={{ position: 'absolute', top: 5, right: 5, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }}></span>
-      </button>
+        {unread > 0 && <span style={{ position: 'absolute', top: 5, right: 5, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }}></span>}
+      </button>}
     </header>
   );
 }

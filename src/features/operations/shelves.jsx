@@ -5,6 +5,7 @@ import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { Page } from '@/components/ui/page-container';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { AttrChip } from '@/components/ui/attr-chip';
@@ -31,7 +32,8 @@ export function Shelves({ initialLocations, products, stores }) {
 
   const [code, setCode] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 

@@ -18,7 +18,7 @@ export function AdminEconomics() {
     <AdminShell route="/admin/economics" breadcrumb={['Economia']} navigate={navigate}>
       <PageHeader
         title="Economia unitária"
-        sub={`Custo real por operação · Haiku 4.5 a US$ ${TOKEN.in.toFixed(2)}/US$ ${TOKEN.out.toFixed(2)} por 1M tokens · câmbio de planejamento R$ ${FX.toFixed(2)}`}
+        sub={`Modelo de custo com premissas de planejamento (não é dado medido) · Haiku 4.5 a US$ ${TOKEN.in.toFixed(2)}/US$ ${TOKEN.out.toFixed(2)} por 1M tokens · câmbio de planejamento R$ ${FX.toFixed(2)}`}
         actions={<button onClick={() => navigate('/admin/plans')} className="btn btn-outline btn-sm">Ver planos</button>}
       />
       <Page>

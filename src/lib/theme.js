@@ -1,4 +1,4 @@
-import { MOCK } from './mock';
+import { CATEGORY_TEMPLATES } from './category-templates';
 
 export const TWEAK_DEFAULTS = {
   accent: '#E94B1C',
@@ -63,7 +63,7 @@ export function applyTheme({ accent, theme, density }) {
   // Category colours need two tokens, because the same hue does two jobs:
   //   --cat-X      solid fill behind WHITE initials/bars  — must stay dark
   //   --cat-X-ink  icon + legend colour ON the page background — must lighten on dark
-  MOCK.categories.forEach(c => {
+  CATEGORY_TEMPLATES.forEach(c => {
     const rgb = hexToRgb(c.color);
     root.style.setProperty(`--cat-${c.id}`, rgbStr(shiftUntilContrast(rgb, BLACK, [WHITE], 4.6)));
     root.style.setProperty(`--cat-${c.id}-ink`, rgbStr(shiftUntilContrast(rgb, dark ? WHITE : BLACK, [elev, sunken], 3.2)));

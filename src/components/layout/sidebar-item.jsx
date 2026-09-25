@@ -1,9 +1,18 @@
 "use client";
 
+// Clique com modificador (nova aba/janela) segue o href nativo; clique simples
+// passa pelo navigate() do app.
+export function isModifiedClick(e) {
+  return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1;
+}
 
-export function SidebarItem({ icon, label, active, onClick, badge, shortcut }) {
+export function SidebarItem({ icon, label, active, onClick, badge, shortcut, href }) {
   return (
-    <a href="#" onClick={(e) => { e.preventDefault(); if (onClick) onClick(); }} style={{
+    <a href={href ?? '#'} aria-current={active ? 'page' : undefined} onClick={(e) => {
+      if (href && isModifiedClick(e)) return;
+      e.preventDefault();
+      if (onClick) onClick();
+    }} style={{
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '0 10px',
       height: 30,

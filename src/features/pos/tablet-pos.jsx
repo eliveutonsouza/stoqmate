@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { ProductThumb } from '@/components/ui/product-thumb';
 import { variantLabel } from '@/lib/attr-colors';
 import { brl } from '@/lib/format';
@@ -17,7 +18,8 @@ const PAYMENTS = [
 
 export function TabletPOS({ stores, categories, products, cashSessionByStore, operatorName }) {
   const navigate = useNavigate();
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [cat, setCat] = React.useState('all');
   const [query, setQuery] = React.useState('');
   const [cart, setCart] = React.useState([]);

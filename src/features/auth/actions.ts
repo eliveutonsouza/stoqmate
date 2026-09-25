@@ -178,10 +178,10 @@ export async function signInAdminAction(input: { email: string; password: string
   redirect("/admin");
 }
 
-export async function signOutAction() {
+export async function signOutAction(to: "/login" | "/login/admin" = "/login") {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect(to === "/login/admin" ? "/login/admin" : "/login");
 }
 
 export async function forgotPasswordAction(input: { email: string }) {

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ShowcaseCtx } from '@/components/ui/showcase-frame';
 import { I } from '@/components/icons';
+import { OPEN_PALETTE_EVENT } from '@/components/ui/palette-event';
 
 export const STORE_COMMANDS = [
   { g: 'Ir para', l: 'Dashboard', r: '/dashboard', i: 'Home' },
@@ -54,8 +55,13 @@ export function CommandPalette({ navigate, admin }) {
         e.preventDefault(); setOpen(o => !o); setQ(''); setSel(0);
       } else if (e.key === 'Escape') setOpen(false);
     };
+    const onOpen = () => { setOpen(true); setQ(''); setSel(0); };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener(OPEN_PALETTE_EVENT, onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(OPEN_PALETTE_EVENT, onOpen);
+    };
   }, [inShowcase]);
 
   const run = (c) => { setOpen(false); navigate(c.r); };

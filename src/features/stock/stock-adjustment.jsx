@@ -12,6 +12,7 @@ import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { I } from '@/components/icons';
+import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { stockAdjustmentAction } from '@/features/stock/actions';
 
 const REASONS = ['Erro de lançamento anterior', 'Furto / extravio', 'Item danificado descartado', 'Venda não registrada', 'Devolução não registrada', 'Transferência não confirmada', 'Contagem anterior incorreta'];
@@ -19,7 +20,8 @@ const REASONS = ['Erro de lançamento anterior', 'Furto / extravio', 'Item danif
 export function StockAdjustment({ stores }) {
   const navigate = useNavigate();
   const [product, setProduct] = React.useState(null);
-  const [storeId, setStoreId] = React.useState(stores[0]?.id ?? '');
+  const defaultStoreId = useDefaultStoreId(stores);
+  const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [real, setReal] = React.useState(0);
   const [reason, setReason] = React.useState(REASONS[0]);
   const [justification, setJustification] = React.useState('');
