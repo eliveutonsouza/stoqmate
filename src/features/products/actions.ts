@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
 
@@ -202,13 +203,14 @@ export async function duplicateProductAction(id: string) {
 
 export async function uploadProductPhotoAction(formData: FormData) {
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };
+  const checked = checkImage(file, 5);
+  if ("error" in checked) return checked;
 
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
-  const path = `${tenantId}/${crypto.randomUUID()}-${file.name}`;
+  const path = uploadPath(tenantId, checked.ext);
 
-  const { error } = await supabase.storage.from("product-photos").upload(path, file);
+  const { error } = await supabase.storage.from("product-photos").upload(path, file as File);
   if (error) return { error: error.message };
 
   const { data } = supabase.storage.from("product-photos").getPublicUrl(path);

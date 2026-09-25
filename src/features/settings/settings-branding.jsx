@@ -60,7 +60,7 @@ export function SettingsBranding({ branding }) {
                 <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
                   <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
                     Substituir
-                    <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={onFileChange} style={{ display: 'none' }} />
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFileChange} style={{ display: 'none' }} />
                   </label>
                   <button onClick={() => { setLogoFile(null); setLogoPreview(null); }} className="btn btn-ghost btn-sm">Remover</button>
                 </div>
@@ -71,9 +71,9 @@ export function SettingsBranding({ branding }) {
               display: 'block', border: '1.5px dashed var(--line-strong)', borderRadius: 10,
               padding: '28px 24px', textAlign: 'center', background: 'var(--bg-sunken)', cursor: 'pointer',
             }}>
-              <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={onFileChange} style={{ display: 'none' }} />
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFileChange} style={{ display: 'none' }} />
               <div style={{ fontSize: 13, fontWeight: 500 }}>Escolher logo</div>
-              <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 8, fontFamily: 'var(--font-mono)' }}>PNG · SVG · até 2 MB</div>
+              <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 8, fontFamily: 'var(--font-mono)' }}>PNG · JPG · WEBP · até 2 MB</div>
             </label>
           )}
         </FormCard>

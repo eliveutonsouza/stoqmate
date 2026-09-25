@@ -48,8 +48,8 @@ export async function invitePlatformStaffAction(input: { email: string; name: st
     data: { user: caller },
   } = await supabase.auth.getUser();
   const { data: callerStaff } = await supabase.from("platform_staff").select("role").eq("user_id", caller?.id).maybeSingle();
-  if (input.role === "super_admin" && callerStaff?.role !== "super_admin") {
-    return { error: "Só um Super Admin pode convidar outro Super Admin." };
+  if (callerStaff?.role !== "super_admin") {
+    return { error: "Só um Super Admin pode convidar pessoas para a equipe." };
   }
 
   const admin = createServiceRoleClient();

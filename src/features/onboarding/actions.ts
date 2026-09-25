@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { CATEGORIES } from "@/lib/mock";
 
@@ -13,13 +14,14 @@ function friendlyError(message: string) {
 
 export async function uploadStoreLogoAction(formData: FormData) {
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };
+  const checked = checkImage(file, 2);
+  if ("error" in checked) return checked;
 
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
-  const path = `${tenantId}/${crypto.randomUUID()}-${file.name}`;
+  const path = uploadPath(tenantId, checked.ext);
 
-  const { error } = await supabase.storage.from("store-branding").upload(path, file);
+  const { error } = await supabase.storage.from("store-branding").upload(path, file as File);
   if (error) return { error: error.message };
 
   const { data } = supabase.storage.from("store-branding").getPublicUrl(path);

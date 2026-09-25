@@ -139,7 +139,7 @@ export function Profile({ profile }) {
           </div>
           <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
             Trocar foto
-            <input type="file" accept="image/png,image/jpeg" onChange={onAvatarChange} style={{ display: 'none' }} />
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onAvatarChange} style={{ display: 'none' }} />
           </label>
         </div>
 

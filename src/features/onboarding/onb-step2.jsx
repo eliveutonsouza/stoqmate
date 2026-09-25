@@ -13,7 +13,7 @@ export function OnbStep2({ data, set }) {
 
   return (
     <>
-      <OnbTitle title="Envie o logo da loja" desc="Usamos no painel, nos relatórios exportados e nas etiquetas de estoque. PNG ou SVG, fundo transparente de preferência." />
+      <OnbTitle title="Envie o logo da loja" desc="Usamos no painel, nos relatórios exportados e nas etiquetas de estoque. PNG com fundo transparente de preferência." />
       {!data.logoFile ? (
         <label style={{
           display: 'block',
@@ -24,7 +24,7 @@ export function OnbStep2({ data, set }) {
           background: 'var(--bg-sunken)',
           cursor: 'pointer',
         }}>
-          <input type="file" accept="image/png,image/jpeg,image/svg+xml" onChange={onFileChange} style={{ display: 'none' }} />
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFileChange} style={{ display: 'none' }} />
           <div style={{
             width: 40, height: 40, borderRadius: 9, margin: '0 auto 14px',
             background: 'var(--bg-elev)', border: '1px solid var(--line)',
@@ -35,7 +35,7 @@ export function OnbStep2({ data, set }) {
             ou <span style={{ color: 'var(--accent-text)', fontWeight: 500 }}>escolha do computador</span>
           </div>
           <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 14, fontFamily: 'var(--font-mono)' }}>
-            PNG · JPG · SVG · até 2 MB · mín. 256×256
+            PNG · JPG · WEBP · até 2 MB · mín. 256×256
           </div>
         </label>
       ) : (
@@ -48,7 +48,7 @@ export function OnbStep2({ data, set }) {
             <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
               <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
                 Substituir
-                <input type="file" accept="image/png,image/jpeg,image/svg+xml" onChange={onFileChange} style={{ display: 'none' }} />
+                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFileChange} style={{ display: 'none' }} />
               </label>
               <button onClick={() => { set('logoFile', null); set('logoPreviewUrl', null); }} className="btn btn-ghost btn-sm">Remover</button>
             </div>

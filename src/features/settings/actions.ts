@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
 
@@ -100,15 +101,16 @@ export async function updateBrandingAction(input: { logoUrl: string | null; bran
 
 export async function uploadBrandingLogoAction(formData: FormData) {
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };
+  const checked = checkImage(file, 2);
+  if ("error" in checked) return checked;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada." };
   const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).maybeSingle();
   if (!profile?.tenant_id) return { error: "Sem rede associada a esta sessão." };
 
-  const path = `${profile.tenant_id}/${crypto.randomUUID()}-${file.name}`;
-  const { error } = await supabase.storage.from("store-branding").upload(path, file);
+  const path = uploadPath(profile.tenant_id, checked.ext);
+  const { error } = await supabase.storage.from("store-branding").upload(path, file as File);
   if (error) return { error: error.message };
   const { data } = supabase.storage.from("store-branding").getPublicUrl(path);
   return { url: data.publicUrl };
@@ -171,14 +173,15 @@ export async function unenrollMfaAction(factorId: string) {
 
 export async function uploadAvatarAction(formData: FormData) {
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };
+  const checked = checkImage(file, 2);
+  if ("error" in checked) return checked;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada." };
 
-  const path = `${user.id}/${crypto.randomUUID()}-${file.name}`;
-  const { error } = await supabase.storage.from("avatars").upload(path, file);
+  const path = uploadPath(user.id, checked.ext);
+  const { error } = await supabase.storage.from("avatars").upload(path, file as File);
   if (error) return { error: error.message };
 
   const { data } = supabase.storage.from("avatars").getPublicUrl(path);
