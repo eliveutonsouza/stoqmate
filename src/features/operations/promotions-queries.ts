@@ -27,3 +27,8 @@ export async function loadPromotion(id: string) {
     .maybeSingle(), "operations/promotions-queries.loadPromotion.data");
   return data ?? null;
 }
+
+export async function loadPromotionFormCategories() {
+  const supabase = await createClient();
+  return must(await supabase.from("categories").select("id, name, code, icon, color").order("name"), "promotions.form.categories") ?? [];
+}

@@ -141,3 +141,23 @@ export function shapeProductDetailForStore(detail: NonNullable<Awaited<ReturnTyp
     movements: detail.movements,
   };
 }
+
+export async function loadCategoriesScreen() {
+  const supabase = await createClient();
+  return must(
+    await supabase
+      .from('categories')
+      .select('id, name, icon, color, unit, unit_plural, code, active, category_attributes(id, key, label, type, values, position), products(count)')
+      .order('name'),
+    'categories.list',
+  ) ?? [];
+}
+
+export async function loadImportScreen() {
+  const supabase = await createClient();
+  const [storesRes, categoriesRes] = await Promise.all([
+    supabase.from('stores').select('id, name').order('name'),
+    supabase.from('categories').select('id, name, code').order('name'),
+  ]);
+  return { stores: must(storesRes, 'import.stores') ?? [], categories: must(categoriesRes, 'import.categories') ?? [] };
+}

@@ -105,3 +105,17 @@ export async function loadSupplierFormData(id?: string) {
     : null;
   return { categories: categories ?? [], supplier };
 }
+
+export async function loadShelvesScreen() {
+  const supabase = await createClient();
+  const [locationsRes, productsRes, storesRes] = await Promise.all([
+    supabase.from("locations").select("id, code, description, store_id, products(count)").order("code"),
+    supabase.from("products").select("id, sku, name, attrs, default_location_id, category:categories(id, name, code, icon, color)").order("name"),
+    supabase.from("stores").select("id, name").order("name"),
+  ]);
+  return {
+    locations: must(locationsRes, "shelves.locations") ?? [],
+    products: must(productsRes, "shelves.products") ?? [],
+    stores: must(storesRes, "shelves.stores") ?? [],
+  };
+}

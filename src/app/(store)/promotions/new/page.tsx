@@ -1,8 +1,7 @@
 import { PromotionForm } from '@/features/entities/promotion-form';
-import { createClient } from '@/lib/supabase/server';
+import { loadPromotionFormCategories } from '@/features/operations/promotions-queries';
 
 export default async function Page() {
-  const supabase = await createClient();
-  const { data: categories } = await supabase.from('categories').select('id, name, code, icon, color').order('name');
-  return <PromotionForm categories={categories ?? []} promotion={null} />;
+  const categories = await loadPromotionFormCategories();
+  return <PromotionForm categories={categories} promotion={null} />;
 }

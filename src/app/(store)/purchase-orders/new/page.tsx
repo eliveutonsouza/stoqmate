@@ -1,35 +1,18 @@
 import { PurchaseOrderNew } from '@/features/purchasing/purchase-order-new';
-import { loadStores } from '@/features/stock/queries';
-import { loadReplenishmentSuggestions } from '@/features/purchasing/queries';
-import { createClient } from '@/lib/supabase/server';
+import { loadPurchaseOrderNew } from '@/features/purchasing/queries';
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ store?: string; supplier?: string; prefill?: string }> }) {
-  const { store, supplier, prefill } = await searchParams;
-  const supabase = await createClient();
-  const stores = await loadStores();
-  const storeId = store || stores[0]?.id || '';
-  const [suggestions, { data: suppliers }] = await Promise.all([
-    storeId ? loadReplenishmentSuggestions(storeId) : Promise.resolve([]),
-    supabase.from('suppliers').select('id, name, lead_time_days, min_order_value').eq('active', true).order('name'),
-  ]);
-
-  const qtyOverrides: Record<string, number> = {};
-  if (prefill) {
-    for (const pair of prefill.split(',')) {
-      const [productId, qty] = pair.split(':');
-      if (productId && qty) qtyOverrides[productId] = parseInt(qty, 10) || 0;
-    }
-  }
-
+  const params = await searchParams;
+  const data = await loadPurchaseOrderNew(params);
   return (
     <PurchaseOrderNew
-      key={`${storeId}:${supplier || suppliers?.[0]?.id || ''}:${prefill ?? ''}`}
-      stores={stores}
-      storeId={storeId}
-      suppliers={suppliers ?? []}
-      supplierId={supplier || suppliers?.[0]?.id || ''}
-      suggestions={suggestions}
-      qtyOverrides={qtyOverrides}
+      key={`${data.storeId}:${data.supplierId}:${params.prefill ?? ''}`}
+      stores={data.stores}
+      storeId={data.storeId}
+      suppliers={data.suppliers}
+      supplierId={data.supplierId}
+      suggestions={data.suggestions}
+      qtyOverrides={data.qtyOverrides}
     />
   );
 }

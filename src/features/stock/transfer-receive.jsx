@@ -22,7 +22,7 @@ import { transferReceiveAction } from '@/features/stock/actions';
 
 const REASONS = ['Item não localizado na caixa', 'Item danificado no transporte', 'Volume chegou aberto', 'Divergência na nota de envio', 'Item extra não listado'];
 
-export function TransferReceive({ transfer }) {
+export function TransferReceive({ transfer, pendingCount = 0 }) {
   const navigate = useNavigate();
 
   if (!transfer) {
@@ -42,10 +42,10 @@ export function TransferReceive({ transfer }) {
     );
   }
 
-  return <TransferReceiveForm transfer={transfer} navigate={navigate} />;
+  return <TransferReceiveForm key={transfer.id} transfer={transfer} pendingCount={pendingCount} navigate={navigate} />;
 }
 
-function TransferReceiveForm({ transfer, navigate }) {
+function TransferReceiveForm({ transfer, pendingCount, navigate }) {
   const [lines, setLines] = React.useState(() => transfer.transfer_items.map((ti) => ({
     id: ti.id, sku: ti.product.sku, name: ti.product.name, category: ti.product.category, attrs: ti.product.attrs,
     sent: ti.qty_sent, got: ti.qty_sent,
@@ -80,7 +80,7 @@ function TransferReceiveForm({ transfer, navigate }) {
     <StoreShell route="/stock/transfer/receive" breadcrumb={['Estoque', 'Receber transferência']} navigate={navigate}>
       <PageHeader
         title="Receber transferência"
-        sub={`De ${transfer.origin.name} · ${lines.length} SKU${lines.length === 1 ? '' : 's'} · ${totalSent} itens`}
+        sub={`De ${transfer.origin.name} · ${lines.length} SKU${lines.length === 1 ? '' : 's'} · ${totalSent} itens${pendingCount > 1 ? ` · mais ${pendingCount - 1} na fila de conferência` : ''}`}
         actions={<button onClick={() => navigate('/stock/history')} className="btn btn-ghost btn-sm">Conferir depois</button>}
       />
       <Page>
