@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { authEmailOrigin } from "@/lib/site-origin";
-import { finishPendingSignup, slugify } from "@/features/auth/pending-signup";
+import { finishPendingSignup, hasStaffRow, slugify } from "@/features/auth/pending-signup";
 import { isInvalidCredentials, signInErrorMessage } from "@/lib/auth-errors";
 
 // Falha que não é credencial errada é incidente (chave inválida, rede) — vai
@@ -122,9 +122,9 @@ export async function signInAction(input: { email: string; password: string }) {
 
   // O link de confirmação aberto em outro navegador não troca o code (PKCE)
   // e o cadastro pendente não fecha no callback — fecha aqui no 1º login.
-  const [{ data: tenantId }, { data: isStaff }] = await Promise.all([
+  const [{ data: tenantId }, isStaff] = await Promise.all([
     supabase.rpc("auth_tenant_id"),
-    supabase.rpc("is_platform_staff"),
+    hasStaffRow(supabase),
   ]);
   if (!tenantId && !isStaff) {
     redirect((await finishPendingSignup(supabase, data.user)) ?? "/complete-signup");
@@ -173,14 +173,21 @@ export async function signInAdminAction(input: { email: string; password: string
   }
 
   const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: totp.id });
-  if (challengeError) return { error: challengeError.message };
+  if (challengeError) {
+    await supabase.auth.signOut();
+    return { error: "Não foi possível validar o 2FA agora. Tente de novo." };
+  }
 
   const { error: verifyError } = await supabase.auth.mfa.verify({
     factorId: totp.id,
     challengeId: challenge.id,
     code: input.code,
   });
-  if (verifyError) return { error: "Código 2FA inválido." };
+  if (verifyError) {
+    // Sem signOut a sessão ficava viva em aal1 (só senha) depois do 2FA errado.
+    await supabase.auth.signOut();
+    return { error: "Código 2FA inválido." };
+  }
 
   redirect("/admin");
 }
