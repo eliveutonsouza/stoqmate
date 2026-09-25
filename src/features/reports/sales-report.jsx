@@ -8,9 +8,12 @@ import { ReportTabs } from '@/components/domain/report-tabs';
 import { MiniAreaChart } from '@/components/domain/mini-area-chart';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { brl } from '@/lib/format';
+import { downloadCsv, toCsv } from '@/lib/csv';
+import { useReportHeader } from '@/features/reports/use-report-header';
 
-export function SalesReport({ report }) {
+export function SalesReport({ report, filters, stores }) {
   const navigate = useNavigate();
+  const { headerProps, scopeLabel, fileSuffix } = useReportHeader(filters, stores);
   const profit = report.revenue - report.cost;
   const margin = report.revenue > 0 ? (profit / report.revenue) * 100 : 0;
   const ticket = report.saleCount > 0 ? report.revenue / report.saleCount : 0;
@@ -21,9 +24,24 @@ export function SalesReport({ report }) {
   const maxStoreRevenue = Math.max(1, ...report.byStore.map((s) => s.revenue));
   const totalCategoryRevenue = report.byCategory.reduce((s, c) => s + c.revenue, 0);
 
+  const exportCsv = () => downloadCsv(`vendas-por-categoria_${fileSuffix}.csv`, toCsv(
+    ['Categoria', 'Vendidos', 'Unidade', 'Receita', 'Custo', 'Ticket médio', 'Share (%)'],
+    report.byCategory.map((m) => [
+      m.name, m.units, m.unit_plural, m.revenue, m.cost,
+      m.units > 0 ? m.revenue / m.units : 0,
+      totalCategoryRevenue > 0 ? (m.revenue / totalCategoryRevenue) * 100 : 0,
+    ]),
+  ));
+
   return (
     <StoreShell route="/reports/sales" breadcrumb={['Relatórios', 'Vendas']} navigate={navigate}>
-      <ReportHeader title="Relatório de vendas" sub={`Últimos 30 dias · ${report.saleCount} vendas registradas`} />
+      <ReportHeader
+        title="Relatório de vendas"
+        sub={`${scopeLabel} · ${report.saleCount} venda${report.saleCount === 1 ? '' : 's'} registrada${report.saleCount === 1 ? '' : 's'}`}
+        {...headerProps}
+        onExport={exportCsv}
+        exportDisabled={report.byCategory.length === 0}
+      />
       <Page>
         <ReportTabs route="/reports/sales" navigate={navigate} />
 

@@ -1,15 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
+import { must } from "@/lib/supabase/must";
 
 export async function loadSupplierDetail(id: string) {
   const supabase = await createClient();
-  const { data: supplier } = await supabase
+  const supplier = must(await supabase
     .from("suppliers")
     .select("id, name, cnpj, phone, whatsapp, order_email, sales_rep, address, brands, lead_time_days, min_order_value, payment_terms, notes, created_at, supplier_categories(category:categories(id, name, icon, color))")
     .eq("id", id)
-    .maybeSingle();
+    .maybeSingle(), "operations/queries.loadSupplierDetail.supplier");
   if (!supplier) return null;
 
-  const [{ data: purchases }, { data: products }, { count: productCount }] = await Promise.all([
+  const [purchasesRes, productsRes, productCountRes] = await Promise.all([
     supabase
       .from("purchase_orders")
       .select("id, status, freight, created_at, received_at, purchase_order_items(qty_ordered, product:products(cost_price))")
@@ -24,6 +25,10 @@ export async function loadSupplierDetail(id: string) {
       .limit(50),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("supplier_id", id),
   ]);
+  const purchases = must(purchasesRes, "operations.loadSupplierDetail.purchases");
+  const products = must(productsRes, "operations.loadSupplierDetail.products");
+  must(productCountRes, "operations.loadSupplierDetail.productCount");
+  const productCount = productCountRes.count;
 
   const receivedOrders = (purchases ?? []).filter((p) => p.received_at);
   const avgLeadDays = receivedOrders.length
@@ -68,7 +73,7 @@ export async function loadSupplierDetail(id: string) {
 
 export async function loadLocationFormData(id?: string) {
   const supabase = await createClient();
-  const [{ data: categories }, { data: stores }, locationResult, countResult] = await Promise.all([
+  const [categoriesRes, storesRes, locationResult, countResult] = await Promise.all([
     supabase.from("categories").select("id, name").order("name"),
     supabase.from("stores").select("id, name").order("name"),
     id
@@ -78,6 +83,8 @@ export async function loadLocationFormData(id?: string) {
       ? supabase.from("products").select("id", { count: "exact", head: true }).eq("default_location_id", id)
       : Promise.resolve({ count: 0 }),
   ]);
+  const categories = must(categoriesRes, "operations.loadLocationFormData.categories");
+  const stores = must(storesRes, "operations.loadLocationFormData.stores");
   const location = locationResult.data
     ? { ...locationResult.data, categoryIds: (locationResult.data.location_categories || []).map((lc: { category_id: string }) => lc.category_id) }
     : null;
@@ -86,12 +93,13 @@ export async function loadLocationFormData(id?: string) {
 
 export async function loadSupplierFormData(id?: string) {
   const supabase = await createClient();
-  const [{ data: categories }, supplierResult] = await Promise.all([
+  const [categoriesRes, supplierResult] = await Promise.all([
     supabase.from("categories").select("id, name").order("name"),
     id
       ? supabase.from("suppliers").select("id, name, cnpj, phone, whatsapp, order_email, sales_rep, address, brands, lead_time_days, min_order_value, payment_terms, notes, supplier_categories(category_id)").eq("id", id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
+  const categories = must(categoriesRes, "operations.loadSupplierFormData.categories");
   const supplier = supplierResult.data
     ? { ...supplierResult.data, categoryIds: (supplierResult.data.supplier_categories || []).map((sc: { category_id: string }) => sc.category_id) }
     : null;

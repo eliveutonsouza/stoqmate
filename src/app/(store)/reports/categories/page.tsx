@@ -1,7 +1,8 @@
 import { ReportCategories } from '@/features/reports/report-categories';
-import { loadSalesReport } from '@/features/reports/queries';
+import { loadReportStores, loadSalesReport, reportFiltersFromParams } from '@/features/reports/queries';
 
-export default async function Page() {
-  const report = await loadSalesReport();
-  return <ReportCategories report={report} />;
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const filters = reportFiltersFromParams(await searchParams);
+  const [report, stores] = await Promise.all([loadSalesReport(filters), loadReportStores()]);
+  return <ReportCategories report={report} filters={filters} stores={stores} />;
 }

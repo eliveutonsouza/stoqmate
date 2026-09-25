@@ -1,3 +1,4 @@
+import { must } from "@/lib/supabase/must";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 
 type Limits = { skus?: number | null; users?: number | null; stores?: number | null };
@@ -7,7 +8,7 @@ export async function loadPlanUsage() {
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
 
-  const [{ data: tenant }, { data: plans }, { count: skus }, { count: stores }, { data: members }, { data: invites }] = await Promise.all([
+  const [tenantRes, plansRes, skusRes, storesRes, membersRes, invitesRes] = await Promise.all([
     supabase.from("tenants").select("plan_id").eq("id", tenantId).maybeSingle(),
     supabase.from("plans").select("id, name, monthly_price, limits").eq("active", true).order("monthly_price"),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("active", true),
@@ -15,6 +16,14 @@ export async function loadPlanUsage() {
     supabase.rpc("fn_team_members"),
     supabase.rpc("fn_team_pending_invites"),
   ]);
+  const tenant = must(tenantRes, "credits.loadPlanUsage.tenant");
+  const plans = must(plansRes, "credits.loadPlanUsage.plans");
+  must(skusRes, "credits.loadPlanUsage.skus");
+  const skus = skusRes.count;
+  must(storesRes, "credits.loadPlanUsage.stores");
+  const stores = storesRes.count;
+  const members = must(membersRes, "credits.loadPlanUsage.members");
+  const invites = must(invitesRes, "credits.loadPlanUsage.invites");
 
   const allPlans = (plans ?? []) as PlanRow[];
   const current = allPlans.find((p) => p.id === tenant?.plan_id) ?? null;

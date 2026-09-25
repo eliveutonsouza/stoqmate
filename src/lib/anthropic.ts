@@ -4,6 +4,11 @@ import { TOKEN } from "@/lib/plans";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
+// Arquivo que acompanha o prompt (foto ou PDF de nota fiscal), em base64.
+export type AiAttachment =
+  | { kind: "image"; mediaType: "image/jpeg" | "image/png" | "image/webp"; data: string }
+  | { kind: "pdf"; data: string };
+
 export function getAnthropic() {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY não configurada.");
@@ -18,17 +23,26 @@ export async function aiCompleteJSON({
   system,
   prompt,
   maxTokens = 1500,
+  attachment,
 }: {
   system: string;
   prompt: string;
   maxTokens?: number;
+  attachment?: AiAttachment;
 }) {
   const client = getAnthropic();
+  const content: Anthropic.ContentBlockParam[] = [];
+  if (attachment?.kind === "image") {
+    content.push({ type: "image", source: { type: "base64", media_type: attachment.mediaType, data: attachment.data } });
+  } else if (attachment?.kind === "pdf") {
+    content.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: attachment.data } });
+  }
+  content.push({ type: "text", text: prompt });
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: maxTokens,
     system: `${system}\n\nResponda APENAS com o JSON pedido, sem texto antes ou depois, sem markdown.`,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content }],
   });
 
   const block = message.content.find((b) => b.type === "text");

@@ -7,6 +7,9 @@ import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
 import { Toolbar } from '@/components/ui/toolbar';
+import { Pagination } from '@/components/ui/pagination';
+import { useQueryUpdate } from '@/hooks/use-query-update';
+import { downloadCsv, csvFilename } from '@/lib/csv';
 import { StoreAvatar } from '@/components/domain/store-avatar';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { Modal } from '@/components/ui/modal';
@@ -16,31 +19,27 @@ import { TextareaInput } from '@/components/ui/textarea-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RowMenu } from '@/components/ui/row-menu';
 import { createSupplierAction, setSupplierActiveAction } from '@/features/operations/actions';
+import { exportSuppliersCsvAction } from '@/features/operations/suppliers-actions';
 
-function exportCsv(suppliers) {
-  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const rows = [
-    ['Nome', 'CNPJ', 'Telefone', 'Email de pedidos', 'Marcas', 'Prazo (dias)', 'Status'],
-    ...suppliers.map((s) => [s.name, s.cnpj, s.phone, s.order_email, (s.brands || []).join(', '), s.lead_time_days, s.active ? 'Ativo' : 'Inativo']),
-  ];
-  const blob = new Blob(['﻿' + rows.map((r) => r.map(cell).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'fornecedores.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
+const LEAD_OPTIONS = [
+  { value: '', label: 'Todos' },
+  { value: 'short', label: 'Até 7 dias' },
+  { value: 'medium', label: '8 a 15 dias' },
+  { value: 'long', label: 'Mais de 15 dias' },
+  { value: 'none', label: 'Não informado' },
+];
 
 function emptyForm() {
   return { name: '', cnpj: '', phone: '', email: '', brands: '', leadTimeDays: '', notes: '', categoryIds: new Set() };
 }
 
-export function Suppliers({ initialSuppliers, categories }) {
+// Busca (?q), filtros (?category ?lead) e página (?page) na URL — o
+// servidor filtra e pagina (fn_suppliers_list).
+export function Suppliers({ filters, pageSize, rows, total, catalogTotal, categories }) {
   const navigate = useNavigate();
-  const suppliers = React.useMemo(
-    () => initialSuppliers.map((s) => ({ ...s, cats: (s.supplier_categories || []).map((sc) => sc.category) })),
-    [initialSuppliers],
-  );
+  const { update, pending: listPending } = useQueryUpdate();
+  const [exporting, startExport] = React.useTransition();
+  const hasFilters = !!(filters.q || filters.category || filters.lead);
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [f, setF] = React.useState(emptyForm());
@@ -59,6 +58,15 @@ export function Suppliers({ initialSuppliers, categories }) {
     startTransition(async () => {
       const result = await setSupplierActiveAction({ id: s.id, active });
       if (result?.error) setListError(result.error);
+    });
+  };
+
+  const exportCsv = () => {
+    setListError('');
+    startExport(async () => {
+      const result = await exportSuppliersCsvAction({ q: filters.q, category: filters.category, lead: filters.lead });
+      if (result?.error) { setListError(result.error); return; }
+      downloadCsv(csvFilename('fornecedores'), result.csv);
     });
   };
 
@@ -81,16 +89,16 @@ export function Suppliers({ initialSuppliers, categories }) {
     <StoreShell route="/suppliers" breadcrumb={['Fornecedores']} navigate={navigate}>
       <PageHeader
         title="Fornecedores"
-        sub={`${suppliers.length} fornecedor${suppliers.length === 1 ? '' : 'es'} cadastrado${suppliers.length === 1 ? '' : 's'}`}
+        sub={`${catalogTotal} fornecedor${catalogTotal === 1 ? '' : 'es'} cadastrado${catalogTotal === 1 ? '' : 's'}`}
         actions={(
           <>
-            <button onClick={() => exportCsv(suppliers)} disabled={suppliers.length === 0} className="btn btn-outline btn-sm"><I.Download size={13} /> Exportar</button>
+            <button onClick={exportCsv} disabled={total === 0 || exporting} className="btn btn-outline btn-sm"><I.Download size={13} /> {exporting ? 'Exportando…' : 'Exportar CSV'}</button>
             <button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Cadastrar fornecedor</button>
           </>
         )}
       />
       <Page>
-        {suppliers.length === 0 ? (
+        {catalogTotal === 0 ? (
           <EmptyState
             icon={<I.Truck size={18} />}
             title="Nenhum fornecedor cadastrado ainda"
@@ -99,11 +107,42 @@ export function Suppliers({ initialSuppliers, categories }) {
           />
         ) : (
           <>
-            <Toolbar placeholder="Buscar por nome, CNPJ ou marca…" filters={[{ label: 'Categoria', value: 'Todas' }, { label: 'Prazo', value: 'Todos' }]} right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{suppliers.length} fornecedores</span>} />
+            <Toolbar
+              placeholder="Buscar por nome, CNPJ, email ou marca…"
+              value={filters.q ?? ''}
+              onChange={(q) => update({ q })}
+              debounce={300}
+              filters={[
+                ...(categories.length > 0 ? [{
+                  label: 'Categoria', value: categories.find((c) => c.id === filters.category)?.name ?? 'Todas',
+                  active: !!filters.category, selected: filters.category ?? '',
+                  options: [{ value: '', label: 'Todas' }, ...categories.map((c) => ({ value: c.id, label: c.name }))],
+                  onChange: (v) => update({ category: v || null }),
+                }] : []),
+                {
+                  label: 'Prazo', value: LEAD_OPTIONS.find((o) => o.value === (filters.lead ?? ''))?.label ?? 'Todos',
+                  active: !!filters.lead, selected: filters.lead ?? '', options: LEAD_OPTIONS,
+                  onChange: (v) => update({ lead: v || null }),
+                },
+              ]}
+              right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{total} de {catalogTotal}</span>}
+            />
 
             {listError && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{listError}</div>}
 
-            <div className="card table-scroll">
+            <div className="card" style={{ opacity: listPending ? 0.6 : 1, transition: 'opacity .15s' }}>
+              {rows.length === 0 ? (
+                <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>Nenhum fornecedor encontrado</div>
+                  <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>
+                    {total > 0 ? 'Esta página não existe mais.' : 'Nenhum fornecedor bate com a busca e os filtros atuais.'}
+                  </div>
+                  {total > 0
+                    ? <button type="button" onClick={() => update({ page: null })} className="btn btn-outline btn-sm" style={{ marginTop: 12 }}>Primeira página</button>
+                    : hasFilters && <button type="button" onClick={() => update({ q: null, category: null, lead: null })} className="btn btn-outline btn-sm" style={{ marginTop: 12 }}>Limpar filtros</button>}
+                </div>
+              ) : (
+              <div className="table-scroll">
               <table className="table">
                 <thead>
                   <tr>
@@ -112,7 +151,7 @@ export function Suppliers({ initialSuppliers, categories }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {suppliers.map((s) => (
+                  {rows.map((s) => (
                     <tr key={s.id} style={{ opacity: s.active ? 1 : 0.55 }}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -127,7 +166,7 @@ export function Suppliers({ initialSuppliers, categories }) {
                         <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{s.order_email ?? '—'}</div>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 4 }}>{s.cats.map((c) => c && <CategoryBadge key={c.id} category={c} />)}</div>
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{(s.cats || []).map((c) => c && <CategoryBadge key={c.id} category={c} />)}</div>
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{(s.brands || []).join(', ') || '—'}</td>
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{s.lead_time_days ? `${s.lead_time_days}d` : '—'}</td>
@@ -144,6 +183,9 @@ export function Suppliers({ initialSuppliers, categories }) {
                   ))}
                 </tbody>
               </table>
+              </div>
+              )}
+              <Pagination page={filters.page} pageSize={pageSize} total={total} pending={listPending} onPage={(page) => update({ page })} />
             </div>
           </>
         )}

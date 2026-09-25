@@ -1,73 +1,161 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { toCsv, csvFilename, type CsvCell } from "@/lib/csv";
 import { last30Days } from "@/features/reports/queries";
 
-function toCsv(headers: string[], rows: (string | number)[][]) {
-  const escape = (v: string | number) => {
-    // Prefixa com aspa simples se começar com =, +, -, @, tab ou CR — Excel/
-    // Sheets tratam essas células como fórmula ao abrir o CSV (CSV formula
-    // injection), o que executaria conteúdo vindo de nome de produto/cliente.
-    const raw = String(v ?? "");
-    const s = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  return [headers, ...rows].map((r) => r.map(escape).join(";")).join("\n");
+export type ExportKind = "catalog" | "sales" | "profit" | "movements" | "suppliers" | "count-sheet";
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+type Page<T> = { data: T[] | null; error: { message: string } | null };
+
+// O PostgREST devolve no máximo 1000 linhas por chamada; "catálogo completo"
+// cortava em silêncio. Busca em páginas até esgotar.
+async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<Page<T>>): Promise<T[]> {
+  const size = 1000;
+  const out: T[] = [];
+  for (let from = 0; ; from += size) {
+    const { data, error } = await page(from, from + size - 1);
+    if (error) throw new Error(error.message);
+    out.push(...(data ?? []));
+    if (!data || data.length < size) return out;
+  }
 }
 
-export async function exportCsvAction(kind: "catalog" | "sales" | "profit") {
-  const supabase = await createClient();
+const MOVEMENT_LABEL: Record<string, string> = {
+  sale: "Venda", entry: "Entrada", return: "Devolução", exchange: "Troca",
+  transfer: "Transferência", adjustment: "Ajuste", count: "Contagem",
+};
 
+const one = <T,>(v: unknown) => (Array.isArray(v) ? v[0] : v) as T | null;
+const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR") : "");
+
+async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: string; headers: string[]; rows: CsvCell[][] }> {
   if (kind === "catalog") {
-    const { data } = await supabase
+    const data = await fetchAll((from, to) => supabase
       .from("products")
       .select("sku, barcode, brand, name, cost_price, sale_price, min_stock, category:categories(name), supplier:suppliers(name), default_location:locations(code)")
-      .order("sku");
-    const rows = (data ?? []).map((p) => {
-      const category = p.category as unknown as { name: string } | null;
-      const supplier = p.supplier as unknown as { name: string } | null;
-      const location = p.default_location as unknown as { code: string } | null;
-      return [
-        p.sku, p.barcode ?? "", p.brand ?? "", p.name,
-        category?.name ?? "", supplier?.name ?? "", location?.code ?? "",
-        p.cost_price, p.sale_price, p.min_stock,
-      ];
-    });
+      .order("sku").range(from, to));
     return {
-      filename: `catalogo-${new Date().toISOString().slice(0, 10)}.csv`,
-      csv: toCsv(["SKU", "Código de barras", "Marca", "Nome", "Categoria", "Fornecedor", "Local", "Preço de compra", "Preço de venda", "Estoque mínimo"], rows),
+      base: "catalogo",
+      headers: ["SKU", "Código de barras", "Marca", "Nome", "Categoria", "Fornecedor", "Local", "Preço de compra", "Preço de venda", "Estoque mínimo"],
+      rows: data.map((p) => [
+        p.sku, p.barcode, p.brand, p.name,
+        one<{ name: string }>(p.category)?.name, one<{ name: string }>(p.supplier)?.name, one<{ code: string }>(p.default_location)?.code,
+        p.cost_price, p.sale_price, p.min_stock,
+      ]),
     };
   }
 
   if (kind === "sales") {
     const { start, end } = last30Days();
-    const { data } = await supabase
+    const data = await fetchAll((from, to) => supabase
       .from("sales")
       .select("created_at, total, discount_amount, payment_method, store:stores(name), customer:customers(name)")
-      .gte("created_at", start.toISOString())
-      .lt("created_at", end.toISOString())
-      .order("created_at");
-    const rows = (data ?? []).map((s) => {
-      const store = s.store as unknown as { name: string } | null;
-      const customer = s.customer as unknown as { name: string } | null;
-      return [
-        new Date(s.created_at).toLocaleString("pt-BR"), store?.name ?? "", customer?.name ?? "consumidor final",
-        s.payment_method, s.discount_amount, s.total,
-      ];
-    });
+      .gte("created_at", start.toISOString()).lt("created_at", end.toISOString())
+      .order("created_at").range(from, to));
     return {
-      filename: `vendas-${new Date().toISOString().slice(0, 10)}.csv`,
-      csv: toCsv(["Data", "Unidade", "Cliente", "Pagamento", "Desconto", "Total"], rows),
+      base: "vendas",
+      headers: ["Data", "Unidade", "Cliente", "Pagamento", "Desconto", "Total"],
+      rows: data.map((s) => [
+        date(s.created_at), one<{ name: string }>(s.store)?.name, one<{ name: string }>(s.customer)?.name ?? "consumidor final",
+        s.payment_method, s.discount_amount, s.total,
+      ]),
     };
   }
 
-  const { start, end } = last30Days();
-  const { data: report } = await supabase.rpc("fn_sales_report", { p_start: start.toISOString(), p_end: end.toISOString() });
-  const rows = (report?.by_product ?? []).map((p: { sku: string; name: string; category_name: string; units: number; cost: number; revenue: number }) => [
-    p.sku, p.name, p.category_name, p.units, p.cost, p.revenue, p.revenue - p.cost,
-  ]);
+  if (kind === "profit") {
+    const { start, end } = last30Days();
+    const { data: report, error } = await supabase.rpc("fn_sales_report", { p_start: start.toISOString(), p_end: end.toISOString() });
+    if (error) throw new Error(error.message);
+    const byProduct = (report?.by_product ?? []) as { sku: string; name: string; category_name: string; units: number; cost: number; revenue: number }[];
+    return {
+      base: "lucratividade",
+      headers: ["SKU", "Produto", "Categoria", "Vendidos", "Custo", "Receita", "Lucro"],
+      rows: byProduct.map((p) => [p.sku, p.name, p.category_name, p.units, p.cost, p.revenue, p.revenue - p.cost]),
+    };
+  }
+
+  if (kind === "movements") {
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
+    const data = await fetchAll((from, to) => supabase
+      .from("stock_movements")
+      .select("created_at, kind, qty, before_qty, after_qty, unit_cost, unit_price, reason, justification, product:products(sku, name), store:stores(name)")
+      .gte("created_at", since.toISOString())
+      .order("created_at").range(from, to));
+    return {
+      base: "movimentacoes-90-dias",
+      headers: ["Data", "Unidade", "Tipo", "SKU", "Produto", "Quantidade", "Saldo antes", "Saldo depois", "Custo un.", "Preço un.", "Motivo", "Justificativa"],
+      rows: data.map((m) => {
+        const product = one<{ sku: string; name: string }>(m.product);
+        return [
+          date(m.created_at), one<{ name: string }>(m.store)?.name, MOVEMENT_LABEL[m.kind] ?? m.kind,
+          product?.sku, product?.name, m.qty, m.before_qty, m.after_qty, m.unit_cost, m.unit_price, m.reason, m.justification,
+        ];
+      }),
+    };
+  }
+
+  if (kind === "suppliers") {
+    const [suppliers, orders] = await Promise.all([
+      fetchAll((from, to) => supabase
+        .from("suppliers")
+        .select("id, name, cnpj, phone, order_email, lead_time_days, min_order_value, payment_terms, active")
+        .order("name").range(from, to)),
+      fetchAll((from, to) => supabase
+        .from("purchase_orders")
+        .select("supplier_id, status, created_at, received_at")
+        .order("created_at").range(from, to)),
+    ]);
+    const stats = new Map<string, { total: number; open: number; last: string | null }>();
+    for (const o of orders) {
+      const s = stats.get(o.supplier_id) ?? { total: 0, open: 0, last: null };
+      s.total += 1;
+      if (o.status === "sent") s.open += 1;
+      if (!s.last || o.created_at > s.last) s.last = o.created_at;
+      stats.set(o.supplier_id, s);
+    }
+    return {
+      base: "fornecedores-e-compras",
+      headers: ["Fornecedor", "CNPJ", "Telefone", "Email de pedido", "Prazo (dias)", "Pedido mínimo", "Condição de pagamento", "Ativo", "Pedidos", "Pedidos em aberto", "Último pedido"],
+      rows: suppliers.map((s) => {
+        const st = stats.get(s.id);
+        return [
+          s.name, s.cnpj, s.phone, s.order_email, s.lead_time_days, s.min_order_value, s.payment_terms,
+          s.active ? "sim" : "não", st?.total ?? 0, st?.open ?? 0, st?.last ? date(st.last) : "",
+        ];
+      }),
+    };
+  }
+
+  // Folha de contagem: o saldo do sistema fica de fora de propósito, pra
+  // quem conta não "acertar" pelo número esperado.
+  const data = await fetchAll((from, to) => supabase
+    .from("products")
+    .select("sku, barcode, brand, name, attrs, category:categories(name), default_location:locations(code)")
+    .eq("active", true)
+    .order("sku").range(from, to));
   return {
-    filename: `lucratividade-${new Date().toISOString().slice(0, 10)}.csv`,
-    csv: toCsv(["SKU", "Produto", "Categoria", "Vendidos", "Custo", "Receita", "Lucro"], rows),
+    base: "folha-de-contagem",
+    headers: ["Local", "SKU", "Código de barras", "Produto", "Variação", "Categoria", "Quantidade contada"],
+    rows: data
+      .map((p) => [
+        one<{ code: string }>(p.default_location)?.code ?? "", p.sku, p.barcode, `${p.brand ? `${p.brand} ` : ""}${p.name}`,
+        Object.values((p.attrs as Record<string, string>) ?? {}).filter(Boolean).join(" · "),
+        one<{ name: string }>(p.category)?.name, "",
+      ] as CsvCell[])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])) || String(a[1]).localeCompare(String(b[1]))),
   };
+}
+
+export async function exportCsvAction(kind: ExportKind) {
+  const supabase = await createClient();
+  try {
+    const { base, headers, rows } = await build(supabase, kind);
+    return { filename: csvFilename(base), csv: toCsv(headers, rows) };
+  } catch (err) {
+    console.error(`[exports] ${kind}:`, err instanceof Error ? err.message : err);
+    return { error: "Não foi possível gerar o arquivo agora. Tente de novo em instantes." };
+  }
 }

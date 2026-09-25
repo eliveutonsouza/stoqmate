@@ -1,12 +1,14 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { must } from "@/lib/supabase/must";
+import { type RawSearchParams, PAGE_SIZE, containsPattern, pageParam, pageRange, param } from "@/lib/list-params";
 
 // cache() dedupe a checagem is_platform_staff quando uma página admin chama
 // 2+ funções deste arquivo na mesma requisição (ex.: admin/users/page.tsx).
 export const requireStaff = cache(async () => {
   const supabase = await createClient();
-  const { data: isStaff } = await supabase.rpc("is_platform_staff");
+  const isStaff = must(await supabase.rpc("is_platform_staff"), "admin/queries.requireStaff.isStaff");
   if (!isStaff) throw new Error("not authorized");
   return supabase;
 });
@@ -14,10 +16,10 @@ export const requireStaff = cache(async () => {
 export async function loadTenantsOverview() {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const { data: tenants } = await admin
+  const tenants = must(await admin
     .from("tenants")
     .select("id, name, cnpj, plan_id, created_at, stores(id), products(count)")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }), "admin/queries.loadTenantsOverview.tenants");
   return (tenants ?? []).map((t) => {
     const products = t.products as unknown as { count: number }[];
     return { ...t, storeCount: t.stores?.length ?? 0, skuCount: products?.[0]?.count ?? 0 };
@@ -27,20 +29,28 @@ export async function loadTenantsOverview() {
 export async function loadTenantDetail(tenantId: string) {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: tenant }, { data: stores }, { data: storeUsers }, { data: auditLog }, { count: skuCount }] = await Promise.all([
+  const [tenantRes, storesRes, storeUsersRes, auditLogRes, skuCountRes] = await Promise.all([
     admin.from("tenants").select("id, name, cnpj, plan_id, status, legal_name, segment, city, state, trial_ends_at, created_at").eq("id", tenantId).maybeSingle(),
     admin.from("stores").select("id, name, type").eq("tenant_id", tenantId).order("name"),
     admin.from("store_users").select("user_id, role, status, joined_at").eq("tenant_id", tenantId),
     admin.from("audit_log").select("id, kind, message, scope, created_at, created_by").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(50),
     admin.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
   ]);
+  const tenant = must(tenantRes, "admin.loadTenantDetail.tenant");
+  const stores = must(storesRes, "admin.loadTenantDetail.stores");
+  const storeUsers = must(storeUsersRes, "admin.loadTenantDetail.storeUsers");
+  const auditLog = must(auditLogRes, "admin.loadTenantDetail.auditLog");
+  must(skuCountRes, "admin.loadTenantDetail.skuCount");
+  const skuCount = skuCountRes.count;
   if (!tenant) return null;
 
   const userIds = (storeUsers ?? []).map((u) => u.user_id);
-  const [{ data: profiles }, { data: authUsers }] = await Promise.all([
+  const [profilesRes, authUsersRes] = await Promise.all([
     userIds.length ? admin.from("profiles").select("id, full_name, phone").in("id", userIds) : Promise.resolve({ data: [] }),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
+  const profiles = must(profilesRes, "admin/queries.loadTenantDetail.profiles");
+  const authUsers = must(authUsersRes, "admin/queries.loadTenantDetail.authUsers");
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
   const phoneById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.phone || ""]));
   const emailById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, u.email]));
@@ -59,8 +69,8 @@ export async function loadTenantDetail(tenantId: string) {
 export async function loadPlatformStaff() {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const { data: staff } = await admin.from("platform_staff").select("user_id, role, mfa_required, created_at").order("created_at");
-  const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const staff = must(await admin.from("platform_staff").select("user_id, role, mfa_required, created_at").order("created_at"), "admin/queries.loadPlatformStaff.staff");
+  const authUsers = must(await admin.auth.admin.listUsers({ perPage: 1000 }), "admin/queries.loadPlatformStaff.authUsers");
   const userById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, u]));
 
   return (staff ?? []).map((s) => {
@@ -72,7 +82,7 @@ export async function loadPlatformStaff() {
 export async function loadPlatformAuditLog() {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: entries }, { data: authUsers }] = await Promise.all([
+  const [entriesRes, authUsersRes] = await Promise.all([
     admin
       .from("audit_log")
       .select("id, kind, message, target_type, target_id, created_by, created_at, tenant_id")
@@ -81,36 +91,55 @@ export async function loadPlatformAuditLog() {
       .limit(100),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
+  const entries = must(entriesRes, "admin/queries.loadPlatformAuditLog.entries");
+  const authUsers = must(authUsersRes, "admin/queries.loadPlatformAuditLog.authUsers");
 
   const emailById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, u.email]));
   const tenantIds = [...new Set((entries ?? []).map((e) => e.tenant_id))];
-  const { data: tenants } = tenantIds.length ? await admin.from("tenants").select("id, name").in("id", tenantIds) : { data: [] };
+  const tenants = tenantIds.length ? must(await admin.from("tenants").select("id, name").in("id", tenantIds), "admin.tenants") : [];
   const tenantNameById = Object.fromEntries((tenants ?? []).map((t) => [t.id, t.name]));
 
   return (entries ?? []).map((e) => ({ ...e, who: emailById[e.created_by ?? ""] || "—", tenantName: tenantNameById[e.tenant_id] || "—" }));
 }
 
-export async function loadSubscriptionsOverview() {
+const SUBSCRIPTION_TENANT_SELECT = `
+  id, name, plan_id, status, trial_ends_at, created_at,
+  plan:plans(name, monthly_price, yearly_price),
+  subscriptions(id, cycle, status, current_period_end, cancel_at_period_end, created_at)
+`;
+
+// Lista de assinaturas (/admin/subscriptions): busca (?q) no nome da rede
+// com `.ilike` de uma coluna (curingas escapados) e ?page via `.range()`.
+// Os KPIs continuam sobre a base inteira de redes, não sobre a página.
+export async function loadSubscriptionsOverview(sp: RawSearchParams = {}) {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: tenants }, { data: invoices }] = await Promise.all([
-    admin
-      .from("tenants")
-      .select(`
-        id, name, plan_id, status, trial_ends_at, created_at,
-        plan:plans(name, monthly_price, yearly_price),
-        subscriptions(id, cycle, status, current_period_end, cancel_at_period_end, created_at)
-      `)
-      .order("created_at", { ascending: false }),
+  const filters = { q: param(sp, "q"), page: pageParam(sp) };
+  const { from, to } = pageRange(filters.page);
+
+  let pageQuery = admin
+    .from("tenants")
+    .select(SUBSCRIPTION_TENANT_SELECT, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .order("id")
+    .range(from, to);
+  if (filters.q) pageQuery = pageQuery.ilike("name", containsPattern(filters.q));
+
+  const [tenantsResult, invoicesResult, pageResult] = await Promise.all([
+    admin.from("tenants").select(SUBSCRIPTION_TENANT_SELECT).order("created_at", { ascending: false }),
     admin.from("invoices").select("tenant_id, amount_paid, status, created_at").eq("status", "paid"),
+    pageQuery,
   ]);
+  const tenants = must(tenantsResult, "loadSubscriptionsOverview.tenants") ?? [];
+  const invoices = must(invoicesResult, "loadSubscriptionsOverview.invoices") ?? [];
+  const pageTenants = must(pageResult, "loadSubscriptionsOverview.page") ?? [];
 
   const ltvByTenant = new Map<string, number>();
-  for (const inv of invoices ?? []) {
+  for (const inv of invoices) {
     ltvByTenant.set(inv.tenant_id, (ltvByTenant.get(inv.tenant_id) ?? 0) + Number(inv.amount_paid));
   }
 
-  const rows = (tenants ?? []).map((t) => {
+  const toRow = (t: (typeof tenants)[number]) => {
     const plan = t.plan as unknown as { name: string; monthly_price: number; yearly_price: number | null } | null;
     const subs = (t.subscriptions ?? []) as { id: string; cycle: string; status: string; current_period_end: string | null; cancel_at_period_end: boolean }[];
     const sub = [...subs].sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
@@ -121,17 +150,22 @@ export async function loadSubscriptionsOverview() {
       value, nextCharge: sub?.current_period_end ?? null, cancelAtPeriodEnd: sub?.cancel_at_period_end ?? false,
       ltv: ltvByTenant.get(t.id) ?? 0,
     };
-  });
+  };
 
-  const active = rows.filter((r) => r.status === "active");
-  const pastDue = rows.filter((r) => r.status === "past_due");
-  const trialing = (tenants ?? []).filter((t) => t.trial_ends_at && new Date(t.trial_ends_at) < new Date());
+  const allRows = tenants.map(toRow);
+  const active = allRows.filter((r) => r.status === "active");
+  const pastDue = allRows.filter((r) => r.status === "past_due");
+  const trialing = tenants.filter((t) => t.trial_ends_at && new Date(t.trial_ends_at) < new Date());
   const converted = trialing.filter((t) => t.status !== "trial");
 
   const mrr = active.reduce((s, r) => s + (r.cycle === "yearly" ? r.value / 12 : r.value), 0);
 
   return {
-    rows,
+    filters,
+    pageSize: PAGE_SIZE,
+    rows: pageTenants.map(toRow),
+    total: pageResult.count ?? 0,
+    allTotal: allRows.length,
     kpis: {
       mrr,
       arr: mrr * 12,
@@ -146,7 +180,7 @@ export async function loadSubscriptionsOverview() {
 export async function loadSubscriptionDetail(tenantId: string) {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: tenant }, { data: invoices }, { data: auditLog }] = await Promise.all([
+  const [tenantRes, invoicesRes, auditLogRes] = await Promise.all([
     admin
       .from("tenants")
       .select("id, name, plan_id, status, created_at, plan:plans(name, monthly_price, yearly_price), subscriptions(stripe_subscription_id, cycle, status, current_period_end, cancel_at_period_end), billing_customers(stripe_customer_id)")
@@ -155,6 +189,9 @@ export async function loadSubscriptionDetail(tenantId: string) {
     admin.from("invoices").select("id, amount_paid, status, hosted_invoice_url, created_at").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(20),
     admin.from("audit_log").select("id, kind, message, created_at").eq("tenant_id", tenantId).eq("scope", "platform").order("created_at", { ascending: false }).limit(20),
   ]);
+  const tenant = must(tenantRes, "admin/queries.loadSubscriptionDetail.tenant");
+  const invoices = must(invoicesRes, "admin/queries.loadSubscriptionDetail.invoices");
+  const auditLog = must(auditLogRes, "admin/queries.loadSubscriptionDetail.auditLog");
   if (!tenant) return null;
 
   // billing_customers é 1:1 (tenant_id é a PK de lá) mas o PostgREST às
@@ -174,7 +211,7 @@ export async function loadSubscriptionDetail(tenantId: string) {
 export async function loadAiMonitoring() {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: usage }, { data: ops }] = await Promise.all([
+  const [usageRes, opsRes] = await Promise.all([
     admin
       .from("ai_usage_log")
       .select("op_id, model, tokens_in, tokens_out, cost_usd, latency_ms, status, created_at, tenant_id")
@@ -182,10 +219,12 @@ export async function loadAiMonitoring() {
       .limit(500),
     admin.from("ai_ops").select("id, label"),
   ]);
+  const usage = must(usageRes, "admin/queries.loadAiMonitoring.usage");
+  const ops = must(opsRes, "admin/queries.loadAiMonitoring.ops");
   const opLabel = Object.fromEntries((ops ?? []).map((o) => [o.id, o.label]));
 
   const tenantIds = [...new Set((usage ?? []).slice(0, 50).map((u) => u.tenant_id))];
-  const { data: tenants } = tenantIds.length ? await admin.from("tenants").select("id, name").in("id", tenantIds) : { data: [] };
+  const tenants = tenantIds.length ? must(await admin.from("tenants").select("id, name").in("id", tenantIds), "admin.tenants") : [];
   const tenantName = Object.fromEntries((tenants ?? []).map((t) => [t.id, t.name]));
 
   const byDay = new Map<string, { cost: number; requests: number; tokens: number }>();
@@ -228,7 +267,7 @@ export async function loadAiMonitoring() {
 export async function loadPlatformReports() {
   const supabase = await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: cohorts }, { data: growth }, { data: tenants }, { data: plans }, { data: products }, { data: movements }, { data: storeUsers }] = await Promise.all([
+  const [cohortsRes, growthRes, tenantsRes, plansRes, productsRes, movementsRes, storeUsersRes] = await Promise.all([
     supabase.rpc("fn_platform_cohort_retention"),
     supabase.rpc("fn_platform_growth_by_month", { p_months: 12 }),
     admin.from("tenants").select("id, plan_id"),
@@ -237,6 +276,13 @@ export async function loadPlatformReports() {
     admin.from("stock_movements").select("id, tenant_id").gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
     admin.from("store_users").select("user_id, tenant_id"),
   ]);
+  const cohorts = must(cohortsRes, "admin/queries.loadPlatformReports.cohorts");
+  const growth = must(growthRes, "admin/queries.loadPlatformReports.growth");
+  const tenants = must(tenantsRes, "admin/queries.loadPlatformReports.tenants");
+  const plans = must(plansRes, "admin/queries.loadPlatformReports.plans");
+  const products = must(productsRes, "admin/queries.loadPlatformReports.products");
+  const movements = must(movementsRes, "admin/queries.loadPlatformReports.movements");
+  const storeUsers = must(storeUsersRes, "admin/queries.loadPlatformReports.storeUsers");
 
   const planIdByTenant = Object.fromEntries((tenants ?? []).map((t) => [t.id, t.plan_id]));
   const countByPlan = (rows: { tenant_id: string }[]) => {
@@ -277,13 +323,18 @@ export async function loadPlatformReports() {
 export async function loadAdminOverview() {
   const supabase = await requireStaff();
   const admin = createServiceRoleClient();
-  const [{ data: mrrTrend }, { data: recentSignups }, { data: activeSubs }, { data: allTenants }, { data: plans }] = await Promise.all([
+  const [mrrTrendRes, recentSignupsRes, activeSubsRes, allTenantsRes, plansRes] = await Promise.all([
     supabase.rpc("fn_platform_mrr_trend", { p_months: 12 }),
     admin.from("tenants").select("id, name, plan_id, segment, city, status, created_at").order("created_at", { ascending: false }).limit(6),
     admin.from("subscriptions").select("tenant_id, cycle, plan:plans(monthly_price, yearly_price)").eq("status", "active"),
     admin.from("tenants").select("plan_id"),
     admin.from("plans").select("id, name"),
   ]);
+  const mrrTrend = must(mrrTrendRes, "admin/queries.loadAdminOverview.mrrTrend");
+  const recentSignups = must(recentSignupsRes, "admin/queries.loadAdminOverview.recentSignups");
+  const activeSubs = must(activeSubsRes, "admin/queries.loadAdminOverview.activeSubs");
+  const allTenants = must(allTenantsRes, "admin/queries.loadAdminOverview.allTenants");
+  const plans = must(plansRes, "admin/queries.loadAdminOverview.plans");
 
   const currentMrr = (activeSubs ?? []).reduce((s, sub) => {
     const plan = sub.plan as unknown as { monthly_price: number; yearly_price: number | null } | null;
@@ -309,10 +360,12 @@ export async function loadPlatformSettings() {
   const admin = createServiceRoleClient();
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const [{ data: settings }, { data: usage }] = await Promise.all([
+  const [settingsRes, usageRes] = await Promise.all([
     supabase.from("platform_settings").select("trial_days, ai_spend_ceiling_usd, ai_alert_pct, updated_at").maybeSingle(),
     admin.from("ai_usage_log").select("cost_usd").gte("created_at", monthStart.toISOString()),
   ]);
+  const settings = must(settingsRes, "admin/queries.loadPlatformSettings.settings");
+  const usage = must(usageRes, "admin/queries.loadPlatformSettings.usage");
 
   const monthSpend = (usage ?? []).reduce((s, u) => s + Number(u.cost_usd ?? 0), 0);
   const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
@@ -350,13 +403,13 @@ export async function loadPlatformSettings() {
 export async function loadPlans() {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const { data } = await admin.from("plans").select("*").order("monthly_price");
+  const data = must(await admin.from("plans").select("*").order("monthly_price"), "admin/queries.loadPlans.data");
   return data ?? [];
 }
 
 export async function loadPlan(id: string) {
   await requireStaff();
   const admin = createServiceRoleClient();
-  const { data } = await admin.from("plans").select("*").eq("id", id).maybeSingle();
+  const data = must(await admin.from("plans").select("*").eq("id", id).maybeSingle(), "admin/queries.loadPlan.data");
   return data ?? null;
 }

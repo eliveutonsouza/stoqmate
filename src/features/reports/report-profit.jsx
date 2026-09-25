@@ -6,9 +6,12 @@ import { ReportHeader } from '@/components/domain/report-header';
 import { Page } from '@/components/ui/page-container';
 import { ReportTabs } from '@/components/domain/report-tabs';
 import { brl } from '@/lib/format';
+import { downloadCsv, toCsv } from '@/lib/csv';
+import { useReportHeader } from '@/features/reports/use-report-header';
 
-export function ReportProfit({ report, monthly }) {
+export function ReportProfit({ report, monthly, filters, stores }) {
   const navigate = useNavigate();
+  const { headerProps, scopeLabel, fileSuffix } = useReportHeader(filters, stores);
   const rows = report.byProduct;
   const totalBuy = report.cost;
   const totalSell = report.revenue;
@@ -16,10 +19,25 @@ export function ReportProfit({ report, monthly }) {
   const margin = totalSell > 0 ? (totalProfit / totalSell) * 100 : 0;
   const maxSell = Math.max(1, ...rows.map((r) => r.revenue));
   const maxMonth = Math.max(1, ...monthly.map((m) => m.revenue));
+  const sorted = [...rows].sort((a, b) => (b.revenue - b.cost) - (a.revenue - a.cost));
+
+  const exportCsv = () => downloadCsv(`lucratividade_${fileSuffix}.csv`, toCsv(
+    ['SKU', 'Produto', 'Categoria', 'Vendidos', 'Custo', 'Vendas', 'Lucro', 'Margem (%)'],
+    sorted.map((r) => [
+      r.sku, r.name, r.category_name, r.units, r.cost, r.revenue, r.revenue - r.cost,
+      r.revenue > 0 ? ((r.revenue - r.cost) / r.revenue) * 100 : 0,
+    ]),
+  ));
 
   return (
     <StoreShell route="/reports/profit" breadcrumb={['Relatórios', 'Lucratividade']} navigate={navigate}>
-      <ReportHeader title="Compras vs. vendas" sub="Lucro bruto por produto, calculado item a item sobre o custo atual" />
+      <ReportHeader
+        title="Compras vs. vendas"
+        sub={`${scopeLabel} · lucro bruto por produto, calculado item a item sobre o custo atual`}
+        {...headerProps}
+        onExport={exportCsv}
+        exportDisabled={rows.length === 0}
+      />
       <Page>
         <ReportTabs route="/reports/profit" navigate={navigate} />
 
@@ -42,7 +60,7 @@ export function ReportProfit({ report, monthly }) {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Compras vs. vendas por mês</h3>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Últimos 6 meses, toda a rede. A diferença entre as barras é o lucro bruto.</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Últimos 6 meses, {filters.storeId ? 'da loja selecionada' : 'toda a rede'} (não segue o período do topo). A diferença entre as barras é o lucro bruto.</p>
             </div>
             <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'var(--fg-muted)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 9, height: 9, borderRadius: 2, background: 'var(--fg-faint)' }}></span> Custo</span>
@@ -84,7 +102,7 @@ export function ReportProfit({ report, monthly }) {
                 </tr>
               </thead>
               <tbody>
-                {[...rows].sort((a, b) => (b.revenue - b.cost) - (a.revenue - a.cost)).map((r) => {
+                {sorted.map((r) => {
                   const profit = r.revenue - r.cost;
                   const rowMargin = r.revenue > 0 ? (profit / r.revenue) * 100 : 0;
                   return (

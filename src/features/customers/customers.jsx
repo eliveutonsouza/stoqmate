@@ -9,6 +9,8 @@ import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
 import { brl } from '@/lib/format';
 import { Toolbar } from '@/components/ui/toolbar';
+import { Pagination } from '@/components/ui/pagination';
+import { useQueryUpdate } from '@/hooks/use-query-update';
 import { StoreAvatar } from '@/components/domain/store-avatar';
 import { Modal } from '@/components/ui/modal';
 import { Field } from '@/components/ui/field';
@@ -20,19 +22,19 @@ function emptyForm() {
   return { name: '', doc: '', phone: '', email: '', notes: '' };
 }
 
-export function Customers({ customers }) {
+// Busca (?q), filtro de crédito (?credit=1) e página (?page) na URL — o
+// servidor filtra e pagina (fn_customers_list).
+export function Customers({ filters, pageSize, rows, total, stats }) {
   const navigate = useNavigate();
   const router = useRouter();
+  const { update, pending: listPending } = useQueryUpdate();
   const [formOpen, setFormOpen] = React.useState(false);
   const [f, setF] = React.useState(emptyForm());
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
-  const filtered = customers;
-  const withCredit = customers.filter((c) => c.credit_balance > 0);
-  const totalCredit = withCredit.reduce((s, c) => s + c.credit_balance, 0);
-  const totalSpent = customers.reduce((s, c) => s + (c.total_spent || 0), 0);
+  const hasFilters = !!(filters.q || filters.credit);
 
   const submit = () => {
     setError('');
@@ -56,9 +58,9 @@ export function Customers({ customers }) {
       <Page>
         <div className="g3 kpi-strip">
           {[
-            { l: 'Clientes cadastrados', v: `${customers.length}` },
-            { l: 'Total gasto (identificado)', v: brl(totalSpent) },
-            { l: 'Crédito em loja aberto', v: brl(totalCredit), s: `${withCredit.length} clientes`, tone: 'warn' },
+            { l: 'Clientes cadastrados', v: `${stats.customerCount}` },
+            { l: 'Total gasto (identificado)', v: brl(stats.totalSpent) },
+            { l: 'Crédito em loja aberto', v: brl(stats.creditTotal), s: `${stats.creditCount} cliente${stats.creditCount === 1 ? '' : 's'}`, tone: 'warn' },
           ].map((m, i) => (
             <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
@@ -68,13 +70,36 @@ export function Customers({ customers }) {
           ))}
         </div>
 
-        <Toolbar placeholder="Buscar por nome, documento ou telefone…"
-          right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{filtered.length} de {customers.length}</span>} />
+        <Toolbar
+          placeholder="Buscar por nome, documento, telefone ou email…"
+          value={filters.q ?? ''}
+          onChange={(q) => update({ q })}
+          debounce={300}
+          filters={[{
+            label: 'Com crédito em loja', active: filters.credit,
+            onClick: () => update({ credit: filters.credit ? null : '1' }),
+          }]}
+          right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{total} de {stats.customerCount}</span>} />
 
-        <div className="card table-scroll">
-          {filtered.length === 0 ? (
-            <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhum cliente encontrado.</div>
+        <div className="card" style={{ opacity: listPending ? 0.6 : 1, transition: 'opacity .15s' }}>
+          {stats.customerCount === 0 ? (
+            <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>Nenhum cliente cadastrado ainda</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>Cadastre clientes para liberar crédito em loja e histórico de compras.</div>
+              <button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm" style={{ marginTop: 12 }}><I.Plus size={12} /> Cadastrar cliente</button>
+            </div>
+          ) : rows.length === 0 ? (
+            <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>Nenhum cliente encontrado</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>
+                {total > 0 ? 'Esta página não existe mais.' : 'Ninguém bate com a busca e os filtros atuais.'}
+              </div>
+              {total > 0
+                ? <button type="button" onClick={() => update({ page: null })} className="btn btn-outline btn-sm" style={{ marginTop: 12 }}>Primeira página</button>
+                : hasFilters && <button type="button" onClick={() => update({ q: null, credit: null })} className="btn btn-outline btn-sm" style={{ marginTop: 12 }}>Limpar filtros</button>}
+            </div>
           ) : (
+            <div className="table-scroll">
             <table className="table">
               <thead>
                 <tr>
@@ -84,7 +109,7 @@ export function Customers({ customers }) {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => (
+                {rows.map((c) => (
                   <tr key={c.id}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -108,6 +133,10 @@ export function Customers({ customers }) {
                 ))}
               </tbody>
             </table>
+            </div>
+          )}
+          {stats.customerCount > 0 && (
+            <Pagination page={filters.page} pageSize={pageSize} total={total} pending={listPending} onPage={(page) => update({ page })} />
           )}
         </div>
       </Page>

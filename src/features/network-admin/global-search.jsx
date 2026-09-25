@@ -102,6 +102,7 @@ export function GlobalSearch() {
         {q.trim().length >= 2 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{searching ? 'Buscando…' : `${totalResults} resultados para "${q}"`}</span>
+            {!searching && results?.error && <span role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{results.error}</span>}
             <div style={{ flex: 1 }}></div>
             <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>Busca em toda a rede</span>
           </div>

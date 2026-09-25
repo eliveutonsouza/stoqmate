@@ -1,7 +1,25 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { aiCompleteJSON } from "@/lib/anthropic";
+import { aiCompleteJSON, type AiAttachment } from "@/lib/anthropic";
+import { loadOcrContext } from "@/features/ai-flows/queries";
+
+// Custo em crédito é fixo por operação; sem teto, um prompt gigante sairia
+// pelo preço de um pequeno. ~60k caracteres ≈ 15k tokens de entrada.
+const MAX_PROMPT_CHARS = 60_000;
+const MAX_QUESTION_CHARS = 500;
+
+// Falha de estorno/log não pode derrubar a resposta ao usuário, mas também
+// não pode sumir: fica no log do servidor com o op para conciliação.
+function logIfFailed(what: string, opId: string, res: { error: { message: string } | null }) {
+  if (res.error) console.error(`[ai] ${what} falhou (op=${opId}): ${res.error.message}`);
+}
+
+async function requireAi(supabase: Awaited<ReturnType<typeof createClient>>, minLevel: number) {
+  const { data: allowed, error } = await supabase.rpc("has_access", { p_area: "ai", p_min_level: minLevel });
+  if (error) throw new Error("Não foi possível verificar sua permissão agora. Tente de novo.");
+  if (!allowed) throw new Error("Seu perfil não tem permissão para usar IA aqui.");
+}
 
 // Débito -> chamada -> log. Se a chamada à Anthropic falhar depois do
 // débito, estorna o crédito (o lojista não paga por uma resposta que não
@@ -13,24 +31,28 @@ async function runAiOp({
   system,
   prompt,
   maxTokens,
+  attachment,
 }: {
   opId: string;
   minLevel: number;
   system: string;
   prompt: string;
   maxTokens?: number;
+  attachment?: AiAttachment;
 }) {
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    throw new Error("Entrada grande demais para a IA. Reduza o texto ou a quantidade de itens.");
+  }
   const supabase = await createClient();
-  const { data: allowed } = await supabase.rpc("has_access", { p_area: "ai", p_min_level: minLevel });
-  if (!allowed) throw new Error("Seu perfil não tem permissão para usar IA aqui.");
+  await requireAi(supabase, minLevel);
 
   const { error: debitError } = await supabase.rpc("fn_ai_debit_credits", { p_op_id: opId });
   if (debitError) throw new Error(debitError.message);
 
   const startedAt = Date.now();
   try {
-    const result = await aiCompleteJSON({ system, prompt, maxTokens });
-    await supabase.rpc("fn_write_ai_usage", {
+    const result = await aiCompleteJSON({ system, prompt, maxTokens, attachment });
+    logIfFailed("registro de uso", opId, await supabase.rpc("fn_write_ai_usage", {
       p_op_id: opId,
       p_model: result.model,
       p_tokens_in: result.tokensIn,
@@ -38,12 +60,12 @@ async function runAiOp({
       p_cost_usd: result.costUsd,
       p_status: "ok",
       p_latency_ms: Date.now() - startedAt,
-    });
+    }));
     return result.data;
   } catch (err) {
-    await supabase.rpc("fn_ai_refund_credits", { p_op_id: opId });
+    logIfFailed("estorno", opId, await supabase.rpc("fn_ai_refund_credits", { p_op_id: opId }));
     const message = err instanceof Error ? err.message : String(err);
-    await supabase.rpc("fn_write_ai_usage", {
+    logIfFailed("registro de uso", opId, await supabase.rpc("fn_write_ai_usage", {
       p_op_id: opId,
       p_model: "claude-haiku-4-5-20251001",
       p_tokens_in: null,
@@ -52,15 +74,17 @@ async function runAiOp({
       p_status: "error",
       p_error_message: message,
       p_latency_ms: Date.now() - startedAt,
-    });
+    }));
     throw err;
   }
 }
 
 export async function askInventoryAction(question: string) {
+  if (question.trim().length > MAX_QUESTION_CHARS) {
+    throw new Error(`Pergunta longa demais (máximo ${MAX_QUESTION_CHARS} caracteres).`);
+  }
   const supabase = await createClient();
-  const { data: allowed } = await supabase.rpc("has_access", { p_area: "ai", p_min_level: 1 });
-  if (!allowed) throw new Error("Seu perfil não tem permissão para usar IA aqui.");
+  await requireAi(supabase, 1);
 
   const { data: categories } = await supabase.from("categories").select("name").order("name");
   const { data: products } = await supabase
@@ -127,17 +151,17 @@ Devolva JSON com a especificação. Nada de contagens ou valores calculados.
       maxTokens: 700,
     });
     spec = result.data as FilterSpec;
-    await supabase.rpc("fn_write_ai_usage", {
+    logIfFailed("registro de uso", "ask", await supabase.rpc("fn_write_ai_usage", {
       p_op_id: "ask", p_model: result.model, p_tokens_in: result.tokensIn, p_tokens_out: result.tokensOut,
       p_cost_usd: result.costUsd, p_status: "ok", p_latency_ms: Date.now() - startedAt,
-    });
+    }));
   } catch (err) {
-    await supabase.rpc("fn_ai_refund_credits", { p_op_id: "ask" });
+    logIfFailed("estorno", "ask", await supabase.rpc("fn_ai_refund_credits", { p_op_id: "ask" }));
     const message = err instanceof Error ? err.message : String(err);
-    await supabase.rpc("fn_write_ai_usage", {
+    logIfFailed("registro de uso", "ask", await supabase.rpc("fn_write_ai_usage", {
       p_op_id: "ask", p_model: "claude-haiku-4-5-20251001", p_tokens_in: null, p_tokens_out: null,
       p_cost_usd: null, p_status: "error", p_error_message: message, p_latency_ms: Date.now() - startedAt,
-    });
+    }));
     throw err;
   }
 
@@ -231,25 +255,47 @@ export async function forecastReplenishmentAction(
   });
 }
 
-export async function extractInvoiceAction(
-  text: string,
-  context: {
-    categories: { name: string; unit: string; category_attributes: { label: string; values: string[] }[] }[];
-    products: { sku: string; brand: string; name: string; attrs: Record<string, string>; cost_price: number }[];
-  },
-) {
+const OCR_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+const OCR_MAX_BYTES = 3.5 * 1024 * 1024;
+
+// Nota fiscal por texto colado, foto ou PDF (DANFE). O catálogo usado para
+// casar SKUs é lido aqui no servidor, não recebido do navegador.
+export async function extractInvoiceAction(form: FormData) {
+  const text = String(form.get("text") ?? "").trim();
+  const file = form.get("file");
+
+  let attachment: AiAttachment | undefined;
+  if (file instanceof File && file.size > 0) {
+    if (file.size > OCR_MAX_BYTES) throw new Error("Arquivo maior que 3,5 MB. Envie uma foto menor ou o PDF da nota.");
+    const data = Buffer.from(await file.arrayBuffer()).toString("base64");
+    if (file.type === "application/pdf") {
+      attachment = { kind: "pdf", data };
+    } else if ((OCR_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+      attachment = { kind: "image", mediaType: file.type as (typeof OCR_IMAGE_TYPES)[number], data };
+    } else {
+      throw new Error("Formato não aceito. Envie foto (JPG, PNG, WEBP) ou PDF.");
+    }
+  } else if (!text) {
+    throw new Error("Cole o texto da nota ou envie uma foto/PDF.");
+  }
+
+  const context = await loadOcrContext();
   const catalogueHint = context.products
-    .map((p) => `${p.sku} | ${p.brand} ${p.name} | ${Object.values(p.attrs || {}).join(" ")} | custo ~${Number(p.cost_price).toFixed(2)}`)
+    .map((p) => `${p.sku} | ${p.brand} ${p.name} | ${Object.values((p.attrs as Record<string, string>) || {}).join(" ")} | custo ~${Number(p.cost_price).toFixed(2)}`)
     .join("\n");
   const schemaHint = context.categories
-    .map((c) => `${c.name} (unidade ${c.unit}): ${c.category_attributes.map((a) => `${a.label} [${a.values.join("/")}]`).join(", ")}`)
+    .map((c) => `${c.name} (unidade ${c.unit}): ${(c.category_attributes ?? []).map((a: { label: string; values: string[] }) => `${a.label} [${a.values.join("/")}]`).join(", ")}`)
     .join("\n");
+  const source = attachment
+    ? `A nota fiscal está no arquivo anexo (${attachment.kind === "pdf" ? "PDF" : "foto"}).`
+    : `Texto da nota fiscal:\n"""\n${text}\n"""`;
 
   return runAiOp({
     opId: "ocr",
     minLevel: 2,
     system: "Você lê notas fiscais brasileiras (DANFE) de entrada de mercadoria para um sistema de estoque multi-loja e devolve os itens estruturados.",
-    prompt: `Catálogo atual da loja (SKU | produto | variação | custo aproximado):\n${catalogueHint}\n\nCategorias disponíveis e seus atributos:\n${schemaHint}\n\nTexto da nota fiscal:\n"""\n${text}\n"""\n\nExtraia os itens. Para cada um, decida se casa com um SKU do catálogo acima ou se é produto novo.\nDevolva JSON com esta forma exata:\n{"supplier":"nome do fornecedor","doc":"numero da nota","total":numero,\n "items":[{"line":1,"description":"texto original do item","qty":numero,"unitCost":numero,\n   "match":"existing"|"new","sku":"SKU casado ou SKU sugerido","productName":"nome limpo",\n   "category":"nome da categoria","attributes":{"chave":"valor"},"confidence":0-100,\n   "reason":"por que casou ou por que é produto novo, em uma frase curta em português"}]}`,
+    prompt: `Catálogo atual da loja (SKU | produto | variação | custo aproximado):\n${catalogueHint}\n\nCategorias disponíveis e seus atributos:\n${schemaHint}\n\n${source}\n\nExtraia os itens. Para cada um, decida se casa com um SKU do catálogo acima ou se é produto novo.\nDevolva JSON com esta forma exata:\n{"supplier":"nome do fornecedor","doc":"numero da nota","total":numero,\n "items":[{"line":1,"description":"texto original do item","qty":numero,"unitCost":numero,\n   "match":"existing"|"new","sku":"SKU casado ou SKU sugerido","productName":"nome limpo",\n   "category":"nome da categoria","attributes":{"chave":"valor"},"confidence":0-100,\n   "reason":"por que casou ou por que é produto novo, em uma frase curta em português"}]}`,
     maxTokens: 2000,
+    attachment,
   });
 }

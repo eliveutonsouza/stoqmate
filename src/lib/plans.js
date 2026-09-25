@@ -142,7 +142,7 @@ export const FEATURE_MATRIX = [
   { g: 'Catálogo e cadastro', rows: [
     ['Categorias e atributos personalizados', 3, 'ilimitadas', 'ilimitadas', 'Sem isso o produto não serve a nenhum ramo. Nunca travar.'],
     ['Cadastro manual de produtos', true, true, true, 'Função básica, custo zero.'],
-    ['Importação de planilha (XLSX/CSV)', true, true, true, 'Remove a maior barreira de entrada. Travar isso mata a ativação.'],
+    ['Importação de planilha (CSV)', true, true, true, 'Remove a maior barreira de entrada. Travar isso mata a ativação.'],
     ['Código de barras e etiquetas', true, true, true, 'Custo zero, aumenta o uso diário.'],
     ['Reajuste de preços em lote', false, true, true, 'Só importa com catálogo grande — sinal natural de upgrade.'],
     ['Histórico de alterações', '3 meses', '24 meses', '5 anos', 'Retenção custa armazenamento: escalona bem.'],

@@ -1,8 +1,8 @@
 import { ReportABC } from '@/features/analysis/report-abc';
-import { loadAbcReport } from '@/features/reports/queries';
+import { loadAbcReport, loadReportStores, reportFiltersFromParams } from '@/features/reports/queries';
 
-export default async function Page() {
-  const { range, rows } = await loadAbcReport();
-  const periodDays = Math.max(1, Math.round((range.end.getTime() - range.start.getTime()) / 86400000));
-  return <ReportABC rows={rows} periodDays={periodDays} />;
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const filters = reportFiltersFromParams(await searchParams);
+  const [{ rows }, stores] = await Promise.all([loadAbcReport(filters), loadReportStores()]);
+  return <ReportABC rows={rows} periodDays={filters.range.days} filters={filters} stores={stores} />;
 }

@@ -6,8 +6,11 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Page } from '@/components/ui/page-container';
 import { HubCard } from '@/components/domain/hub-card';
 import { I } from '@/components/icons';
+import { brl } from '@/lib/format';
 
-export function SettingsHub() {
+const limitLabel = (n) => (n == null ? 'Ilimitado' : String(n));
+
+export function SettingsHub({ hub }) {
   const navigate = useNavigate();
   return (
     <StoreShell route="/settings" breadcrumb={['Configurações']} navigate={navigate}>
@@ -20,16 +23,16 @@ export function SettingsHub() {
             desc="Razão social, CNPJ, endereço e preferências de operação usadas nos relatórios e notas." />
           <HubCard icon={<I.Swap size={15} />} accent title="Unidades da rede" onClick={() => navigate('/settings/units')}
             desc="Lojas e centros de distribuição. Cada unidade tem saldo isolado e locais de estoque próprios."
-            meta={[['Unidades', '4'], ['Limite', '5']]} />
+            meta={[['Unidades', String(hub.stores)], ['Limite', limitLabel(hub.storeLimit)]]} />
           <HubCard icon={<I.Users size={15} />} accent title="Usuários e perfis" onClick={() => navigate('/settings/users')}
             desc="Equipe da rede e o que cada perfil pode ver e fazer, de vendedor a proprietário."
-            meta={[['Usuários', '6'], ['Limite', '10']]} />
+            meta={[['Usuários', String(hub.users)], ['Limite', limitLabel(hub.userLimit)]]} />
           <HubCard icon={<I.Credit size={15} />} accent title="Plano e assinatura" onClick={() => navigate('/settings/subscription')}
             desc="Plano atual, uso dos limites, forma de pagamento e histórico de faturas."
-            meta={[['Plano', 'Controle'], ['Mensal', 'R$ 89']]} />
+            meta={hub.planName ? [['Plano', hub.planName], ['Mensal', brl(hub.monthlyPrice)]] : undefined} />
           <HubCard icon={<I.Sliders size={15} />} accent title="Categorias e atributos" onClick={() => navigate('/categories')}
             desc="O esquema de cada categoria: atributos do SKU, valores permitidos e unidade de medida."
-            meta={[['Categorias', '6'], ['Atributos', '12']]} />
+            meta={[['Categorias', String(hub.categories)], ['Atributos', String(hub.attributes)]]} />
         </div>
 
         <div>

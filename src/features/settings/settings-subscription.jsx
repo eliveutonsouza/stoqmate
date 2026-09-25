@@ -7,7 +7,6 @@ import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { SettingsLayout } from '@/components/ui/settings-layout';
 import { brl } from '@/lib/format';
-import { I } from '@/components/icons';
 import { createCheckoutSessionAction, createPortalSessionAction } from '@/features/billing/actions';
 
 const STATUS_LABELS = {
@@ -65,6 +64,12 @@ export function SettingsSubscription({ billing }) {
           <div style={{ padding: '10px 12px', background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 7, fontSize: 12.5 }}>Checkout cancelado — nenhuma cobrança foi feita.</div>
         )}
         {error && <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5 }}>{error}</div>}
+        {(subscription?.status === 'past_due' || subscription?.status === 'unpaid') && (
+          <div style={{ padding: '10px 12px', background: 'var(--warning-soft)', border: '1px solid var(--warning)', borderRadius: 7, fontSize: 12.5 }}>
+            A última cobrança falhou.{' '}
+            <a href="/billing/past-due" onClick={(e) => { e.preventDefault(); navigate('/billing/past-due'); }}>Ver pagamento pendente</a>.
+          </div>
+        )}
 
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
@@ -127,14 +132,14 @@ export function SettingsSubscription({ billing }) {
             <div style={{ padding: 18, fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhuma fatura ainda.</div>
           ) : (
             <table className="table">
-              <thead><tr><th>Data</th><th className="num">Valor</th><th>Status</th><th style={{ width: 80 }}></th></tr></thead>
+              <thead><tr><th>Data</th><th className="num">Valor</th><th>Status</th><th style={{ width: 96 }}></th></tr></thead>
               <tbody>
                 {invoices.map((inv) => (
                   <tr key={inv.id}>
                     <td style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{new Date(inv.created_at).toLocaleDateString('pt-BR')}</td>
                     <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{brl(inv.amount_paid)}</td>
                     <td>{inv.status === 'paid' ? <span className="badge badge-success">Pago</span> : <span className="badge badge-warning">{inv.status}</span>}</td>
-                    <td>{inv.hosted_invoice_url && <a href={inv.hosted_invoice_url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm"><I.Download size={11} /> Abrir</a>}</td>
+                    <td><button type="button" onClick={() => navigate(`/settings/subscription/invoice?id=${inv.id}`)} className="btn btn-ghost btn-sm">Detalhes</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -143,12 +148,17 @@ export function SettingsSubscription({ billing }) {
         </div>
 
         {subscription && (
-          <div className="card" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ flex: 1 }}>
+          <div className="card" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
               <div style={{ fontSize: 13, fontWeight: 500 }}>Trocar cartão, mudar de plano ou cancelar</div>
-              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>Tudo isso fica no portal de cobrança, fora do nosso painel.</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>A confirmação acontece no portal de cobrança do Stripe.</div>
             </div>
-            <button onClick={manage} disabled={pendingId === 'portal'} className="btn btn-outline btn-sm">Abrir portal de cobrança</button>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => navigate('/settings/subscription/change')} className="btn btn-ghost btn-sm">Trocar de plano</button>
+              {subscription.cycle !== 'yearly' && <button type="button" onClick={() => navigate('/settings/subscription/annual')} className="btn btn-ghost btn-sm">Mudar para anual</button>}
+              {!subscription.cancel_at_period_end && subscription.status !== 'canceled' && <button type="button" onClick={() => navigate('/settings/subscription/cancel')} className="btn btn-ghost btn-sm">Cancelar</button>}
+              <button onClick={manage} disabled={pendingId === 'portal'} className="btn btn-outline btn-sm">Abrir portal de cobrança</button>
+            </div>
           </div>
         )}
       </SettingsLayout>

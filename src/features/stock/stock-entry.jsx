@@ -42,6 +42,8 @@ export function StockEntry({ stores, suppliers, locations }) {
         notes: [invoice && `NF ${invoice}`, notes].filter(Boolean).join(' — '), locationId,
       });
       if (result?.error) { setError(result.error); return; }
+      // Entrada já gravada: avisa e segue pro histórico só depois que a pessoa leu.
+      if (result?.warning) { setError(result.warning); setTimeout(() => navigate('/stock/history'), 2500); return; }
       navigate('/stock/history');
     });
   };

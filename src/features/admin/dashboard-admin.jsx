@@ -10,7 +10,7 @@ import { PlanDistributionCard } from '@/features/admin/plan-distribution-card';
 import { RecentSignupsCard } from '@/features/admin/recent-signups-card';
 import { SystemHealthCard } from '@/features/admin/system-health-card';
 
-export function DashboardAdmin({ overview }) {
+export function DashboardAdmin({ overview, health }) {
   const navigate = useNavigate();
   const { currentMrr, mrrTrend, planDistribution, tenantCount, recentSignups } = overview;
 
@@ -44,7 +44,7 @@ export function DashboardAdmin({ overview }) {
 
             <div className="split-2" style={{ '--a': '1.2fr' }}>
               <RecentSignupsCard navigate={navigate} signups={recentSignups} />
-              <SystemHealthCard />
+              <SystemHealthCard health={health} />
             </div>
           </div>
     </AdminShell>

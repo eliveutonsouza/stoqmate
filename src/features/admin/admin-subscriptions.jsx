@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
 import { Toolbar } from '@/components/ui/toolbar';
+import { Pagination } from '@/components/ui/pagination';
+import { useQueryUpdate } from '@/hooks/use-query-update';
 import { StoreAvatar } from '@/components/domain/store-avatar';
 import { PlanBadge } from '@/components/domain/plan-badge';
 import { StatusBadge } from '@/components/domain/status-badge';
@@ -15,13 +17,14 @@ const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR', { day: 
 
 export function AdminSubscriptions({ overview }) {
   const navigate = useNavigate();
-  const { rows, kpis } = overview;
+  const { rows, kpis, filters, pageSize, total, allTotal } = overview;
+  const { update, pending } = useQueryUpdate();
 
   return (
     <AdminShell route="/admin/subscriptions" breadcrumb={['Assinaturas']} navigate={navigate}>
       <PageHeader
         title="Assinaturas"
-        sub={`${rows.length} rede(s) · ${brl(kpis.mrr)} de MRR · ${kpis.pastDueCount} inadimplente(s)`}
+        sub={`${allTotal} rede(s) · ${brl(kpis.mrr)} de MRR · ${kpis.pastDueCount} inadimplente(s)`}
       />
       <Page>
         <div className="g5 kpi-strip">
@@ -40,9 +43,31 @@ export function AdminSubscriptions({ overview }) {
           ))}
         </div>
 
-        <Toolbar placeholder="Buscar rede…" right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{rows.length} rede(s)</span>} />
+        <Toolbar
+          placeholder="Buscar rede pelo nome…"
+          value={filters.q ?? ''}
+          onChange={(q) => update({ q })}
+          debounce={300}
+          right={<span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{total} de {allTotal} rede(s)</span>}
+        />
 
-        <div className="card table-scroll">
+        <div className="card" style={{ opacity: pending ? 0.6 : 1, transition: 'opacity .15s' }}>
+          {rows.length === 0 ? (
+            <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>{allTotal === 0 ? 'Nenhuma rede cadastrada ainda' : 'Nenhuma rede encontrada'}</div>
+              {allTotal > 0 && (
+                <>
+                  <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>
+                    {total > 0 ? 'Esta página não existe mais.' : 'Nenhum nome bate com a busca.'}
+                  </div>
+                  <button type="button" onClick={() => update(total > 0 ? { page: null } : { q: null })} className="btn btn-outline btn-sm" style={{ marginTop: 12 }}>
+                    {total > 0 ? 'Primeira página' : 'Limpar busca'}
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+          <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>
@@ -72,6 +97,9 @@ export function AdminSubscriptions({ overview }) {
               ))}
             </tbody>
           </table>
+          </div>
+          )}
+          <Pagination page={filters.page} pageSize={pageSize} total={total} pending={pending} onPage={(page) => update({ page })} />
         </div>
       </Page>
     </AdminShell>

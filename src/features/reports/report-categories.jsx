@@ -9,18 +9,37 @@ import { DonutChart } from '@/components/domain/donut-chart';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { ProductThumb } from '@/components/ui/product-thumb';
 import { brl } from '@/lib/format';
+import { downloadCsv, toCsv } from '@/lib/csv';
+import { useReportHeader } from '@/features/reports/use-report-header';
 
-export function ReportCategories({ report }) {
+export function ReportCategories({ report, filters, stores }) {
   const navigate = useNavigate();
+  const { headerProps, scopeLabel, fileSuffix } = useReportHeader(filters, stores);
   const total = report.byCategory.reduce((s, c) => s + c.revenue, 0);
   const maxRev = Math.max(1, ...report.byCategory.map((c) => c.revenue));
   const maxUnits = Math.max(1, ...report.byProduct.map((p) => p.units));
   const leaderRevenue = report.byCategory[0];
   const leaderVolume = [...report.byCategory].sort((a, b) => b.units - a.units)[0];
 
+  // Exporta a lista de produtos do período (a tabela mostra os 20 primeiros).
+  const exportCsv = () => downloadCsv(`produtos-por-receita_${fileSuffix}.csv`, toCsv(
+    ['#', 'SKU', 'Produto', 'Marca', 'Categoria', 'Vendidos', 'Receita', 'Custo', 'Ticket médio', 'Margem (%)'],
+    report.byProduct.map((p, i) => [
+      i + 1, p.sku, p.name, p.brand, p.category_name, p.units, p.revenue, p.cost,
+      p.units > 0 ? p.revenue / p.units : 0,
+      p.revenue > 0 ? ((p.revenue - p.cost) / p.revenue) * 100 : 0,
+    ]),
+  ));
+
   return (
     <StoreShell route="/reports/categories" breadcrumb={['Relatórios', 'Categorias e produtos']} navigate={navigate}>
-      <ReportHeader title="Categorias e produtos" sub={`${report.byCategory.length} categorias com venda no período · ${report.byProduct.length} produtos`} />
+      <ReportHeader
+        title="Categorias e produtos"
+        sub={`${scopeLabel} · ${report.byCategory.length} categorias com venda · ${report.byProduct.length} produtos`}
+        {...headerProps}
+        onExport={exportCsv}
+        exportDisabled={report.byProduct.length === 0}
+      />
       <Page>
         <ReportTabs route="/reports/categories" navigate={navigate} />
 
@@ -101,7 +120,7 @@ export function ReportCategories({ report }) {
 
         <div className="card table-scroll">
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Top produtos da rede</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{filters.storeId ? 'Top produtos da loja' : 'Top produtos da rede'}</h3>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Ordenado por receita no período.</p>
           </div>
           {report.byProduct.length === 0 ? (

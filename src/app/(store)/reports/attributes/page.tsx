@@ -1,11 +1,7 @@
 import { ReportAttributes } from '@/features/reports/report-attributes';
-import { loadCategoriesWithAttributes, loadAttributeReport } from '@/features/reports/queries';
+import { loadAttributeReportPage } from '@/features/reports/queries';
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
-  const { category } = await searchParams;
-  const categories = await loadCategoriesWithAttributes();
-  const categoryId = category || categories[0]?.id || '';
-  const data = categoryId ? await loadAttributeReport(categoryId) : {};
-
-  return <ReportAttributes categories={categories} categoryId={categoryId} data={data} />;
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { filters, stores, categories, categoryId, data } = await loadAttributeReportPage(await searchParams);
+  return <ReportAttributes categories={categories} categoryId={categoryId} data={data} filters={filters} stores={stores} />;
 }

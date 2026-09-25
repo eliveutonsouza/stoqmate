@@ -1,16 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
+import { must } from "@/lib/supabase/must";
 
 export async function loadOpenCashSession(storeId: string) {
   const supabase = await createClient();
-  const { data: session } = await supabase
+  const session = must(await supabase
     .from("cash_sessions")
     .select("id, store_id, opening_amount, opened_at, created_by")
     .eq("store_id", storeId)
     .eq("status", "open")
-    .maybeSingle();
+    .maybeSingle(), "pos/queries.loadOpenCashSession.session");
   if (!session) return null;
 
-  const [{ data: movements }, { data: sales }] = await Promise.all([
+  const [movementsRes, salesRes] = await Promise.all([
     supabase
       .from("cash_session_movements")
       .select("id, kind, amount, note, created_at, created_by")
@@ -22,13 +23,15 @@ export async function loadOpenCashSession(storeId: string) {
       .eq("store_id", storeId)
       .gte("created_at", session.opened_at),
   ]);
+  const movements = must(movementsRes, "pos/queries.loadOpenCashSession.movements");
+  const sales = must(salesRes, "pos/queries.loadOpenCashSession.sales");
 
   const userIds = Array.from(
     new Set([session.created_by, ...(movements ?? []).map((m) => m.created_by)].filter(Boolean)),
   );
-  const { data: profiles } = userIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
-    : { data: [] };
+  const profiles = userIds.length
+    ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "pos/queries.profiles")
+    : [];
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
   const salesSummary = {
     count: sales?.length ?? 0,
@@ -50,7 +53,7 @@ export async function loadOpenCashSession(storeId: string) {
 
 export async function loadSaleReceipt(saleId: string) {
   const supabase = await createClient();
-  const { data: sale } = await supabase
+  const sale = must(await supabase
     .from("sales")
     .select(`
       id, store_id, subtotal, discount_amount, total, payment_method, installments, notes, created_at,
@@ -59,7 +62,7 @@ export async function loadSaleReceipt(saleId: string) {
       sale_items(id, sku_snapshot, name_snapshot, variant_snapshot, qty, unit_price, discount_pct, total)
     `)
     .eq("id", saleId)
-    .maybeSingle();
+    .maybeSingle(), "pos/queries.loadSaleReceipt.sale");
   return sale ?? null;
 }
 
@@ -67,7 +70,7 @@ export async function loadPosData() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: stores }, { data: categories }, { data: products }, { data: openSessions }, { data: profile }] = await Promise.all([
+  const [storesRes, categoriesRes, productsRes, openSessionsRes, profileRes] = await Promise.all([
     supabase.from("stores").select("id, name").order("name"),
     supabase.from("categories").select("id, name, icon, color, code").order("name"),
     supabase
@@ -78,6 +81,11 @@ export async function loadPosData() {
     supabase.from("cash_sessions").select("id, store_id").eq("status", "open"),
     user ? supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  const stores = must(storesRes, "pos/queries.loadPosData.stores");
+  const categories = must(categoriesRes, "pos/queries.loadPosData.categories");
+  const products = must(productsRes, "pos/queries.loadPosData.products");
+  const openSessions = must(openSessionsRes, "pos/queries.loadPosData.openSessions");
+  const profile = must(profileRes, "pos/queries.loadPosData.profile");
 
   return {
     stores: stores ?? [],

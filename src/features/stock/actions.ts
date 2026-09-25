@@ -37,7 +37,8 @@ export async function stockEntryAction(input: {
   });
   if (error) return { error: friendlyError(error.message) };
   if (input.locationId) {
-    await supabase.from("products").update({ default_location_id: input.locationId }).eq("id", input.productId);
+    const { error: locError } = await supabase.from("products").update({ default_location_id: input.locationId }).eq("id", input.productId);
+    if (locError) return { id: data as string, warning: "Entrada gravada, mas o local padrão do produto não foi atualizado." };
   }
   revalidatePath("/stock/history");
   revalidatePath("/products");

@@ -49,15 +49,42 @@ export async function createSupplierAction(input: {
     if (catError) return { error: catError.message };
   }
 
-  await supabase.rpc("fn_write_audit", {
+  const { error: auditError } = await supabase.rpc("fn_write_audit", {
     p_kind: "supplier",
     p_message: `Cadastrou o fornecedor "${input.name}"`,
     p_target_type: "supplier",
     p_target_id: supplier.id,
   });
+  // Auditoria não desfaz a operação já gravada, mas a falha não pode sumir.
+  if (auditError) console.error(`[audit] falhou: ${auditError.message}`);
 
   revalidatePath("/suppliers");
   return { id: supplier.id as string };
+}
+
+// Troca os vínculos de categoria sem janela vazia: grava os novos primeiro
+// (upsert idempotente) e só então apaga os que saíram. Antes era apaga-tudo
+// e reinsere — se o insert falhasse, o fornecedor/local ficava sem categoria.
+async function syncCategoryLinks(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  table: "supplier_categories" | "location_categories",
+  ownerColumn: "supplier_id" | "location_id",
+  ownerId: string,
+  categoryIds: string[],
+) {
+  if (categoryIds.length) {
+    const { error } = await supabase
+      .from(table)
+      .upsert(categoryIds.map((categoryId) => ({ [ownerColumn]: ownerId, category_id: categoryId })), {
+        onConflict: `${ownerColumn},category_id`,
+        ignoreDuplicates: true,
+      });
+    if (error) return "Não foi possível salvar as categorias. Tente de novo.";
+  }
+  let removal = supabase.from(table).delete().eq(ownerColumn, ownerId);
+  if (categoryIds.length) removal = removal.not("category_id", "in", `(${categoryIds.join(",")})`);
+  const { error } = await removal;
+  return error ? "Não foi possível atualizar as categorias. Tente de novo." : null;
 }
 
 export async function updateSupplierAction(input: {
@@ -97,13 +124,8 @@ export async function updateSupplierAction(input: {
     .eq("id", input.id);
   if (error) return { error: error.message };
 
-  await supabase.from("supplier_categories").delete().eq("supplier_id", input.id);
-  if (input.categoryIds.length) {
-    const { error: catError } = await supabase
-      .from("supplier_categories")
-      .insert(input.categoryIds.map((categoryId) => ({ supplier_id: input.id, category_id: categoryId })));
-    if (catError) return { error: catError.message };
-  }
+  const linkError = await syncCategoryLinks(supabase, "supplier_categories", "supplier_id", input.id, input.categoryIds);
+  if (linkError) return { error: linkError };
 
   revalidatePath("/suppliers");
   revalidatePath("/suppliers/detail");
@@ -155,13 +177,8 @@ export async function updateLocationAction(input: {
     .eq("id", input.id);
   if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : error.message };
 
-  await supabase.from("location_categories").delete().eq("location_id", input.id);
-  if (input.categoryIds.length) {
-    const { error: catError } = await supabase
-      .from("location_categories")
-      .insert(input.categoryIds.map((categoryId) => ({ location_id: input.id, category_id: categoryId })));
-    if (catError) return { error: catError.message };
-  }
+  const linkError = await syncCategoryLinks(supabase, "location_categories", "location_id", input.id, input.categoryIds);
+  if (linkError) return { error: linkError };
 
   revalidatePath("/shelves");
   return { id: input.id };

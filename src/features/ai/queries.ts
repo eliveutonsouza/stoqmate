@@ -1,20 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
+import { must } from "@/lib/supabase/must";
 
 export async function loadCreditPacks() {
   const supabase = await createClient();
-  const { data } = await supabase.from("credit_packs").select("id, credits, price").eq("active", true).order("credits");
+  const data = must(await supabase.from("credit_packs").select("id, credits, price").eq("active", true).order("credits"), "ai/queries.loadCreditPacks.data");
   return data ?? [];
 }
 
 export async function loadAiQuota() {
   const supabase = await createClient();
-  const [{ data: tenant }, { data: ops }] = await Promise.all([
+  const [tenantRes, opsRes] = await Promise.all([
     supabase
       .from("tenants")
       .select("plan_id, ai_credit_plan_balance, ai_credit_extra_balance, ai_credit_renews_at, plan:plans(name, credits)")
       .single(),
     supabase.from("ai_ops").select("id, label, credits"),
   ]);
+  const tenant = must(tenantRes, "ai/queries.loadAiQuota.tenant");
+  const ops = must(opsRes, "ai/queries.loadAiQuota.ops");
   if (!tenant) return null;
 
   const plan = tenant.plan as unknown as { name: string; credits: number } | null;
@@ -22,11 +25,11 @@ export async function loadAiQuota() {
   const cycleStart = new Date(renewsAt);
   cycleStart.setMonth(cycleStart.getMonth() - 1);
 
-  const { data: usage } = await supabase
+  const usage = must(await supabase
     .from("ai_usage_log")
     .select("op_id")
     .eq("status", "ok")
-    .gte("created_at", cycleStart.toISOString());
+    .gte("created_at", cycleStart.toISOString()), "ai/queries.loadAiQuota.usage");
 
   const opById = Object.fromEntries((ops ?? []).map((o) => [o.id, o]));
 
@@ -57,5 +60,6 @@ export async function loadAiQuota() {
     extraBalance,
     renewsAt: tenant.ai_credit_renews_at as string,
     byFeature,
+    costs: Object.fromEntries((ops ?? []).map((o) => [o.id, o.credits as number])) as Record<string, number>,
   };
 }

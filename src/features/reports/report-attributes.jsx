@@ -9,15 +9,30 @@ import { I } from '@/components/icons';
 import { colorHex, isColorValue } from '@/lib/attr-colors';
 import { AttrChip } from '@/components/ui/attr-chip';
 import { brl } from '@/lib/format';
+import { downloadCsv, toCsv } from '@/lib/csv';
+import { useReportHeader } from '@/features/reports/use-report-header';
+import { useQueryUpdate } from '@/hooks/use-query-update';
 
-export function ReportAttributes({ categories, categoryId, data }) {
+export function ReportAttributes({ categories, categoryId, data, filters, stores }) {
   const navigate = useNavigate();
+  const { headerProps, scopeLabel, fileSuffix } = useReportHeader(filters, stores);
+  const { update } = useQueryUpdate();
   const cat = categories.find((c) => c.id === categoryId);
+
+  const exportRows = (cat?.category_attributes ?? []).flatMap((attr) => {
+    const rows = data[attr.key] || [];
+    const totalU = rows.reduce((s, r) => s + r.units, 0);
+    return rows.map((r, i) => [attr.label, i + 1, r.value, r.units, r.revenue, totalU > 0 ? (r.units / totalU) * 100 : 0]);
+  });
+  const exportCsv = () => downloadCsv(`atributos-${cat?.code ?? 'categoria'}_${fileSuffix}.csv`, toCsv(
+    ['Atributo', '#', 'Valor', 'Unidades', 'Receita', 'Share (%)'],
+    exportRows,
+  ));
 
   if (!cat) {
     return (
       <StoreShell route="/reports/attributes" breadcrumb={['Relatórios', 'Atributos']} navigate={navigate}>
-        <ReportHeader title="Atributos mais vendidos" />
+        <ReportHeader title="Atributos mais vendidos" {...headerProps} />
         <Page><ReportTabs route="/reports/attributes" navigate={navigate} />
           <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhuma categoria cadastrada ainda.</div>
         </Page>
@@ -27,7 +42,13 @@ export function ReportAttributes({ categories, categoryId, data }) {
 
   return (
     <StoreShell route="/reports/attributes" breadcrumb={['Relatórios', 'Atributos']} navigate={navigate}>
-      <ReportHeader title="Atributos mais vendidos" sub="Quais variações giram nos últimos 30 dias — no esquema de cada categoria" />
+      <ReportHeader
+        title="Atributos mais vendidos"
+        sub={`${scopeLabel} · quais variações giram, no esquema de cada categoria`}
+        {...headerProps}
+        onExport={exportCsv}
+        exportDisabled={exportRows.length === 0}
+      />
       <Page>
         <ReportTabs route="/reports/attributes" navigate={navigate} />
 
@@ -41,7 +62,7 @@ export function ReportAttributes({ categories, categoryId, data }) {
             const active = categoryId === cc.id;
             const CIco = I[cc.icon] || I.Box;
             return (
-              <button key={cc.id} onClick={() => navigate(`/reports/attributes?category=${cc.id}`)} style={{
+              <button key={cc.id} type="button" aria-pressed={active} onClick={() => update({ category: cc.id })} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
                 height: 28, padding: '0 11px',
                 border: '1px solid ' + (active ? 'var(--accent)' : 'var(--line)'),

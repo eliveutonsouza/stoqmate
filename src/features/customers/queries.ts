@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { must } from "@/lib/supabase/must";
+import { type RawSearchParams, PAGE_SIZE, pageParam, pageRange, param } from "@/lib/list-params";
 
 export async function loadFirstRunStatus() {
   const supabase = await createClient();
@@ -23,24 +25,34 @@ export async function loadFirstRunStatus() {
   };
 }
 
-export async function loadCustomers() {
+// Lista de clientes (/customers): busca (?q) em nome/documento/telefone/
+// email, filtro ?credit=1 (com crédito em loja) e ?page — no servidor via
+// fn_customers_list. KPIs somam a base inteira, não a página.
+export async function loadCustomers(sp: RawSearchParams) {
+  const filters = { q: param(sp, "q"), credit: param(sp, "credit") === "1", page: pageParam(sp) };
+  const { offset, limit } = pageRange(filters.page);
   const supabase = await createClient();
-  const [{ data: customers }, { data: stats }] = await Promise.all([
-    supabase.from("customers").select("id, name, doc, phone, email, credit_balance, created_at").order("name"),
-    supabase.from("customer_stats").select("customer_id, purchases_count, total_spent, last_purchase_at"),
-  ]);
-  const statsById = Object.fromEntries((stats ?? []).map((s) => [s.customer_id, s]));
-  return (customers ?? []).map((c) => ({
-    ...c,
-    purchases_count: statsById[c.id]?.purchases_count ?? 0,
-    total_spent: statsById[c.id]?.total_spent ?? 0,
-    last_purchase_at: statsById[c.id]?.last_purchase_at ?? null,
-  }));
+  const data = must(
+    await supabase.rpc("fn_customers_list", { p_term: filters.q, p_with_credit: filters.credit, p_limit: limit, p_offset: offset }),
+    "loadCustomers",
+  );
+  return {
+    filters,
+    pageSize: PAGE_SIZE,
+    rows: data?.rows ?? [],
+    total: Number(data?.total ?? 0),
+    stats: {
+      customerCount: Number(data?.catalog_total ?? 0),
+      totalSpent: Number(data?.total_spent ?? 0),
+      creditTotal: Number(data?.credit_total ?? 0),
+      creditCount: Number(data?.credit_count ?? 0),
+    },
+  };
 }
 
 export async function loadCustomerDetail(customerId: string) {
   const supabase = await createClient();
-  const [{ data: customer }, { data: sales }, { data: ledger }] = await Promise.all([
+  const [customerRes, salesRes, ledgerRes] = await Promise.all([
     supabase.from("customers").select("id, name, doc, phone, email, notes, credit_balance, created_at").eq("id", customerId).maybeSingle(),
     supabase
       .from("sales")
@@ -53,6 +65,9 @@ export async function loadCustomerDetail(customerId: string) {
       .eq("customer_id", customerId)
       .order("created_at", { ascending: false }),
   ]);
+  const customer = must(customerRes, "customers/queries.loadCustomerDetail.customer");
+  const sales = must(salesRes, "customers/queries.loadCustomerDetail.sales");
+  const ledger = must(ledgerRes, "customers/queries.loadCustomerDetail.ledger");
   if (!customer) return null;
 
   const productCounts = new Map<string, number>();

@@ -3,11 +3,20 @@
 import * as React from 'react';
 import { I } from '@/components/icons';
 
-const NAV = [{ l: 'Produto', r: '/' }, { l: 'Planos', r: '/pricing' }, { l: 'Clientes', r: null }, { l: 'Ajuda', r: '/help' }];
+const NAV = [{ l: 'Produto', r: '/' }, { l: 'Planos', r: '/pricing' }];
+
+// Rodapé só com destinos que existem sem login.
+const FOOTER = [
+  { h: 'Produto', l: [{ t: 'Visão geral', r: '/' }, { t: 'Planos', r: '/pricing' }] },
+  { h: 'Conta', l: [{ t: 'Criar conta', r: '/signup' }, { t: 'Entrar', r: '/login' }, { t: 'Esqueci a senha', r: '/forgot-password' }] },
+];
 
 export function LayoutPublic({ children, navigate, route }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
-  const go = (r) => (e) => { e.preventDefault(); setMenuOpen(false); if (r) navigate(r); };
+  const go = (r) => (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+    e.preventDefault(); setMenuOpen(false); navigate(r);
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
@@ -18,13 +27,13 @@ export function LayoutPublic({ children, navigate, route }) {
         borderBottom: '1px solid var(--line)',
       }}>
         <div className="pub-header-row">
-          <a href="#" onClick={go('/')} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <a href={'/'} onClick={go('/')} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <I.Brand size={22} />
             <I.Wordmark size={15} />
           </a>
           <nav className="pub-nav" style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
             {NAV.map(item => (
-              <a key={item.l} href="#" onClick={go(item.r)} style={{
+              <a key={item.l} href={item.r} onClick={go(item.r)} style={{
                 fontSize: 13,
                 color: route === item.r && item.r !== '/' ? 'var(--fg)' : 'var(--fg-muted)',
                 padding: '6px 10px', borderRadius: 6,
@@ -33,8 +42,8 @@ export function LayoutPublic({ children, navigate, route }) {
             ))}
           </nav>
           <div style={{ flex: 1 }}></div>
-          <a href="#" onClick={go('/login')} className="btn btn-ghost btn-sm pub-login">Entrar</a>
-          <a href="#" onClick={go('/signup')} className="btn btn-primary btn-sm">Testar grátis</a>
+          <a href={'/login'} onClick={go('/login')} className="btn btn-ghost btn-sm pub-login">Entrar</a>
+          <a href={'/signup'} onClick={go('/signup')} className="btn btn-primary btn-sm">Testar grátis</a>
           <button onClick={() => setMenuOpen((o) => !o)} className="btn btn-ghost btn-icon btn-sm show-tablet"
             aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen}>
             {menuOpen ? <I.X size={16} /> : <I.Menu size={16} />}
@@ -43,9 +52,9 @@ export function LayoutPublic({ children, navigate, route }) {
         {menuOpen && (
           <nav className="pub-menu">
             {NAV.filter((item) => item.r).map(item => (
-              <a key={item.l} href="#" onClick={go(item.r)} style={{ fontSize: 14, padding: '10px 4px', color: 'var(--fg)' }}>{item.l}</a>
+              <a key={item.l} href={item.r} onClick={go(item.r)} style={{ fontSize: 14, padding: '10px 4px', color: 'var(--fg)' }}>{item.l}</a>
             ))}
-            <a href="#" onClick={go('/login')} style={{ fontSize: 14, padding: '10px 4px', color: 'var(--fg)' }}>Entrar</a>
+            <a href={'/login'} onClick={go('/login')} style={{ fontSize: 14, padding: '10px 4px', color: 'var(--fg)' }}>Entrar</a>
           </nav>
         )}
       </header>
@@ -58,22 +67,21 @@ export function LayoutPublic({ children, navigate, route }) {
               <I.Wordmark size={14} />
             </div>
             <div style={{ fontSize: 12, color: 'var(--fg-soft)', lineHeight: 1.6, maxWidth: 260 }}>
-              Controle de estoque por par, feito sob medida para o varejo de calçados.
+              Controle de estoque multi-loja com IA, para qualquer tipo de varejo.
             </div>
             <div style={{ marginTop: 18, display: 'flex', gap: 10, color: 'var(--fg-soft)', fontSize: 11 }}>
               <span>© 2026 Stoqmate</span><span>·</span><span>São Paulo, BR</span>
             </div>
           </div>
-          {[
-            { h: 'Produto', l: ['Recursos', 'Planos', 'Multi-loja', 'Mobile', 'Mudanças'] },
-            { h: 'Empresa', l: ['Sobre', 'Clientes', 'Blog', 'Carreiras', 'Imprensa'] },
-            { h: 'Suporte', l: ['Central de ajuda', 'Documentação', 'API', 'Status', 'Contato'] },
-            { h: 'Legal', l: ['Termos', 'Privacidade', 'LGPD', 'Cookies', 'DPA'] },
-          ].map(col => (
+          {FOOTER.map(col => (
             <div key={col.h}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>{col.h}</div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {col.l.map(item => <li key={item} style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{item}</li>)}
+                {col.l.map(item => (
+                  <li key={item.r}>
+                    <a href={item.r} onClick={go(item.r)} style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{item.t}</a>
+                  </li>
+                ))}
               </ul>
             </div>
           ))}

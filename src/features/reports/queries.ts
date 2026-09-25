@@ -1,4 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { must } from "@/lib/supabase/must";
+import { type RawSearchParams, param, uuidParam } from "@/lib/list-params";
+import { type ReportRange, resolveReportRange, todayInSaoPaulo } from "@/lib/report-range";
 
 export function last30Days() {
   const end = new Date();
@@ -9,10 +12,33 @@ export function last30Days() {
   return { start, end };
 }
 
-export async function loadSalesReport() {
+// Filtros comuns dos relatórios, lidos da URL:
+// ?period=7d|30d|90d|month|last-month|custom&from=YYYY-MM-DD&to=YYYY-MM-DD&store=<uuid>
+export type ReportFilters = { range: ReportRange; storeId: string | null };
+
+export function reportFiltersFromParams(sp: RawSearchParams): ReportFilters {
+  return {
+    range: resolveReportRange({ period: param(sp, "period"), from: param(sp, "from"), to: param(sp, "to") }, todayInSaoPaulo()),
+    storeId: uuidParam(sp, "store"),
+  };
+}
+
+function rangeArgs(filters?: ReportFilters) {
+  if (filters) return { p_start: filters.range.startIso, p_end: filters.range.endIso, p_store_id: filters.storeId };
+  const { start, end } = last30Days();
+  return { p_start: start.toISOString(), p_end: end.toISOString() };
+}
+
+export async function loadReportStores() {
+  const supabase = await createClient();
+  return must(await supabase.from("stores").select("id, name").order("name"), "loadReportStores") ?? [];
+}
+
+// Sem `filters`: últimos 30 dias da rede inteira (dashboard e rede usam assim).
+export async function loadSalesReport(filters?: ReportFilters) {
   const supabase = await createClient();
   const { start, end } = last30Days();
-  const { data } = await supabase.rpc("fn_sales_report", { p_start: start.toISOString(), p_end: end.toISOString() });
+  const data = must(await supabase.rpc("fn_sales_report", rangeArgs(filters)), "loadSalesReport");
   return {
     range: { start, end },
     revenue: data?.revenue ?? 0,
@@ -26,33 +52,45 @@ export async function loadSalesReport() {
   };
 }
 
-export async function loadAttributeReport(categoryId: string) {
+export async function loadAttributeReport(categoryId: string, filters?: ReportFilters) {
   const supabase = await createClient();
-  const { start, end } = last30Days();
-  const { data } = await supabase.rpc("fn_attribute_sales_report", {
-    p_category_id: categoryId, p_start: start.toISOString(), p_end: end.toISOString(),
-  });
+  const data = must(
+    await supabase.rpc("fn_attribute_sales_report", { p_category_id: categoryId, ...rangeArgs(filters) }),
+    "loadAttributeReport",
+  );
   return data ?? {};
 }
 
-export async function loadAbcReport() {
+export async function loadAbcReport(filters?: ReportFilters) {
   const supabase = await createClient();
-  const { start, end } = last30Days();
-  const { data } = await supabase.rpc("fn_abc_report", { p_start: start.toISOString(), p_end: end.toISOString() });
-  return { range: { start, end }, rows: data ?? [] };
+  const data = must(await supabase.rpc("fn_abc_report", rangeArgs(filters)), "loadAbcReport");
+  return { rows: data ?? [] };
 }
 
-export async function loadMonthlyProfit() {
+export async function loadMonthlyProfit(storeId: string | null = null) {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("fn_monthly_profit", { p_months: 6 });
+  const data = must(await supabase.rpc("fn_monthly_profit", { p_months: 6, p_store_id: storeId }), "loadMonthlyProfit");
   return data ?? [];
 }
 
 export async function loadCategoriesWithAttributes() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("categories")
-    .select("id, name, code, icon, color, unit, unit_plural, category_attributes(id, key, label, type, position)")
-    .order("name");
+  const data = must(
+    await supabase
+      .from("categories")
+      .select("id, name, code, icon, color, unit, unit_plural, category_attributes(id, key, label, type, position)")
+      .order("name"),
+    "loadCategoriesWithAttributes",
+  );
   return (data ?? []).map((c) => ({ ...c, category_attributes: [...(c.category_attributes || [])].sort((a, b) => a.position - b.position) }));
+}
+
+// Tela de atributos: categoria vem da URL (?category=), senão a primeira.
+export async function loadAttributeReportPage(sp: RawSearchParams) {
+  const filters = reportFiltersFromParams(sp);
+  const [categories, stores] = await Promise.all([loadCategoriesWithAttributes(), loadReportStores()]);
+  const requested = uuidParam(sp, "category");
+  const categoryId = categories.find((c) => c.id === requested)?.id ?? categories[0]?.id ?? "";
+  const data = categoryId ? await loadAttributeReport(categoryId, filters) : {};
+  return { filters, stores, categories, categoryId, data };
 }

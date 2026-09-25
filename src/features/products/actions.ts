@@ -145,12 +145,14 @@ export async function updateProductAction(input: {
 
   const previousSalePrice = before ? Number(before.sale_price) : null;
   if (before && previousSalePrice !== null && previousSalePrice !== input.salePrice) {
-    await supabase.rpc("fn_write_audit", {
+    const { error: auditError } = await supabase.rpc("fn_write_audit", {
       p_kind: "price",
       p_message: `Alterou preço de venda de ${before.name} de R$ ${previousSalePrice.toFixed(2)} para R$ ${input.salePrice.toFixed(2)}`,
       p_target_type: "product",
       p_target_id: input.id,
     });
+    // Auditoria não desfaz a operação já gravada, mas a falha não pode sumir.
+    if (auditError) console.error(`[audit] falhou: ${auditError.message}`);
   }
 
   revalidatePath("/products");
@@ -203,7 +205,7 @@ export async function duplicateProductAction(id: string) {
 
 export async function uploadProductPhotoAction(formData: FormData) {
   const file = formData.get("file");
-  const checked = checkImage(file, 5);
+  const checked = checkImage(file, 4);
   if ("error" in checked) return checked;
 
   const supabase = await createClient();

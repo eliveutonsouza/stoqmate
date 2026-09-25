@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { must } from "@/lib/supabase/must";
 import { loadSalesReport } from "@/features/reports/queries";
 
 export async function loadNetworkData() {
   const supabase = await createClient();
-  const [salesReport, { data: overview }, { data: stores }, { data: balanceRows }] = await Promise.all([
+  const [salesReport, overviewRes, storesRes, balanceRowsRes] = await Promise.all([
     loadSalesReport(),
     supabase.rpc("fn_stock_overview"),
     supabase.from("stores").select("id, name, type").order("name"),
     supabase.from("stock_balances").select("product_id, store_id, qty, product:products(sku, name, brand, attrs, category:categories(id, name, icon, color))"),
   ]);
+  const overview = must(overviewRes, "analysis.loadNetworkData.overview");
+  const stores = must(storesRes, "analysis.loadNetworkData.stores");
+  const balanceRows = must(balanceRowsRes, "analysis.loadNetworkData.balanceRows");
 
   const revenueByStore = new Map((salesReport.byStore ?? []).map((s: { store_id: string; revenue: number }) => [s.store_id, s.revenue]));
   const skuCountByStore = new Map<string, number>();
@@ -50,11 +54,14 @@ export async function loadNetworkData() {
 
 export async function loadPricingScopeOptions() {
   const supabase = await createClient();
-  const [{ data: suppliers }, { data: categories }, { data: brandRows }] = await Promise.all([
+  const [suppliersRes, categoriesRes, brandRowsRes] = await Promise.all([
     supabase.from("suppliers").select("id, name").order("name"),
     supabase.from("categories").select("id, name").order("name"),
     supabase.from("products").select("brand").not("brand", "is", null).order("brand"),
   ]);
+  const suppliers = must(suppliersRes, "analysis/queries.loadPricingScopeOptions.suppliers");
+  const categories = must(categoriesRes, "analysis/queries.loadPricingScopeOptions.categories");
+  const brandRows = must(brandRowsRes, "analysis/queries.loadPricingScopeOptions.brandRows");
   const brands = [...new Set((brandRows ?? []).map((p) => p.brand).filter(Boolean))];
   return { suppliers: suppliers ?? [], categories: categories ?? [], brands };
 }
@@ -70,6 +77,6 @@ export async function loadPricingPreview(scope: "supplier" | "category" | "brand
   if (scope === "supplier") query = query.eq("supplier_id", scopeValue);
   else if (scope === "category") query = query.eq("category_id", scopeValue);
   else query = query.eq("brand", scopeValue);
-  const { data } = await query;
+  const data = must(await query, "analysis/queries.loadPricingPreview.data");
   return data ?? [];
 }

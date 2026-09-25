@@ -8,9 +8,18 @@ import { ReportTabs } from '@/components/domain/report-tabs';
 import { brl } from '@/lib/format';
 import { ProductThumb } from '@/components/ui/product-thumb';
 import { CategoryBadge } from '@/components/ui/category-badge';
+import { downloadCsv, toCsv } from '@/lib/csv';
+import { useReportHeader } from '@/features/reports/use-report-header';
 
-export function ReportABC({ rows: input, periodDays }) {
+function recommendation(r) {
+  if (r.cls === 'A') return 'Nunca faltar';
+  if (r.cls === 'B') return 'Manter';
+  return (r.cover === null || r.cover > 120) ? 'Liquidar' : 'Reduzir compra';
+}
+
+export function ReportABC({ rows: input, periodDays, filters, stores }) {
   const navigate = useNavigate();
+  const { headerProps, scopeLabel, fileSuffix } = useReportHeader(filters, stores);
   const total = input.reduce((s, r) => s + r.revenue, 0);
   const rows = input.reduce((acc, r) => {
     const cum = (acc.length ? acc[acc.length - 1].cum : 0) + r.revenue;
@@ -27,9 +36,23 @@ export function ReportABC({ rows: input, periodDays }) {
   const maxRevenue = Math.max(1, ...rows.map((r) => r.revenue));
   const CLS = { A: ['var(--success)', 'var(--success-soft)'], B: ['var(--warning)', 'var(--warning-soft)'], C: ['var(--danger)', 'var(--danger-soft)'] };
 
+  const exportCsv = () => downloadCsv(`curva-abc_${fileSuffix}.csv`, toCsv(
+    ['Classe', 'SKU', 'Produto', 'Categoria', 'Vendidos', 'Receita', '% acumulado', 'Estoque (qtd)', 'Valor em estoque', 'Cobertura (dias)', 'Giro anual', 'Recomendação'],
+    rows.map((r) => [
+      r.cls, r.sku, r.name, r.category_name, r.units, r.revenue, r.cumPct, r.stock_qty, r.stock_value,
+      r.cover, r.turns, recommendation(r),
+    ]),
+  ));
+
   return (
     <StoreShell route="/reports/abc" breadcrumb={['Relatórios', 'Curva ABC']} navigate={navigate}>
-      <ReportHeader title="Curva ABC de estoque" sub="Onde está o dinheiro parado — e quais produtos realmente pagam a operação" />
+      <ReportHeader
+        title="Curva ABC de estoque"
+        sub={`${scopeLabel} · onde está o dinheiro parado — e quais produtos realmente pagam a operação`}
+        {...headerProps}
+        onExport={exportCsv}
+        exportDisabled={rows.length === 0}
+      />
       <Page>
         <ReportTabs route="/reports/abc" navigate={navigate} />
 
@@ -60,7 +83,7 @@ export function ReportABC({ rows: input, periodDays }) {
                 <div>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Concentração de receita</h3>
                   <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>
-                    Barras = receita do produto nos últimos {periodDays} dias. A curva mostra quantos produtos bastam para 70%.
+                    Barras = receita do produto no período ({periodDays} dia{periodDays === 1 ? '' : 's'}). A curva mostra quantos produtos bastam para 70%.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--fg-muted)' }}>
@@ -138,7 +161,7 @@ export function ReportABC({ rows: input, periodDays }) {
                       </td>
                       <td>
                         <span style={{ fontSize: 11.5, color: r.cls === 'A' ? 'var(--success)' : r.cls === 'C' ? 'var(--danger)' : 'var(--fg-muted)' }}>
-                          {r.cls === 'A' ? 'Nunca faltar' : r.cls === 'B' ? 'Manter' : (r.cover === null || r.cover > 120) ? 'Liquidar' : 'Reduzir compra'}
+                          {recommendation(r)}
                         </span>
                       </td>
                     </tr>

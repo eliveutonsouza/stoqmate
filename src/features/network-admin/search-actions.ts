@@ -6,11 +6,13 @@ export async function globalSearchAction(term: string) {
   const supabase = await createClient();
   const clean = term.trim();
   if (clean.length < 2) {
-    return { products: [], movements: [], suppliers: [], promotions: [], locations: [] };
+    return { products: [], movements: [], suppliers: [], promotions: [], locations: [], error: null };
   }
-  const like = `%${clean.replace(/[%_]/g, "")}%`;
+  // `%`/`_` são curinga do ILIKE; `,().` e aspas quebram a sintaxe do filtro
+  // `.or()` do PostgREST (dava pra injetar condição extra). Saem todos.
+  const like = `%${clean.replace(/[%_,().:"'\\]/g, "")}%`;
 
-  const [{ data: products }, { data: movements }, { data: suppliers }, { data: promotions }, { data: locations }] = await Promise.all([
+  const results = await Promise.all([
     supabase.rpc("fn_search_products", { p_term: clean, p_limit: 5 }),
     supabase
       .from("stock_movements")
@@ -22,12 +24,15 @@ export async function globalSearchAction(term: string) {
     supabase.from("promotions").select("id, name, active, promo_price").ilike("name", like).limit(5),
     supabase.from("locations").select("id, code, description").or(`code.ilike.${like},description.ilike.${like}`).limit(5),
   ]);
+  const [products, movements, suppliers, promotions, locations] = results;
+  const failed = results.find((r) => r.error);
 
   return {
-    products: products ?? [],
-    movements: movements ?? [],
-    suppliers: suppliers ?? [],
-    promotions: promotions ?? [],
-    locations: locations ?? [],
+    products: products.data ?? [],
+    movements: movements.data ?? [],
+    suppliers: suppliers.data ?? [],
+    promotions: promotions.data ?? [],
+    locations: locations.data ?? [],
+    error: failed ? "Parte da busca falhou. Tente de novo em instantes." : null,
   };
 }

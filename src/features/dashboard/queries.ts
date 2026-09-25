@@ -1,3 +1,4 @@
+import { must } from "@/lib/supabase/must";
 import { createClient } from "@/lib/supabase/server";
 import { loadSalesReport, last30Days } from "@/features/reports/queries";
 import { loadLowStockItems } from "@/features/stock/queries";
@@ -10,7 +11,7 @@ export async function loadDashboardData() {
   const prevStart = new Date(start);
   prevStart.setDate(prevStart.getDate() - 30);
 
-  const [salesReport, { data: prevReport }, { data: overview }, { data: stores }, { data: movements }, lowStockItems, { data: balanceRows }] = await Promise.all([
+  const [salesReport, prevReportRes, overviewRes, storesRes, movementsRes, lowStockItems, balanceRes] = await Promise.all([
     loadSalesReport(),
     supabase.rpc("fn_sales_report", { p_start: prevStart.toISOString(), p_end: prevEnd.toISOString() }),
     supabase.rpc("fn_stock_overview"),
@@ -25,13 +26,18 @@ export async function loadDashboardData() {
       .order("created_at", { ascending: false })
       .limit(8),
     loadLowStockItems(6),
-    supabase.from("stock_balances").select("store_id, qty"),
+    supabase.rpc("fn_store_balance_totals"),
   ]);
+  const prevReport = must(prevReportRes, "dashboard.prevReport");
+  const overview = must(overviewRes, "dashboard.overview");
+  const stores = must(storesRes, "dashboard.stores");
+  const movements = must(movementsRes, "dashboard.movements");
+  const balanceRows = must(balanceRes, "dashboard.balances") as { store_id: string; sku_count: number; qty: number }[] | null;
 
   const userIds = [...new Set((movements ?? []).map((m) => m.created_by).filter(Boolean))];
-  const { data: profiles } = userIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
-    : { data: [] };
+  const profiles = userIds.length
+    ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "dashboard/queries.profiles")
+    : [];
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
 
   const pctDelta = (curr: number, prev: number) => (prev > 0 ? ((curr - prev) / prev) * 100 : null);
@@ -41,13 +47,9 @@ export async function loadDashboardData() {
 
   const categoriesActive = new Set((salesReport.byCategory ?? []).map((c: { category_id: string }) => c.category_id)).size;
 
-  const balanceByStore = new Map<string, { skuCount: number; qty: number }>();
-  for (const row of balanceRows ?? []) {
-    const entry = balanceByStore.get(row.store_id) ?? { skuCount: 0, qty: 0 };
-    if (row.qty > 0) entry.skuCount += 1;
-    entry.qty += row.qty;
-    balanceByStore.set(row.store_id, entry);
-  }
+  const balanceByStore = new Map(
+    (balanceRows ?? []).map((row) => [row.store_id, { skuCount: Number(row.sku_count), qty: Number(row.qty) }]),
+  );
   const storeBalances = (stores ?? []).map((s) => ({ ...s, ...(balanceByStore.get(s.id) ?? { skuCount: 0, qty: 0 }) }));
 
   return {

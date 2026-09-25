@@ -1,11 +1,60 @@
 import { createClient } from '@/lib/supabase/server';
+import { must } from '@/lib/supabase/must';
+import { type RawSearchParams, PAGE_SIZE, oneOf, pageParam, pageRange, param, uuidParam } from '@/lib/list-params';
+
+export const PRODUCT_STOCK_FILTERS = ['in', 'low', 'out'] as const;
+
+// Lista do catálogo (/products): busca (?q) em SKU/código de barras/nome/
+// marca, filtros ?category ?brand ?stock ?location e ?page — tudo no
+// servidor via fn_products_list (termo como parâmetro ligado, nunca
+// dentro de filtro PostgREST). Facetas (abas por categoria, marcas) são
+// do catálogo inteiro.
+export async function loadProductsList(sp: RawSearchParams) {
+  const filters = {
+    q: param(sp, 'q'),
+    category: uuidParam(sp, 'category'),
+    brand: param(sp, 'brand'),
+    stock: oneOf(sp, 'stock', PRODUCT_STOCK_FILTERS),
+    location: uuidParam(sp, 'location'),
+    page: pageParam(sp),
+  };
+  const { offset, limit } = pageRange(filters.page);
+  const supabase = await createClient();
+  const [list, facets, categories, locations] = await Promise.all([
+    supabase.rpc('fn_products_list', {
+      p_term: filters.q, p_category_id: filters.category, p_brand: filters.brand,
+      p_stock: filters.stock, p_location_id: filters.location, p_limit: limit, p_offset: offset,
+    }),
+    supabase.rpc('fn_products_facets'),
+    supabase.from('categories').select('id, name, code, unit, icon, color').order('name'),
+    supabase.from('locations').select('id, code, store:stores(name)').order('code'),
+  ]);
+  const listData = must(list, 'loadProductsList');
+  const facetData = must(facets, 'loadProductsList.facets');
+
+  return {
+    filters,
+    pageSize: PAGE_SIZE,
+    rows: listData?.rows ?? [],
+    total: Number(listData?.total ?? 0),
+    catalogTotal: Number(facetData?.total ?? 0),
+    countByCategory: Object.fromEntries(
+      ((facetData?.by_category ?? []) as { category_id: string; count: number }[]).map((c) => [c.category_id, Number(c.count)]),
+    ),
+    brands: (facetData?.brands ?? []) as string[],
+    categories: must(categories, 'loadProductsList.categories') ?? [],
+    locations: (must(locations, 'loadProductsList.locations') ?? []).map((l) => ({
+      id: l.id, code: l.code, store: (l.store as unknown as { name: string } | null)?.name ?? null,
+    })),
+  };
+}
 
 // Compartilhado por /products/new e /products/edit — as duas rotas hoje
 // renderizam o mesmo ProductForm sem distinção real (nenhuma rota dinâmica
 // [id] existe ainda, ver .spec/routing.md), então pedem o mesmo dado.
 export async function loadProductFormData() {
   const supabase = await createClient();
-  const [{ data: categories }, { data: suppliers }, { data: locations }] = await Promise.all([
+  const [categoriesRes, suppliersRes, locationsRes] = await Promise.all([
     supabase
       .from('categories')
       .select('id, name, code, unit, icon, color, category_attributes(id, key, label, type, values, position)')
@@ -13,13 +62,16 @@ export async function loadProductFormData() {
     supabase.from('suppliers').select('id, name').order('name'),
     supabase.from('locations').select('id, code').order('code'),
   ]);
+  const categories = must(categoriesRes, "products/queries.loadProductFormData.categories");
+  const suppliers = must(suppliersRes, "products/queries.loadProductFormData.suppliers");
+  const locations = must(locationsRes, "products/queries.loadProductFormData.locations");
 
   return { categories: categories ?? [], suppliers: suppliers ?? [], locations: locations ?? [] };
 }
 
 export async function loadProduct(id: string) {
   const supabase = await createClient();
-  const { data } = await supabase
+  const data = must(await supabase
     .from("products")
     .select(`
       id, sku, barcode, brand, name, attrs, cost_price, sale_price, min_stock, notes, photo_url, created_at,
@@ -28,7 +80,7 @@ export async function loadProduct(id: string) {
       default_location:locations(id, code)
     `)
     .eq("id", id)
-    .maybeSingle();
+    .maybeSingle(), "products/queries.loadProduct.data");
   return data ?? null;
 }
 
@@ -40,7 +92,7 @@ export async function loadProductDetail(id: string) {
   if (!product) return null;
   const categoryId = (product.category as unknown as { id: string }).id;
 
-  const [{ data: balances }, { data: siblings }, { data: movements }, { data: categoryAttributes }] = await Promise.all([
+  const [balancesRes, siblingsRes, movementsRes, categoryAttributesRes] = await Promise.all([
     supabase.from("stock_balances").select("store_id, qty, store:stores(id, name)").eq("product_id", id),
     supabase
       .from("products")
@@ -57,11 +109,13 @@ export async function loadProductDetail(id: string) {
       .limit(20),
     supabase.from("category_attributes").select("id, key, label, type, values, position").eq("category_id", categoryId).order("position"),
   ]);
+  const balances = must(balancesRes, "products/queries.loadProductDetail.balances");
+  const siblings = must(siblingsRes, "products/queries.loadProductDetail.siblings");
+  const movements = must(movementsRes, "products/queries.loadProductDetail.movements");
+  const categoryAttributes = must(categoryAttributesRes, "products/queries.loadProductDetail.categoryAttributes");
 
   const userIds = [...new Set((movements ?? []).map((m) => m.created_by).filter(Boolean))];
-  const { data: profiles } = userIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
-    : { data: [] };
+  const profiles = userIds.length ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "products.profiles") : [];
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
 
   return {

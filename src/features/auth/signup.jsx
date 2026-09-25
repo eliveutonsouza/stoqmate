@@ -6,7 +6,6 @@ import { LayoutPublic } from '@/components/layout/layout-public';
 import { FormCard } from '@/components/ui/form-card';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
-import { SelectInput } from '@/components/ui/select-input';
 import { I } from '@/components/icons';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { brl } from '@/lib/format';
@@ -57,11 +56,8 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
               </FormCard>
 
               <FormCard title="Sua loja" desc="Você escolhe as categorias que vende no onboarding." cols={2}>
-                <Field label="Nome da loja ou rede" required span={2}><TextInput value={form.storeName} onChange={set('storeName')} placeholder="Bonsucesso Varejo" style={{ height: 36 }} /></Field>
-                <Field label="CNPJ" span={1}><TextInput mono value={form.cnpj} onChange={set('cnpj')} placeholder="00.000.000/0001-00" style={{ height: 36 }} /></Field>
-                <Field label="Nº de unidades" span={1}>
-                  <SelectInput options={['1 loja', '2 a 3 lojas', '4 a 10 lojas', 'mais de 10']} value="1 loja" onChange={() => {}} />
-                </Field>
+                <Field label="Nome da loja ou rede" required span={2}><TextInput value={form.storeName} onChange={set('storeName')} placeholder="Ex.: Loja Centro" style={{ height: 36 }} /></Field>
+                <Field label="CNPJ" span={2} hint="Opcional agora; dá para preencher depois em Dados da empresa."><TextInput mono value={form.cnpj} onChange={set('cnpj')} placeholder="00.000.000/0001-00" style={{ height: 36 }} /></Field>
               </FormCard>
 
               <label style={{ display: 'flex', gap: 9, fontSize: 12, color: 'var(--fg-muted)', alignItems: 'flex-start', lineHeight: 1.5 }}>

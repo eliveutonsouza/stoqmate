@@ -1,15 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
+import { must } from "@/lib/supabase/must";
 
 // Produtos com pelo menos 1 atributo do esquema da categoria ainda vazio —
 // substitui o array mockado GAPS. "Vazio" = chave do esquema ausente de
 // products.attrs ou com valor vazio.
 export async function loadEnrichGaps(limit = 20) {
   const supabase = await createClient();
-  const { data: products } = await supabase
+  const products = must(await supabase
     .from("products")
     .select("id, sku, name, attrs, category:categories(id, name, icon, color, code, category_attributes(key))")
     .eq("active", true)
-    .limit(200);
+    .limit(200), "ai-flows/queries.loadEnrichGaps.products");
 
   const gaps = (products ?? [])
     .map((p) => {
@@ -27,7 +28,7 @@ export async function loadEnrichGaps(limit = 20) {
 
 export async function loadForecastBase(storeId: string, limit = 15) {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("fn_replenishment_suggestions", { p_store_id: storeId });
+  const data = must(await supabase.rpc("fn_replenishment_suggestions", { p_store_id: storeId }), "ai-flows/queries.loadForecastBase.data");
   return (data ?? [])
     .filter((r: { suggest_qty: number }) => r.suggest_qty > 0)
     .slice(0, limit);
@@ -42,7 +43,7 @@ export async function loadAnomalies(storeId: string) {
   const since = new Date();
   since.setDate(since.getDate() - 90);
 
-  const [{ data: suggestions }, { data: balances }, { data: recentSales }] = await Promise.all([
+  const [suggestionsRes, balancesRes, recentSalesRes] = await Promise.all([
     supabase.rpc("fn_replenishment_suggestions", { p_store_id: storeId }),
     supabase
       .from("stock_balances")
@@ -50,6 +51,9 @@ export async function loadAnomalies(storeId: string) {
       .eq("store_id", storeId),
     supabase.from("sales").select("sale_items(product_id)").eq("store_id", storeId).gte("created_at", since.toISOString()),
   ]);
+  const suggestions = must(suggestionsRes, "ai-flows/queries.loadAnomalies.suggestions");
+  const balances = must(balancesRes, "ai-flows/queries.loadAnomalies.balances");
+  const recentSales = must(recentSalesRes, "ai-flows/queries.loadAnomalies.recentSales");
 
   const stockouts = (suggestions ?? [])
     .filter((s: { stock: number; sold_30d: number }) => s.stock === 0 && s.sold_30d > 0)
@@ -74,9 +78,11 @@ export async function loadAnomalies(storeId: string) {
 
 export async function loadOcrContext() {
   const supabase = await createClient();
-  const [{ data: categories }, { data: products }] = await Promise.all([
+  const [categoriesRes, productsRes] = await Promise.all([
     supabase.from("categories").select("id, name, unit, category_attributes(key, label, values)").order("name"),
     supabase.from("products").select("sku, brand, name, attrs, cost_price").eq("active", true).limit(300),
   ]);
+  const categories = must(categoriesRes, "ai-flows/queries.loadOcrContext.categories");
+  const products = must(productsRes, "ai-flows/queries.loadOcrContext.products");
   return { categories: categories ?? [], products: products ?? [] };
 }

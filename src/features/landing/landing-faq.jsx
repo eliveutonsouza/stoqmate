@@ -11,7 +11,7 @@ export function LandingFAQ() {
     ['Serve para o meu ramo?',
      'Provavelmente sim. Você define as categorias e os atributos que fazem sentido no seu negócio — de autopeças a farmácia, de vestuário a alimentos. Existem modelos prontos para os ramos mais comuns, e você pode criar o seu do zero.'],
     ['Vou perder tempo migrando da planilha?',
-     'Uma tarde, no pior caso. O assistente importa XLSX e CSV com mapeamento de colunas automático, mostra as linhas com erro antes de gravar e deixa você corrigir. No plano Controle e acima, nossa equipe faz a migração junto com você por videochamada.'],
+     'Uma tarde, no pior caso. O assistente importa planilha em CSV (no Excel: Salvar como › CSV) com mapeamento de colunas automático, mostra as linhas com erro antes de gravar e deixa você corrigir. No plano Controle e acima, nossa equipe faz a migração junto com você por videochamada.'],
     ['O que conta como um SKU?',
      'Cada combinação de atributos da categoria. Se Vestuário tem Cor e Tamanho, uma camiseta em 6 tamanhos e 2 cores ocupa 12 SKUs. No plano Controle os SKUs são ilimitados.'],
     ['E se eu acabar os créditos de IA?',
@@ -19,7 +19,7 @@ export function LandingFAQ() {
     ['A IA pode errar e estragar meu estoque?',
      'Não, porque ela não escreve no estoque. Toda sugestão passa por uma fila de revisão com a confiança e o motivo à mostra, e só entra depois que uma pessoa aprova. Você define quem tem permissão para aprovar.'],
     ['Meus dados ficam seguros?',
-     'O saldo é isolado por unidade no banco, o acesso é por perfil e todo evento entra no log de alterações. Seus dados não treinam modelos de IA. Você pode exportar tudo em XLSX a qualquer momento — inclusive no dia em que decidir sair.'],
+     'O saldo é isolado por unidade no banco, o acesso é por perfil e todo evento entra no log de alterações. Seus dados não treinam modelos de IA. Você pode exportar catálogo, estoque e movimentações em CSV a qualquer momento — inclusive no dia em que decidir sair.'],
   ];
   return (
     <section style={{ ...SECTION, paddingBottom: 80 }}>

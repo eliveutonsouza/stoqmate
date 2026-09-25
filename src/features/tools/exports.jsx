@@ -8,16 +8,15 @@ import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
 import { HubCard } from '@/components/domain/hub-card';
 import { exportCsvAction } from '@/features/tools/actions';
+import { downloadCsv } from '@/lib/csv';
 
 const CARDS = [
   { kind: 'catalog', i: <I.Box size={15} />, t: 'Catálogo completo', d: 'Todos os SKUs com categoria, fornecedor, local e preços.' },
   { kind: 'sales', i: <I.Chart size={15} />, t: 'Vendas dos últimos 30 dias', d: 'Uma linha por venda, com desconto, forma de pagamento e cliente.' },
-  { kind: 'profit', i: <I.Credit size={15} />, t: 'Lucratividade', d: 'Compras vs. vendas por produto, com lucro bruto no período.' },
-];
-const SOON = [
-  { i: <I.Activity size={15} />, t: 'Movimentações', d: 'Entradas, vendas, transferências, trocas, devoluções e ajustes.' },
-  { i: <I.Truck size={15} />, t: 'Fornecedores e compras', d: 'Cadastro, condições comerciais e histórico de pedidos.' },
-  { i: <I.Grid size={15} />, t: 'Folha de contagem', d: 'Planilha para inventário físico, com saldo do sistema oculto.' },
+  { kind: 'profit', i: <I.Credit size={15} />, t: 'Lucratividade', d: 'Compras vs. vendas por produto, com lucro bruto nos últimos 30 dias.' },
+  { kind: 'movements', i: <I.Activity size={15} />, t: 'Movimentações (90 dias)', d: 'Entradas, vendas, transferências, trocas, devoluções e ajustes.' },
+  { kind: 'suppliers', i: <I.Truck size={15} />, t: 'Fornecedores e compras', d: 'Cadastro, condições comerciais e resumo de pedidos por fornecedor.' },
+  { kind: 'count-sheet', i: <I.Grid size={15} />, t: 'Folha de contagem', d: 'Planilha para inventário físico, por local, com o saldo do sistema oculto.' },
 ];
 
 export function Exports() {
@@ -31,13 +30,7 @@ export function Exports() {
     exportCsvAction(kind).then((result) => {
       setPendingKind(null);
       if (result?.error) { setError(result.error); return; }
-      const blob = new Blob([`﻿${result.csv}`], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = result.filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadCsv(result.filename, result.csv);
     });
   };
 
@@ -54,11 +47,6 @@ export function Exports() {
             {CARDS.map((c) => (
               <HubCard key={c.kind} icon={c.i} title={c.t} desc={pendingKind === c.kind ? 'Gerando…' : c.d} accent
                 meta={[['Formato', 'CSV']]} onClick={() => download(c.kind)} />
-            ))}
-            {SOON.map((c) => (
-              <div key={c.t} style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Em breve">
-                <HubCard icon={c.i} title={c.t} desc={c.d} meta={[['Formato', '—']]} onClick={() => {}} />
-              </div>
             ))}
           </div>
         </div>

@@ -128,16 +128,16 @@ anteriores aparecem zerados/vazios, não reconstruídos. Backfill de 1
 evento `signup` por tenant existente (com `occurred_at` real, não
 inventado) dá o primeiro ponto de dado.
 
-**Telas de billing órfãs, intencionalmente**: `cancel-subscription.jsx`,
-`plan-change.jsx`, `switch-to-annual.jsx`, `invoice-detail.jsx`,
-`account-cancelled.jsx`, `past-due.jsx`, `trial-ended.jsx` (todas em
-`src/features/billing/`), mais `/checkout` (`src/features/public/checkout.jsx`,
-formulário de cartão próprio que nunca cobra — lê `PLANS` estático de
-propósito), ficam sem rota de navegação real desde que a
-arquitetura de assinatura virou Stripe Checkout + Customer Portal —
-decisão do desenvolvedor manter os arquivos como reserva pra uma troca
-futura de ferramenta de billing, não religar nem deletar sem pedido
-explícito (ver comentário em `billing-state.js`).
+**Telas de billing ligadas ao Stripe** (decisão do desenvolvedor,
+2026-09-24, substitui a reserva "órfã" de 2026-09-21): `cancel-subscription`,
+`plan-change`, `switch-to-annual`, `invoice-detail`, `account-cancelled`,
+`past-due`, `trial-ended` (em `src/features/billing/`) e `/checkout`
+(`src/features/public/checkout.jsx`) leem assinatura/faturas/planos reais
+e agem via Stripe Checkout ou Customer Portal com `flow_data`
+(`changePlanAction`, `cancelSubscriptionAction`,
+`updatePaymentMethodAction`). Nenhuma coleta cartão no app. O proxy
+(`src/lib/access-gate.ts` + `fn_session_context`) manda conta com trial
+vencido, cancelada ou sem pagamento para essas telas.
 
 **Planos nas páginas públicas**: landing, `/pricing`, `/signup` e
 `/complete-signup` leem o catálogo real via `loadPublicPlans()`

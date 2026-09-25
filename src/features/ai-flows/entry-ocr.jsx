@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { SAMPLE_NF } from '@/features/ai-flows/sample-nf';
 import { useAITask } from '@/features/ai/use-ai-task';
 import { extractInvoiceAction } from '@/features/ai/actions';
 import { confirmInvoiceEntryAction } from '@/features/ai-flows/actions';
@@ -25,9 +24,11 @@ import { SummaryRow } from '@/components/ui/summary-row';
 import { SelectInput } from '@/components/ui/select-input';
 import { AIQuotaCard } from '@/features/ai/ai-quota-card';
 
-export function EntryOCR({ stores, categories, products, quota }) {
+export function EntryOCR({ stores, quota }) {
   const navigate = useNavigate();
-  const [text, setText] = React.useState(SAMPLE_NF);
+  const [mode, setMode] = React.useState('photo');
+  const [text, setText] = React.useState('');
+  const [file, setFile] = React.useState(null);
   const [rows, setRows] = React.useState(null);
   const [decided, setDecided] = React.useState({});
   const defaultStoreId = useDefaultStoreId(stores);
@@ -36,8 +37,19 @@ export function EntryOCR({ stores, categories, products, quota }) {
   const [error, setError] = React.useState('');
   const task = useAITask();
 
+  const ready = mode === 'text' ? text.trim().length > 0 : !!file;
+
+  const pickFile = async (e) => {
+    const picked = e.target.files?.[0] ?? null;
+    e.target.value = '';
+    setFile(picked && picked.type.startsWith('image/') ? await shrinkImage(picked) : picked);
+  };
+
   const extract = () => task.run(async () => {
-    const data = await extractInvoiceAction(text, { categories, products });
+    const form = new FormData();
+    if (mode === 'text') form.set('text', text);
+    else if (file) form.set('file', file);
+    const data = await extractInvoiceAction(form);
     setRows(data.items || []);
     return data;
   });
@@ -76,36 +88,53 @@ export function EntryOCR({ stores, categories, products, quota }) {
 
         <div className="split-aside" style={{ '--aside': '320px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-            <FormCard title="Origem da nota" desc="Em produção: foto, PDF ou XML. Aqui, o texto da nota alimenta a mesma extração." cols={1}>
-              <div className="g3" style={{ gap: 8 }}>
+            <FormCard title="Origem da nota" desc="Foto do papel, PDF da DANFE ou o texto da nota. A IA extrai os itens e casa com o seu catálogo." cols={1}>
+              <div className="g3" role="radiogroup" aria-label="Origem da nota" style={{ gap: 8 }}>
                 {[
-                  { i: <I.QR size={15} />, t: 'Foto da nota', d: 'Papel do fornecedor' },
-                  { i: <I.Download size={15} />, t: 'PDF ou XML', d: 'DANFE eletrônica' },
-                  { i: <I.Layers size={15} />, t: 'Texto colado', d: 'Em uso nesta demo', on: true },
-                ].map(o => (
-                  <div key={o.t} style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px',
-                    border: '1px solid ' + (o.on ? 'var(--accent)' : 'var(--line)'),
-                    background: o.on ? 'var(--accent-soft)' : 'var(--bg-elev)',
-                    borderRadius: 7,
-                  }}>
-                    <span style={{ color: o.on ? 'var(--accent-text)' : 'var(--fg-muted)', display: 'flex', flexShrink: 0 }}>{o.i}</span>
-                    <span style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--fg)' }}>{o.t}</span>
-                      <span style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)' }}>{o.d}</span>
-                    </span>
-                  </div>
-                ))}
+                  { id: 'photo', i: <I.QR size={15} />, t: 'Foto da nota', d: 'Papel do fornecedor' },
+                  { id: 'pdf', i: <I.Download size={15} />, t: 'PDF da DANFE', d: 'Arquivo eletrônico' },
+                  { id: 'text', i: <I.Layers size={15} />, t: 'Texto colado', d: 'Copiado de e-mail ou sistema' },
+                ].map(o => {
+                  const on = mode === o.id;
+                  return (
+                    <button key={o.id} type="button" role="radio" aria-checked={on}
+                      onClick={() => { setMode(o.id); setFile(null); }} style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px', textAlign: 'left',
+                        border: '1px solid ' + (on ? 'var(--accent)' : 'var(--line)'),
+                        background: on ? 'var(--accent-soft)' : 'var(--bg-elev)',
+                        borderRadius: 7, fontFamily: 'inherit', cursor: 'pointer',
+                      }}>
+                      <span style={{ color: on ? 'var(--accent-text)' : 'var(--fg-muted)', display: 'flex', flexShrink: 0 }}>{o.i}</span>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--fg)' }}>{o.t}</span>
+                        <span style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)' }}>{o.d}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-              <Field label="Texto da nota" hint="Edite para testar com outra nota — a extração é real.">
-                <TextareaInput value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 168, fontFamily: 'var(--font-mono)', fontSize: 11.5 }} />
-              </Field>
+              {mode === 'text' ? (
+                <Field label="Texto da nota">
+                  <TextareaInput value={text} onChange={(e) => setText(e.target.value)} placeholder="Cole aqui o conteúdo da nota fiscal (emitente, itens, quantidades e valores)."
+                    style={{ minHeight: 168, fontFamily: 'var(--font-mono)', fontSize: 11.5 }} />
+                </Field>
+              ) : (
+                <Field label={mode === 'pdf' ? 'Arquivo PDF' : 'Foto da nota'} hint={mode === 'pdf' ? 'PDF até 3,5 MB.' : 'JPG, PNG ou WEBP. A foto é reduzida antes do envio.'}>
+                  <label className="btn btn-outline" style={{ justifyContent: 'flex-start', width: '100%' }}>
+                    <I.Download size={13} />
+                    <span className="truncate">{file ? file.name : mode === 'pdf' ? 'Escolher PDF…' : 'Tirar foto ou escolher imagem…'}</span>
+                    <input type="file" onChange={pickFile} style={{ display: 'none' }}
+                      accept={mode === 'pdf' ? 'application/pdf' : 'image/jpeg,image/png,image/webp'}
+                      {...(mode === 'photo' ? { capture: 'environment' } : {})} />
+                  </label>
+                </Field>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button onClick={extract} disabled={task.state === 'running'} className="btn btn-primary"
+                <button onClick={extract} disabled={task.state === 'running' || !ready} className="btn btn-primary"
                   style={{ opacity: task.state === 'running' ? 0.6 : 1 }}>
                   <I.Sparkle size={13} /> {task.state === 'running' ? 'Lendo a nota…' : 'Ler nota com IA'}
                 </button>
-                <span style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>Consome 5 créditos de IA</span>
+                <span style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>Consome {quota?.costs?.ocr} créditos de IA</span>
               </div>
             </FormCard>
 
@@ -243,4 +272,26 @@ export function EntryOCR({ stores, categories, products, quota }) {
       </Page>
     </StoreShell>
   );
+}
+
+// Foto de celular passa fácil de 4 MB; 1600px no lado maior mantém a nota
+// legível e cabe folgado no limite de upload.
+function shrinkImage(file, maxSide = 1600) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        resolve(blob ? new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file);
+      }, 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
 }

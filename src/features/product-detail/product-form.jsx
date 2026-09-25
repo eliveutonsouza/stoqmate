@@ -236,7 +236,7 @@ export function ProductForm({ categories, suppliers, locations, product }) {
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>
                     ou <span style={{ color: 'var(--accent-text)', fontWeight: 500 }}>escolha do computador</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12, fontFamily: 'var(--font-mono)' }}>JPG · PNG · WEBP · até 5 MB</div>
+                  <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12, fontFamily: 'var(--font-mono)' }}>JPG · PNG · WEBP · até 4 MB</div>
                 </label>
               ) : (
                 <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>

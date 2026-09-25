@@ -1,5 +1,7 @@
 import { AccountCancelled } from '@/features/billing/account-cancelled';
+import { loadAccountCancelledState } from '@/features/billing/queries';
 
-export default function Page() {
-  return <AccountCancelled />;
+export default async function Page() {
+  const state = await loadAccountCancelledState();
+  return <AccountCancelled state={state} />;
 }

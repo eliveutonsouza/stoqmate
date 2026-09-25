@@ -1,5 +1,7 @@
 import { CancelSubscription } from '@/features/billing/cancel-subscription';
+import { loadSubscriptionOverview } from '@/features/billing/queries';
 
-export default function Page() {
-  return <CancelSubscription />;
+export default async function Page() {
+  const overview = await loadSubscriptionOverview();
+  return <CancelSubscription overview={overview} />;
 }

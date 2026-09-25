@@ -1,5 +1,7 @@
 import { TrialEnded } from '@/features/billing/trial-ended';
+import { loadTrialEndedState } from '@/features/billing/queries';
 
-export default function Page() {
-  return <TrialEnded />;
+export default async function Page() {
+  const state = await loadTrialEndedState();
+  return <TrialEnded state={state} />;
 }

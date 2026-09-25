@@ -94,7 +94,13 @@ async function syncSubscription(sub: Stripe.Subscription) {
     // espera o cron mensal (fn_ai_renew_cycle). Realinha ai_credit_renews_at
     // com o ciclo real da assinatura em vez do aniversário genérico.
     if (changed && changed.length > 0) {
-      const renewsAt = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
+      // A cota de IA é mensal nos dois ciclos. No anual, current_period_end
+      // fica 12 meses à frente e a cota só renovaria uma vez por ano.
+      const oneMonth = new Date();
+      oneMonth.setMonth(oneMonth.getMonth() + 1);
+      const renewsAt = cycle === "yearly"
+        ? oneMonth.toISOString()
+        : periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
       must(await supabase.rpc("fn_ai_apply_plan_change", { p_tenant_id: tenantId, p_plan_id: planId, p_renews_at: renewsAt }), "apply plan change");
       must(await supabase.from("tenant_lifecycle_events").insert({
         tenant_id: tenantId, event_type: "plan_change", from_plan_id: tenant?.plan_id ?? null, to_plan_id: planId,
@@ -157,7 +163,7 @@ Deno.serve(async (req) => {
         const tenantId = await tenantIdForCustomer(sub.customer as string);
         // Só registra churn na transição real (reentrega não duplica evento).
         const canceled = must(
-          await supabase.from("tenants").update({ status: "canceled" }).eq("id", tenantId).neq("status", "canceled").select("id"),
+          await supabase.from("tenants").update({ status: "canceled", canceled_at: new Date().toISOString() }).eq("id", tenantId).neq("status", "canceled").select("id"),
           "tenant cancel",
         );
         if (canceled && canceled.length > 0) {
