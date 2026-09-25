@@ -4,6 +4,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { authEmailOrigin } from "@/lib/site-origin";
 import { finishPendingSignup, hasStaffRow, slugify } from "@/features/auth/pending-signup";
+import { isInvalidCredentials, signInErrorMessage } from "@/lib/auth-errors";
+
+// Falha que não é credencial errada é incidente (chave inválida, rede) — vai
+// pro log da Vercel em vez de sumir atrás de "senha incorreta".
+function logAuthFailure(where: string, error: { name?: string; status?: number; code?: string; message?: string }) {
+  if (isInvalidCredentials(error)) return;
+  console.error(`[auth] ${where}`, { name: error.name, status: error.status, code: error.code, message: error.message });
+}
 
 function verifyEmailPath(email: string) {
   return `/verify-email?email=${encodeURIComponent(email)}`;
@@ -107,7 +115,10 @@ export async function signInAction(input: { email: string; password: string }) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(input);
   if (error?.code === "email_not_confirmed") redirect(verifyEmailPath(input.email));
-  if (error) return { error: "Email ou senha incorretos." };
+  if (error) {
+    logAuthFailure("signIn", error);
+    return { error: signInErrorMessage(error) };
+  }
 
   // O link de confirmação aberto em outro navegador não troca o code (PKCE)
   // e o cadastro pendente não fecha no callback — fecha aqui no 1º login.
@@ -143,7 +154,10 @@ export async function signInAdminAction(input: { email: string; password: string
     email: input.email,
     password: input.password,
   });
-  if (signInError) return { error: "Email ou senha incorretos." };
+  if (signInError) {
+    logAuthFailure("signInAdmin", signInError);
+    return { error: signInErrorMessage(signInError) };
+  }
 
   const { data: staffRow } = await supabase.from("platform_staff").select("user_id").maybeSingle();
   if (!staffRow) {
