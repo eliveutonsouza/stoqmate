@@ -14,7 +14,16 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    if (error) {
+      // Sem isso a falha some: o usuário só volta pro /login. Foi assim que
+      // uma anon key inválida em produção passou despercebida.
+      console.error("[auth/callback] exchangeCodeForSession falhou", {
+        name: error.name,
+        status: error.status,
+        code: error.code,
+        message: error.message,
+      });
+    } else {
       // Sem tenant: ou é confirmação de email de um cadastro/convite (dados
       // em user_metadata, fechados aqui), ou é login com Google, que não
       // coleta loja/CNPJ/plano e fecha o cadastro em /complete-signup.
@@ -30,6 +39,11 @@ export async function GET(request: Request) {
       }
       return NextResponse.redirect(`${origin}${next}`);
     }
+  } else {
+    console.error("[auth/callback] chamado sem code", {
+      error: searchParams.get("error"),
+      errorCode: searchParams.get("error_code"),
+    });
   }
 
   return NextResponse.redirect(`${origin}/login`);
