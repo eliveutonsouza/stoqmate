@@ -9,7 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 
 // Busca real (debounce 250ms) por sku/código de barras/marca/nome — usada
 // por toda tela de movimentação de estoque. `storeId` decide de qual loja
-// vem o saldo mostrado (o mesmo produto tem saldo diferente por loja).
+// vem o saldo mostrado (o mesmo produto tem saldo diferente por loja);
+// sem `storeId`, mostra o total da rede.
 //
 // O dropdown de resultados vai por portal pro <body>: os cards que envolvem
 // este componente (FormCard) usam overflow:hidden pra arredondar canto, o
@@ -59,8 +60,11 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
 
   if (product) {
     const category = product.category ?? null;
+    // Sem loja (promoção, etiqueta, contagem de rede): saldo somado da rede.
     const stock = product.stock_balances
-      ? (product.stock_balances.find((b) => b.store_id === storeId)?.qty ?? 0)
+      ? (storeId
+        ? (product.stock_balances.find((b) => b.store_id === storeId)?.qty ?? 0)
+        : product.stock_balances.reduce((s, b) => s + b.qty, 0))
       : (product.stock ?? 0);
     return (
       <div style={{

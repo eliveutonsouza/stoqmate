@@ -75,7 +75,7 @@ export function AIHub({ quota, pendingCount }) {
               <div className="card" style={{ padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Uso por recurso neste ciclo</div>
                 {quota.byFeature.map((f) => (
-                  <SummaryRow key={f.id} label={f.label} value={`${f.runs}× · ${f.used} créditos`} />
+                  <SummaryRow key={f.id} label={f.label} value={`${f.runs}× · ${f.used} ${f.used === 1 ? "crédito" : "créditos"}`} />
                 ))}
               </div>
             )}

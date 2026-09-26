@@ -5,7 +5,23 @@ const REPORT_TABS = [
   { r: '/reports/categories', l: 'Categorias e produtos' },
   { r: '/reports/attributes', l: 'Atributos' },
   { r: '/reports/profit', l: 'Lucratividade' },
+  { r: '/reports/abc', l: 'Curva ABC' },
 ];
+
+// Filtros que valem pra todos os relatórios: trocar de aba não pode zerar
+// o período nem a loja escolhidos.
+const SHARED_PARAMS = ['period', 'from', 'to', 'store'];
+
+function withSharedFilters(route) {
+  const current = new URLSearchParams(window.location.search);
+  const next = new URLSearchParams();
+  for (const k of SHARED_PARAMS) {
+    const v = current.get(k);
+    if (v) next.set(k, v);
+  }
+  const qs = next.toString();
+  return qs ? `${route}?${qs}` : route;
+}
 
 export function ReportTabs({ route, navigate }) {
   return (
@@ -13,7 +29,7 @@ export function ReportTabs({ route, navigate }) {
       {REPORT_TABS.map(t => {
         const active = route === t.r;
         return (
-          <button key={t.r} onClick={() => navigate(t.r)} style={{
+          <button key={t.r} onClick={() => navigate(withSharedFilters(t.r))} style={{
             background: active ? 'var(--bg-elev)' : 'transparent',
             border: '1px solid ' + (active ? 'var(--line)' : 'transparent'),
             borderRadius: 5, padding: '5px 12px', fontSize: 12.5, fontWeight: 500,

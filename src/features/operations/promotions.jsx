@@ -109,9 +109,14 @@ export function Promotions({ promotions }) {
                       </td>
                       <td><span className={`badge ${st.cls}`}>{p.status === 'active' && <span className="badge-dot"></span>} {st.label}</span></td>
                       <td>
-                        <button onClick={() => toggle(p)} disabled={pending} className="btn btn-outline btn-sm">
-                          {p.active ? 'Encerrar' : 'Reativar'}
-                        </button>
+                        {/* Vencida pela data: reativar não muda nada — a vigência não se edita, só se cria outra. */}
+                        {!p.until_stock && p.ends_at && new Date(p.ends_at) < new Date() ? (
+                          <button onClick={() => navigate(`/promotions/edit?id=${p.id}`)} className="btn btn-ghost btn-sm">Detalhes</button>
+                        ) : (
+                          <button onClick={() => toggle(p)} disabled={pending} className="btn btn-outline btn-sm">
+                            {p.active ? 'Encerrar' : 'Reativar'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

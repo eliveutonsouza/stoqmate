@@ -311,7 +311,7 @@ async function extractInvoiceActionImpl(form: FormData) {
     .map((p) => `${p.sku} | ${p.brand} ${p.name} | ${Object.values((p.attrs as Record<string, string>) || {}).join(" ")} | custo ~${Number(p.cost_price).toFixed(2)}`)
     .join("\n");
   const schemaHint = context.categories
-    .map((c) => `${c.name} (unidade ${c.unit}): ${(c.category_attributes ?? []).map((a: { label: string; values: string[] }) => `${a.label} [${a.values.join("/")}]`).join(", ")}`)
+    .map((c) => `${c.name} (unidade ${c.unit}): ${(c.category_attributes ?? []).map((a: { key: string; label: string; values: string[] }) => `${a.key} (${a.label}) [${a.values.join("/")}]`).join(", ")}`)
     .join("\n");
   const source = attachment
     ? `A nota fiscal está no arquivo anexo (${attachment.kind === "pdf" ? "PDF" : "foto"}).`

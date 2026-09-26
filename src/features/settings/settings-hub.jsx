@@ -40,8 +40,8 @@ export function SettingsHub({ hub }) {
           <div className="g3" style={{ gap: 12 }}>
             <HubCard icon={<I.Shield size={15} />} title="Meu perfil" onClick={() => navigate('/profile')}
               desc="Seus dados de acesso, senha, verificação em duas etapas e sessões ativas." />
-            <HubCard icon={<I.Bell size={15} />} title="Notificações" onClick={() => navigate('/notifications')}
-              desc="Alertas de ruptura, transferências pendentes e avisos de cobrança." />
+            <HubCard icon={<I.Bell size={15} />} title="Regras de aviso" onClick={() => navigate('/settings/notifications')}
+              desc="Ruptura, estoque abaixo do mínimo e pedidos de acesso — no painel e, se quiser, por email." />
             <HubCard icon={<I.Download size={15} />} title="Importar catálogo" onClick={() => navigate('/products/import')}
               desc="Traga sua planilha de produtos com mapeamento de colunas assistido." />
           </div>

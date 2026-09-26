@@ -34,7 +34,7 @@ export const loadStoreShell = cache(async () => {
 
   const [profile, tenant, stores, role, counts] = await Promise.all([
     supabase.from("profiles").select("full_name, initials").eq("id", user.id).maybeSingle(),
-    supabase.from("tenants").select("id, name, logo_url").maybeSingle(),
+    supabase.from("tenants").select("id, name, logo_url, brand_color").maybeSingle(),
     supabase.from("stores").select("id, name, type").order("created_at"),
     supabase.rpc("auth_role"),
     supabase.rpc("fn_shell_counts"),

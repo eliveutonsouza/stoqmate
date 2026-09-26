@@ -13,7 +13,7 @@ export function OnbStep2({ data, set }) {
 
   return (
     <>
-      <OnbTitle title="Envie o logo da loja" desc="Usamos no painel, nos relatórios exportados e nas etiquetas de estoque. PNG com fundo transparente de preferência." />
+      <OnbTitle title="Envie o logo da loja" desc="Aparece no topo do painel, pra equipe reconhecer a rede. PNG com fundo transparente de preferência." />
       {!data.logoFile ? (
         <label style={{
           display: 'block',

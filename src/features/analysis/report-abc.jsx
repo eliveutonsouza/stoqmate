@@ -22,9 +22,13 @@ export function ReportABC({ rows: input, periodDays, filters, stores }) {
   const { headerProps, scopeLabel, fileSuffix } = useReportHeader(filters, stores);
   const total = input.reduce((s, r) => s + r.revenue, 0);
   const rows = input.reduce((acc, r) => {
-    const cum = (acc.length ? acc[acc.length - 1].cum : 0) + r.revenue;
+    const prev = acc.length ? acc[acc.length - 1].cum : 0;
+    const cum = prev + r.revenue;
     const cumPct = total > 0 ? (cum / total) * 100 : 100;
-    const cls = r.revenue === 0 ? 'C' : cumPct <= 70 ? 'A' : cumPct <= 90 ? 'B' : 'C';
+    // A classe vem de onde o produto COMEÇA na curva: o que entra antes de
+    // fechar 70% é A (mesmo que sozinho passe dos 70%), até 90% é B.
+    const startPct = total > 0 ? (prev / total) * 100 : 100;
+    const cls = r.revenue === 0 ? 'C' : startPct < 70 ? 'A' : startPct < 90 ? 'B' : 'C';
     const dailyRate = r.units / periodDays;
     const cover = dailyRate > 0 ? Math.round(r.stock_qty / dailyRate) : null;
     const turns = r.stock_qty > 0 ? +((r.units * (365 / periodDays)) / r.stock_qty).toFixed(1) : 0;

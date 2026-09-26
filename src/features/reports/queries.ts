@@ -3,13 +3,12 @@ import { must } from "@/lib/supabase/must";
 import { type RawSearchParams, param, uuidParam } from "@/lib/list-params";
 import { type ReportRange, resolveReportRange, todayInSaoPaulo } from "@/lib/report-range";
 
+// Mesmo "últimos 30 dias" dos relatórios (dias de calendário em São Paulo).
+// Antes era 31 dias no fuso do servidor: a visão geral dizia "27 ago" e o
+// relatório de vendas, "28 ago", pro mesmo período.
 export function last30Days() {
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
-  const start = new Date(end);
-  start.setDate(start.getDate() - 30);
-  start.setHours(0, 0, 0, 0);
-  return { start, end };
+  const range = resolveReportRange({ period: "30d" }, todayInSaoPaulo());
+  return { start: new Date(range.startIso), end: new Date(new Date(range.endIso).getTime() - 1) };
 }
 
 // Filtros comuns dos relatórios, lidos da URL:

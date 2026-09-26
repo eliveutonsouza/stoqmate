@@ -50,7 +50,7 @@ export async function loadAnomalies(storeId: string) {
     supabase.rpc("fn_replenishment_suggestions", { p_store_id: storeId }),
     supabase
       .from("stock_balances")
-      .select("product_id, qty, product:products(sku, name, brand, attrs, category:categories(id, name, icon, color))")
+      .select("product_id, qty, product:products(sku, name, brand, attrs, created_at, category:categories(id, name, icon, color))")
       .eq("store_id", storeId),
     supabase.rpc("fn_products_sold_since", { p_store_id: storeId, p_since: since.toISOString() }),
   ]);
@@ -68,7 +68,10 @@ export async function loadAnomalies(storeId: string) {
   const soldRecently = new Set((recentSales ?? []) as string[]);
   const costById = await productCostMap(supabase, (balances ?? []).map((b) => b.product_id));
   const deadStock = (balances ?? [])
-    .filter((b) => b.qty > 0 && !soldRecently.has(b.product_id))
+    // "Sem venda há 90 dias" só vale pra produto que existe há 90 dias —
+    // cadastro recente ainda não teve tempo de girar.
+    .filter((b) => b.qty > 0 && !soldRecently.has(b.product_id)
+      && new Date((b.product as unknown as { created_at: string } | null)?.created_at ?? 0) <= since)
     .map((b) => ({
       productId: b.product_id, qty: b.qty, product: b.product,
       value: b.qty * (costById.get(b.product_id) ?? 0),

@@ -40,6 +40,15 @@ export async function applyEnrichmentAction(items: { sku: string; filled: Record
 // fn_stock_entry (mesma função do lançamento manual); "new" são
 // cadastrados primeiro, na categoria que a IA casou (precisa já existir
 // no esquema — a IA nunca inventa categoria).
+function schemaAttributes(raw: Record<string, string> | undefined, keyByName: Record<string, string>) {
+  const out: Record<string, string> = {};
+  for (const [name, value] of Object.entries(raw ?? {})) {
+    const key = keyByName[name.toLowerCase()];
+    if (key && typeof value === "string" && value.trim()) out[key] = value.trim();
+  }
+  return out;
+}
+
 export async function confirmInvoiceEntryAction(input: {
   storeId: string;
   items: {
@@ -64,10 +73,20 @@ export async function confirmInvoiceEntryAction(input: {
 
   const needsCategory = input.items.some((i) => i.match === "new");
   let categoryIdByName: Record<string, string> = {};
+  // A IA pode devolver o atributo pelo rótulo ("Cor") em vez da chave ("cor").
+  const attrKeyByCategory: Record<string, Record<string, string>> = {};
   if (needsCategory) {
-    const { data: categories, error } = await supabase.from("categories").select("id, name");
+    const { data: categories, error } = await supabase.from("categories").select("id, name, category_attributes(key, label)");
     if (error) return { error: userMessage(error, "ai-flows/confirmInvoice.categories") };
     categoryIdByName = Object.fromEntries((categories ?? []).map((c) => [c.name.toLowerCase(), c.id]));
+    for (const c of categories ?? []) {
+      const byName: Record<string, string> = {};
+      for (const a of c.category_attributes ?? []) {
+        byName[a.key.toLowerCase()] = a.key;
+        byName[a.label.toLowerCase()] = a.key;
+      }
+      attrKeyByCategory[c.id] = byName;
+    }
   }
 
   const items = [];
@@ -79,7 +98,8 @@ export async function confirmInvoiceEntryAction(input: {
     }
     items.push({
       match: item.match === "new" ? "new" : "existing", sku: item.sku, product_name: item.productName,
-      category_id: categoryId, attributes: item.attributes ?? {}, qty: item.qty, unit_cost: item.unitCost,
+      category_id: categoryId, attributes: categoryId ? schemaAttributes(item.attributes, attrKeyByCategory[categoryId] ?? {}) : {},
+      qty: item.qty, unit_cost: item.unitCost,
     });
   }
 

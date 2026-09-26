@@ -23,6 +23,7 @@ export function AIForecast({ base }) {
   const navigate = useNavigate();
   const [result, setResult] = React.useState(null);
   const [decided, setDecided] = React.useState({});
+  const [applyError, setApplyError] = React.useState('');
   const task = useAITask();
 
   const run = () => task.run(async () => {
@@ -41,7 +42,14 @@ export function AIForecast({ base }) {
       .map((p) => ({ p, r: result.find((x) => x.sku === p.sku) }))
       .filter(({ p, r }) => r && decided[p.sku] === 'accept');
     if (accepted.length === 0) return;
-    const supplierId = accepted[0].p.supplier_id;
+    // Pedido é por fornecedor: item sem fornecedor não tem pra onde ir.
+    const withSupplier = accepted.filter(({ p }) => p.supplier_id);
+    if (withSupplier.length === 0) {
+      setApplyError('Os itens aceitos não têm fornecedor — defina o fornecedor no cadastro do produto pra gerar o pedido.');
+      return;
+    }
+    setApplyError('');
+    const supplierId = withSupplier[0].p.supplier_id;
     const sameSupplier = accepted.filter(({ p }) => p.supplier_id === supplierId);
     const prefill = sameSupplier.map(({ p, r }) => `${p.product_id}:${Math.round(r.suggested)}`).join(',');
     navigate(`/purchase-orders/new?supplier=${supplierId}&prefill=${encodeURIComponent(prefill)}`);
@@ -164,6 +172,7 @@ export function AIForecast({ base }) {
               <span style={{ fontSize: 12.5, color: 'var(--fg-muted)', flex: 1, lineHeight: 1.5 }}>
                 As quantidades aceitas substituem a sugestão na tela de reposição e entram no pedido de compra.
               </span>
+              {applyError && <span role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{applyError}</span>}
               <button onClick={applyAccepted} disabled={Object.values(decided).filter(v => v === 'accept').length === 0} className="btn btn-primary btn-sm">
                 Aplicar {Object.values(decided).filter(v => v === 'accept').length} e abrir reposição
               </button>

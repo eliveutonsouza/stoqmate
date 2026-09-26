@@ -105,8 +105,8 @@ export async function updateBrandingAction(input: { logoUrl: string | null; bran
     if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para mudar o branding." };
     return { error: userMessage(error, "settings/actions") };
   }
-  revalidatePath("/settings/branding");
-  revalidatePath("/dashboard");
+  // Cor e logo vivem no layout da loja inteira (sidebar, --accent).
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

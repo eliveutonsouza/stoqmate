@@ -101,7 +101,7 @@ export function AIEnrich({ gaps, categories, quota }) {
                 </div>
                 <button onClick={run} disabled={task.state === 'running' || picked.size === 0} className="btn btn-primary btn-sm"
                   style={{ opacity: task.state === 'running' || !picked.size ? 0.6 : 1 }}>
-                  <I.Sparkle size={12} /> {task.state === 'running' ? 'Analisando…' : `Completar ${picked.size} SKUs`}
+                  <I.Sparkle size={12} /> {task.state === 'running' ? 'Analisando…' : `Completar ${picked.size} ${picked.size === 1 ? 'SKU' : 'SKUs'}`}
                 </button>
               </div>
               <table className="table">
@@ -160,7 +160,7 @@ export function AIEnrich({ gaps, categories, quota }) {
                         {result && <td>{r ? <ConfidenceBar value={r.confidence || 0} width={50} /> : null}</td>}
                         {result && (
                           <td>
-                            {r && <ReviewActions compact accepted={state === 'accept'} rejected={state === 'reject'}
+                            {r && r.filled && Object.values(r.filled).some(v => v) && <ReviewActions compact accepted={state === 'accept'} rejected={state === 'reject'}
                               onAccept={() => decide(g.sku, 'accept')} onReject={() => decide(g.sku, 'reject')} />}
                           </td>
                         )}
@@ -210,7 +210,7 @@ export function AIEnrich({ gaps, categories, quota }) {
 
             {applyError && <div role="alert" style={{ fontSize: 12, color: 'var(--danger)', marginBottom: 8 }}>{applyError}</div>}
             <button onClick={applyAccepted} disabled={!result || applying || Object.values(decided).filter(v => v === 'accept').length === 0}
-              className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: result && !applying ? 1 : 0.45 }}>
+              className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: result && !applying && Object.values(decided).some(v => v === 'accept') ? 1 : 0.45 }}>
               {applying ? 'Aplicando…' : 'Aplicar aos aceitos'}
             </button>
             <AIQuotaCard compact quota={quota} />

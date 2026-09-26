@@ -96,7 +96,7 @@ export function SalesReport({ report, filters, stores }) {
           <div className="card table-scroll">
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Vendas por categoria</h3>
-              <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Cada categoria conta na sua própria unidade de medida.</p>
+              <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>Cada categoria conta na sua própria unidade de medida. Receita por item, antes do desconto dado no total da venda.</p>
             </div>
             {report.byCategory.length === 0 ? (
               <div style={{ padding: '18px', fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhuma venda no período.</div>

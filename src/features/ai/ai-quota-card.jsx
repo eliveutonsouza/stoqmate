@@ -45,7 +45,7 @@ export function AIQuotaCard({ navigate, compact, quota }) {
               {byFeature.map(f => (
                 <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                   <span style={{ fontSize: 12, flex: 1 }}>{f.label}</span>
-                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{f.used} créditos · {f.runs} {f.runs === 1 ? 'uso' : 'usos'}</span>
+                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{f.used} {f.used === 1 ? 'crédito' : 'créditos'} · {f.runs} {f.runs === 1 ? 'uso' : 'usos'}</span>
                 </div>
               ))}
             </div>

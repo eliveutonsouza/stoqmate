@@ -49,7 +49,7 @@ export function SettingsBranding({ branding }) {
     <StoreShell route="/settings/branding" breadcrumb={['Configurações', 'Branding']} navigate={navigate}>
       <PageHeader title="Configurações" sub="Identidade visual, dados da empresa, equipe e assinatura." />
       <SettingsLayout route="/settings/branding" navigate={navigate}>
-        <FormCard title="Logo da loja" desc="Aparece no painel, nos relatórios exportados e nas etiquetas de estoque." cols={1}
+        <FormCard title="Logo da loja" desc="Aparece no topo do painel, pra equipe reconhecer a rede." cols={1}
           footer={<button onClick={save} disabled={pending} className="btn btn-primary">{pending ? 'Salvando…' : 'Salvar alterações'}</button>}>
           {logoPreview ? (
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>

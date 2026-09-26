@@ -131,7 +131,7 @@ export function EntryOCR({ stores, quota }) {
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <button onClick={extract} disabled={task.state === 'running' || !ready} className="btn btn-primary"
-                  style={{ opacity: task.state === 'running' ? 0.6 : 1 }}>
+                  style={{ opacity: task.state === 'running' || !ready ? 0.5 : 1 }}>
                   <I.Sparkle size={13} /> {task.state === 'running' ? 'Lendo a nota…' : 'Ler nota com IA'}
                 </button>
                 <span style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>Consome {quota?.costs?.ocr} créditos de IA</span>
