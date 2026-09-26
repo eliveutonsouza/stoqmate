@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { useAITask } from '@/features/ai/use-ai-task';
+import { unwrap, useAITask } from '@/features/ai/use-ai-task';
 import { enrichCatalogAction } from '@/features/ai/actions';
 import { applyEnrichmentAction } from '@/features/ai-flows/actions';
 import { StoreShell } from '@/components/ui/store-shell';
@@ -27,16 +27,17 @@ export function AIEnrich({ gaps, categories, quota }) {
   const [result, setResult] = React.useState(null);
   const [decided, setDecided] = React.useState({});
   const [applying, setApplying] = React.useState(false);
+  const [applyError, setApplyError] = React.useState('');
   const task = useAITask();
 
   const run = () => task.run(async () => {
     const targets = [...picked].map(i => gaps[i]).filter(Boolean).map(g => ({
       sku: g.sku, categoryName: g.category?.name ?? '', name: g.name, known: g.known, missing: g.missing,
     }));
-    const data = await enrichCatalogAction(
+    const data = unwrap(await enrichCatalogAction(
       targets,
       categories.map(c => ({ name: c.name, unit: c.unit, attributes: (c.category_attributes || []).map(a => ({ key: a.key, values: a.values })) })),
-    );
+    ));
     setResult(data.items || []);
     return data;
   });
@@ -47,10 +48,13 @@ export function AIEnrich({ gaps, categories, quota }) {
     const accepted = (result || []).filter(r => decided[r.sku] === 'accept' && r.filled);
     if (!accepted.length) return;
     setApplying(true);
-    applyEnrichmentAction(accepted.map(r => ({ sku: r.sku, filled: r.filled }))).then(() => {
-      setApplying(false);
-      navigate('/products');
-    });
+    setApplyError('');
+    applyEnrichmentAction(accepted.map(r => ({ sku: r.sku, filled: r.filled })))
+      .then((res) => {
+        if (res?.error) { setApplyError(res.error); setApplying(false); return; }
+        navigate('/products');
+      })
+      .catch(() => { setApplyError('Não foi possível aplicar agora. Tente de novo.'); setApplying(false); });
   };
 
   if (gaps.length === 0) {
@@ -204,6 +208,7 @@ export function AIEnrich({ gaps, categories, quota }) {
               </>}
             </div>
 
+            {applyError && <div role="alert" style={{ fontSize: 12, color: 'var(--danger)', marginBottom: 8 }}>{applyError}</div>}
             <button onClick={applyAccepted} disabled={!result || applying || Object.values(decided).filter(v => v === 'accept').length === 0}
               className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: result && !applying ? 1 : 0.45 }}>
               {applying ? 'Aplicando…' : 'Aplicar aos aceitos'}

@@ -1,15 +1,10 @@
 import * as React from 'react';
 
-export async function aiJSON({ system, prompt, max_tokens = 1400 }) {
-  const raw = await window.claude.complete({
-    system: (system || '') + '\nResponda SOMENTE com JSON válido, sem cercas de código, sem texto antes ou depois.',
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens,
-  });
-  const text = String(raw || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-  const start = Math.min(...['{', '['].map(c => { const i = text.indexOf(c); return i < 0 ? Infinity : i; }));
-  const slice = start === Infinity ? text : text.slice(start);
-  return JSON.parse(slice);
+// Actions de IA devolvem { data } ou { error } (texto já pronto pro
+// usuário). Aqui vira exceção de novo pra useAITask mostrar o erro.
+export function unwrap(result) {
+  if (!result || result.error) throw new Error(result?.error || 'Não foi possível concluir agora. Tente de novo em instantes.');
+  return result.data;
 }
 
 // Hook that owns the three states every AI surface needs.

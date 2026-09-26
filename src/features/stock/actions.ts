@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage, type DbErrorLike } from "@/lib/errors";
 
-function friendlyError(message: string) {
+function friendlyError(error: DbErrorLike) {
+  const message = error?.message ?? "";
   const known: Record<string, string> = {
     "not authorized": "Seu perfil não tem permissão para essa operação.",
     "quantidade precisa ser positiva": "A quantidade precisa ser maior que zero.",
@@ -24,7 +26,7 @@ function friendlyError(message: string) {
   if (message.includes("justificativa precisa ter pelo menos 20 caracteres quando há divergência")) {
     return "Há divergência — a justificativa precisa ter pelo menos 20 caracteres.";
   }
-  return message;
+  return userMessage(error, "stock/actions");
 }
 
 export async function stockEntryAction(input: {
@@ -35,7 +37,7 @@ export async function stockEntryAction(input: {
     p_store_id: input.storeId, p_product_id: input.productId, p_qty: input.qty,
     p_unit_cost: input.unitCost, p_notes: input.notes || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   if (input.locationId) {
     const { error: locError } = await supabase.from("products").update({ default_location_id: input.locationId }).eq("id", input.productId);
     if (locError) return { id: data as string, warning: "Entrada gravada, mas o local padrão do produto não foi atualizado." };
@@ -53,7 +55,7 @@ export async function stockAdjustmentAction(input: {
     p_store_id: input.storeId, p_product_id: input.productId, p_counted_qty: input.countedQty,
     p_reason: input.reason, p_justification: input.justification,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -70,7 +72,7 @@ export async function transferDispatchAction(input: {
     p_items: input.items.map((i) => ({ product_id: i.productId, qty: i.qty })),
     p_reason: input.reason, p_carrier: input.carrier || null, p_notes: input.notes || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -89,7 +91,7 @@ export async function transferReceiveAction(input: {
     p_discrepancy_reason: input.discrepancyReason || null,
     p_discrepancy_detail: input.discrepancyDetail || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/stock/history");
   revalidatePath("/stock/transfer");
   revalidatePath("/products");
@@ -106,7 +108,7 @@ export async function stockExchangeAction(input: {
     p_delivered_product_id: input.deliveredProductId, p_qty: input.qty,
     p_reason: input.reason, p_notes: input.notes || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -120,7 +122,7 @@ export async function stockReturnAction(input: {
     p_store_id: input.storeId, p_product_id: input.productId, p_qty: input.qty,
     p_reason: input.reason, p_restock: input.restock, p_notes: input.notes || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -137,7 +139,7 @@ export async function stockCountSubmitAction(input: {
     p_items: input.items.map((i) => ({ product_id: i.productId, counted_qty: i.countedQty })),
     p_reason: input.reason || null, p_justification: input.justification || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };

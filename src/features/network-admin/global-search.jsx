@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { useAITask } from '@/features/ai/use-ai-task';
+import { unwrap, useAITask } from '@/features/ai/use-ai-task';
 import { askInventoryAction } from '@/features/ai/actions';
 import { globalSearchAction } from '@/features/network-admin/search-actions';
 import { variantLabel } from '@/lib/attr-colors';
@@ -42,7 +42,7 @@ export function GlobalSearch() {
     const question = q;
     setAsked(question);
     ai.run(async () => {
-      const { spec, rows, metric, metricKind } = await askInventoryAction(question);
+      const { spec, rows, metric, metricKind } = unwrap(await askInventoryAction(question));
       const metricLabel = metricKind === 'sumSale' ? brl(metric)
         : metricKind === 'sumStock' ? `${metric} unidades`
         : `${metric} ${metric === 1 ? 'produto' : 'produtos'}`;

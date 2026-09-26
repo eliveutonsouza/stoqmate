@@ -27,15 +27,21 @@ export async function loadTenantsOverview() {
 }
 
 export async function loadTenantDetail(tenantId: string) {
-  await requireStaff();
+  const supabase = await requireStaff();
   const admin = createServiceRoleClient();
-  const [tenantRes, storesRes, storeUsersRes, auditLogRes, skuCountRes] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser();
+  const [tenantRes, storesRes, storeUsersRes, auditLogRes, skuCountRes, openSessionRes] = await Promise.all([
     admin.from("tenants").select("id, name, cnpj, plan_id, status, legal_name, segment, city, state, trial_ends_at, created_at").eq("id", tenantId).maybeSingle(),
     admin.from("stores").select("id, name, type").eq("tenant_id", tenantId).order("name"),
     admin.from("store_users").select("user_id, role, status, joined_at").eq("tenant_id", tenantId),
     admin.from("audit_log").select("id, kind, message, scope, created_at, created_by").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(50),
     admin.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    // Acesso de suporte aberto por MIM nesta rede (cada staff encerra o seu).
+    supabase.from("impersonation_sessions").select("id, reason, ticket_ref, started_at")
+      .eq("tenant_id", tenantId).eq("staff_user_id", user?.id ?? "").is("ended_at", null)
+      .order("started_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
+  const openSession = must(openSessionRes, "admin.loadTenantDetail.openSession");
   const tenant = must(tenantRes, "admin.loadTenantDetail.tenant");
   const stores = must(storesRes, "admin.loadTenantDetail.stores");
   const storeUsers = must(storeUsersRes, "admin.loadTenantDetail.storeUsers");
@@ -63,6 +69,7 @@ export async function loadTenantDetail(tenantId: string) {
     users: (storeUsers ?? []).map((u) => ({ ...u, name: nameById[u.user_id] || "Usuário", email: emailById[u.user_id] || "" })),
     auditLog: (auditLog ?? []).map((a) => ({ ...a, who: nameById[a.created_by ?? ""] || emailById[a.created_by ?? ""] || "—" })),
     skuCount: skuCount ?? 0,
+    openSession,
   };
 }
 

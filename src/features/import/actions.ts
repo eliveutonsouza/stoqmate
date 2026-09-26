@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
+import { userMessage } from "@/lib/errors";
 
 export async function checkExistingSkusAction(skus: string[]) {
   if (!skus.length) return { existing: [] };
   const supabase = await createClient();
   const { data, error } = await supabase.from("products").select("sku").in("sku", skus);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error, "import/actions") };
   return { existing: (data ?? []).map((p) => p.sku) };
 }
 
@@ -34,7 +35,7 @@ export async function bulkImportProductsAction(input: {
     const limit = limitKindFromError(error.message);
     if (limit) redirect(`/limit-reached?kind=${limit}`);
     if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para importar produtos." };
-    return { error: error.message };
+    return { error: userMessage(error, "import/actions") };
   }
   revalidatePath("/products");
   revalidatePath("/categories");

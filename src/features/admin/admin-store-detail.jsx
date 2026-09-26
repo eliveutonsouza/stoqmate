@@ -12,7 +12,7 @@ import { Field } from '@/components/ui/field';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextInput } from '@/components/ui/text-input';
 import { EmptyState } from '@/components/ui/empty-state';
-import { startImpersonationAction } from '@/features/admin/actions';
+import { endImpersonationAction, startImpersonationAction } from '@/features/admin/actions';
 
 const PLAN_NAMES = { balcao: 'Balcão', controle: 'Controle', rede: 'Rede' };
 const REASONS = ['Atendimento de ticket de suporte', 'Investigação de bug reportado', 'Demonstração comercial', 'Migração de dados assistida'];
@@ -40,7 +40,7 @@ export function AdminStoreDetail({ detail, subscription }) {
     );
   }
 
-  const { tenant: t, stores, users, auditLog, skuCount } = detail;
+  const { tenant: t, stores, users, auditLog, skuCount, openSession } = detail;
   const subs = subscription?.tenant?.subscriptions ?? [];
   const sub = subs.find((s) => s.status !== 'canceled') ?? subs[0] ?? null;
 
@@ -54,18 +54,40 @@ export function AdminStoreDetail({ detail, subscription }) {
     });
   };
 
+  const endAccess = () => {
+    setError('');
+    startTransition(async () => {
+      const result = await endImpersonationAction(openSession.id);
+      if (result?.error) { setError(result.error); return; }
+      router.refresh();
+    });
+  };
+
   return (
     <AdminShell breadcrumb={['Lojas', t.name]} navigate={navigate}>
       <PageHeader
         title={t.name}
         sub={`${PLAN_NAMES[t.plan_id] ?? t.plan_id} · ${stores.length} ${stores.length === 1 ? 'loja' : 'lojas'} · cliente desde ${new Date(t.created_at).toLocaleDateString('pt-BR')}`}
-        actions={(
+        actions={openSession ? (
+          <button onClick={endAccess} disabled={pending} className="btn btn-outline btn-sm">
+            <I.Logout size={13} /> {pending ? 'Encerrando…' : 'Encerrar acesso de suporte'}
+          </button>
+        ) : (
           <button onClick={() => setOpen(true)} className="btn btn-primary btn-sm">
             <I.Logout size={13} style={{ transform: 'scaleX(-1)' }} /> Registrar acesso de suporte
           </button>
         )}
       />
       <Page>
+        {openSession && (
+          <div role="status" style={{ padding: '10px 13px', marginBottom: 12, background: 'var(--warning-soft)', border: '1px solid var(--warning)', borderRadius: 7, fontSize: 12.5 }}>
+            Acesso de suporte aberto desde {new Date(openSession.started_at).toLocaleString('pt-BR')} — {openSession.reason}
+            {openSession.ticket_ref ? ` · ref ${openSession.ticket_ref}` : ''}. Encerre quando terminar.
+          </div>
+        )}
+        {error && !open && (
+          <div role="alert" style={{ padding: '10px 13px', marginBottom: 12, background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5 }}>{error}</div>
+        )}
         <div className="g3 kpi-strip">
           {[
             { l: 'Plano', v: PLAN_NAMES[t.plan_id] ?? t.plan_id },

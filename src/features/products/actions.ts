@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
+import { userMessage } from "@/lib/errors";
+import { textError } from "@/lib/validation";
+import { isOwnStorageUrl } from "@/lib/validation";
 
 export async function createCategoryAction(input: {
   name: string;
@@ -14,38 +17,20 @@ export async function createCategoryAction(input: {
   color?: string;
   attributes: { key: string; label: string; type: "color" | "size" | "spec"; values: string[] }[];
 }) {
+  const invalid = textError(input.name, "o nome da categoria", 2, 60) ?? textError(input.code, "o prefixo", 2, 8);
+  if (invalid) return { error: invalid };
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
 
-  const { data: category, error } = await supabase
-    .from("categories")
-    .insert({
-      tenant_id: tenantId,
-      name: input.name,
-      code: input.code.toUpperCase(),
-      unit: input.unit,
-      unit_plural: input.unit,
-      icon: input.icon || "Box",
-      color: input.color || "#6B7280",
-    })
-    .select("id")
-    .single();
-  if (error) return { error: error.code === "23505" ? "Já existe uma categoria com esse prefixo." : error.message };
-
-  const attrRows = input.attributes.filter((a) => a.key && a.label);
-  if (attrRows.length) {
-    const { error: attrError } = await supabase.from("category_attributes").insert(
-      attrRows.map((a, i) => ({
-        category_id: category.id,
-        key: a.key,
-        label: a.label,
-        type: a.type,
-        values: a.values,
-        position: i,
-      })),
-    );
-    if (attrError) return { error: attrError.message };
+  // Categoria + atributos numa transação (fn_create_category).
+  const { data: categoryId, error } = await supabase.rpc("fn_create_category", {
+    p_category: { name: input.name.trim(), code: input.code.trim(), unit: input.unit, icon: input.icon ?? "", color: input.color ?? "" },
+    p_attributes: input.attributes.filter((a) => a.key && a.label)
+      .map((a) => ({ key: a.key, label: a.label, type: a.type, values: a.values })),
+  });
+  if (error) {
+    return { error: userMessage(error, "products/createCategory", { categories_tenant_id_code_key: "Já existe uma categoria com esse prefixo." }) };
   }
+  const category = { id: categoryId as string };
 
   revalidatePath("/categories");
   revalidatePath("/products");
@@ -68,6 +53,7 @@ export async function createProductAction(input: {
   notes: string;
   photoUrl: string | null;
 }) {
+  if (input.photoUrl && !isOwnStorageUrl(input.photoUrl, "product-photos")) return { error: "Foto inválida — envie a imagem pelo botão de upload." };
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
 
@@ -94,7 +80,7 @@ export async function createProductAction(input: {
   if (error) {
     const limit = limitKindFromError(error.message);
     if (limit) redirect(`/limit-reached?kind=${limit}`);
-    return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : error.message };
+    return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : userMessage(error, "products/actions") };
   }
 
   revalidatePath("/products");
@@ -117,9 +103,11 @@ export async function updateProductAction(input: {
   notes: string;
   photoUrl: string | null;
 }) {
+  if (input.photoUrl && !isOwnStorageUrl(input.photoUrl, "product-photos")) return { error: "Foto inválida — envie a imagem pelo botão de upload." };
   const supabase = await createClient();
 
-  const { data: before } = await supabase.from("products").select("sale_price, name").eq("id", input.id).maybeSingle();
+  const { data: before, error: beforeError } = await supabase.from("products").select("sale_price, name").eq("id", input.id).maybeSingle();
+  if (beforeError) return { error: userMessage(beforeError, "products/update.before") };
 
   const { error } = await supabase
     .from("products")
@@ -140,7 +128,7 @@ export async function updateProductAction(input: {
     })
     .eq("id", input.id);
   if (error) {
-    return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : error.message };
+    return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : userMessage(error, "products/actions") };
   }
 
   const previousSalePrice = before ? Number(before.sale_price) : null;
@@ -167,7 +155,7 @@ export async function setProductActiveAction(input: { id: string; active: boolea
   if (error) {
     const limit = limitKindFromError(error.message);
     if (limit) redirect(`/limit-reached?kind=${limit}`);
-    return { error: error.message };
+    return { error: userMessage(error, "products/actions") };
   }
   revalidatePath("/products");
   return { ok: true };
@@ -184,7 +172,8 @@ export async function duplicateProductAction(id: string) {
     .maybeSingle();
   if (readError || !src) return { error: "Produto não encontrado." };
 
-  const { data: taken } = await supabase.from("products").select("sku").like("sku", `${src.sku}-COPIA%`);
+  const { data: taken, error: takenError } = await supabase.from("products").select("sku").like("sku", `${src.sku.replace(/[\%_]/g, "\$&")}-COPIA%`);
+  if (takenError) return { error: userMessage(takenError, "products/duplicate.taken") };
   const used = new Set((taken ?? []).map((t) => t.sku));
   let sku = `${src.sku}-COPIA`;
   for (let n = 2; used.has(sku); n++) sku = `${src.sku}-COPIA${n}`;
@@ -197,7 +186,7 @@ export async function duplicateProductAction(id: string) {
   if (error) {
     const limit = limitKindFromError(error.message);
     if (limit) redirect(`/limit-reached?kind=${limit}`);
-    return { error: error.message };
+    return { error: userMessage(error, "products/actions") };
   }
   revalidatePath("/products");
   return { id: copy.id as string };
@@ -213,7 +202,7 @@ export async function uploadProductPhotoAction(formData: FormData) {
   const path = uploadPath(tenantId, checked.ext);
 
   const { error } = await supabase.storage.from("product-photos").upload(path, file as File);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error, "products/actions") };
 
   const { data } = supabase.storage.from("product-photos").getPublicUrl(path);
   return { url: data.publicUrl };

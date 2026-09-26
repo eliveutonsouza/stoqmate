@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
+import { loadStores } from "@/features/stock/queries";
+import { resolveStoreId } from "@/features/shell/queries";
 
 // Produtos com pelo menos 1 atributo do esquema da categoria ainda vazio —
 // substitui o array mockado GAPS. "Vazio" = chave do esquema ausente de
@@ -49,7 +51,7 @@ export async function loadAnomalies(storeId: string) {
       .from("stock_balances")
       .select("product_id, qty, product:products(sku, name, brand, attrs, cost_price, category:categories(id, name, icon, color))")
       .eq("store_id", storeId),
-    supabase.from("sales").select("sale_items(product_id)").eq("store_id", storeId).gte("created_at", since.toISOString()),
+    supabase.rpc("fn_products_sold_since", { p_store_id: storeId, p_since: since.toISOString() }),
   ]);
   const suggestions = must(suggestionsRes, "ai-flows/queries.loadAnomalies.suggestions");
   const balances = must(balancesRes, "ai-flows/queries.loadAnomalies.balances");
@@ -62,7 +64,7 @@ export async function loadAnomalies(storeId: string) {
       soldPerDay: s.sold_30d / 30, lossEstimate: (s.sold_30d / 30) * 7 * s.cost_price,
     }));
 
-  const soldRecently = new Set((recentSales ?? []).flatMap((s) => (s.sale_items ?? []).map((i: { product_id: string }) => i.product_id)));
+  const soldRecently = new Set((recentSales ?? []) as string[]);
   const deadStock = (balances ?? [])
     .filter((b) => b.qty > 0 && !soldRecently.has(b.product_id))
     .map((b) => ({
@@ -85,4 +87,37 @@ export async function loadOcrContext() {
   const categories = must(categoriesRes, "ai-flows/queries.loadOcrContext.categories");
   const products = must(productsRes, "ai-flows/queries.loadOcrContext.products");
   return { categories: categories ?? [], products: products ?? [] };
+}
+
+// Telas de IA que dependem de loja usam a loja ativa da sidebar.
+async function activeStoreForAi() {
+  const stores = await loadStores();
+  return resolveStoreId(stores);
+}
+
+export async function loadAnomaliesScreen() {
+  const storeId = await activeStoreForAi();
+  return storeId ? loadAnomalies(storeId) : { stockouts: [], deadStock: [] };
+}
+
+export async function loadForecastScreen() {
+  const storeId = await activeStoreForAi();
+  return storeId ? loadForecastBase(storeId) : [];
+}
+
+// Contagem de pendências da fila de IA (hub e fila mostram o mesmo número).
+export async function loadAiQueueCounts() {
+  const storeId = await activeStoreForAi();
+  const [enrichGaps, forecastBase, anomalies] = await Promise.all([
+    loadEnrichGaps(),
+    storeId ? loadForecastBase(storeId) : Promise.resolve([]),
+    storeId ? loadAnomalies(storeId) : Promise.resolve({ stockouts: [], deadStock: [] }),
+  ]);
+  const anomalyCount = anomalies.stockouts.length + anomalies.deadStock.length;
+  return {
+    enrichCount: enrichGaps.length,
+    forecastCount: forecastBase.length,
+    anomalyCount,
+    pendingCount: enrichGaps.length + forecastBase.length + anomalyCount,
+  };
 }

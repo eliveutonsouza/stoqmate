@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage, type DbErrorLike } from "@/lib/errors";
 
-function friendlyError(message: string) {
+function friendlyError(error: DbErrorLike) {
+  const message = error?.message ?? "";
   const known: Record<string, string> = {
     "not authorized": "Seu perfil não tem permissão para essa operação.",
     "já existe um caixa aberto nesta unidade": "Já existe um caixa aberto nesta unidade.",
@@ -15,7 +17,7 @@ function friendlyError(message: string) {
   }
   if (message.includes("saldo insuficiente")) return "Saldo insuficiente para um dos itens do carrinho.";
   if (message.includes("detalhe a divergência")) return "Há diferença no caixa — detalhe em pelo menos 10 caracteres.";
-  return message;
+  return userMessage(error, "pos/actions");
 }
 
 export async function confirmSaleAction(input: {
@@ -39,7 +41,7 @@ export async function confirmSaleAction(input: {
     p_items: input.items.map((i) => ({ product_id: i.productId, qty: i.qty, unit_price: i.unitPrice, discount_pct: i.discountPct })),
     p_order_discount_amount: input.orderDiscountAmount,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/stock/history");
   revalidatePath("/products");
   revalidatePath("/cash");
@@ -51,7 +53,7 @@ export async function cashSessionOpenAction(input: { storeId: string; openingAmo
   const { data, error } = await supabase.rpc("fn_cash_session_open", {
     p_store_id: input.storeId, p_opening_amount: input.openingAmount,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/cash");
   return { id: data as string };
 }
@@ -61,7 +63,7 @@ export async function cashSessionMovementAction(input: { sessionId: string; kind
   const { error } = await supabase.rpc("fn_cash_session_movement", {
     p_session_id: input.sessionId, p_kind: input.kind, p_amount: input.amount, p_note: input.note || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/cash");
   return { ok: true };
 }
@@ -74,7 +76,7 @@ export async function cashSessionCloseAction(input: {
     p_session_id: input.sessionId, p_counted_amount: input.countedAmount,
     p_discrepancy_reason: input.discrepancyReason || null, p_discrepancy_detail: input.discrepancyDetail || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/cash");
   return { ok: true };
 }

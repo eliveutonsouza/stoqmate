@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage, type DbErrorLike } from "@/lib/errors";
 
-function friendlyError(message: string) {
+function friendlyError(error: DbErrorLike) {
+  const message = error?.message ?? "";
   const known: Record<string, string> = {
     "not authorized": "Seu perfil não tem permissão para essa operação.",
     "informe um nome para a promoção": "Informe um nome para a promoção.",
@@ -17,7 +19,7 @@ function friendlyError(message: string) {
   for (const [key, friendly] of Object.entries(known)) {
     if (message.includes(key)) return friendly;
   }
-  return message;
+  return userMessage(error, "operations/promotions-actions");
 }
 
 export async function createPromotionAction(input: {
@@ -41,7 +43,7 @@ export async function createPromotionAction(input: {
     p_ends_at: input.endsAt,
     p_until_stock: input.untilStock,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   const { error: auditError } = await supabase.rpc("fn_write_audit", {
     p_kind: "promo",
     p_message: `Criou promoção "${input.name}" · preço R$ ${input.promoPrice.toFixed(2)}`,
@@ -57,7 +59,7 @@ export async function createPromotionAction(input: {
 export async function setPromotionActiveAction(input: { id: string; active: boolean }) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_promotion_set_active", { p_id: input.id, p_active: input.active });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/promotions");
   revalidatePath("/promotions/edit");
   return { ok: true };

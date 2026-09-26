@@ -2,12 +2,12 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { AI_OPS, ANNUAL, CREDIT_PACKS, FEATURE_MATRIX, MARKET } from '@/lib/plans';
+import { AI_OPS, ANNUAL, FEATURE_MATRIX, MARKET } from '@/lib/plans';
 import { I } from '@/components/icons';
 import { LayoutPublic } from '@/components/layout/layout-public';
 import { AIChip } from '@/features/ai/ai-chip';
 
-export function Pricing({ plans, trialDays }) {
+export function Pricing({ plans, trialDays, creditPacks }) {
   const navigate = useNavigate();
   const activePlans = plans.filter((p) => p.active);
   const [annual, setAnnual] = React.useState(false);
@@ -178,13 +178,13 @@ export function Pricing({ plans, trialDays }) {
               Acabaram os créditos? A IA pausa e o resto do sistema segue funcionando. Você escolhe comprar um pacote
               ou esperar o mês virar — nunca cobramos excedente automaticamente.
             </span>
-            {CREDIT_PACKS.map(pk => (
-              <div key={pk.credits} style={{
+            {(creditPacks ?? []).map(pk => (
+              <div key={pk.id} style={{
                 padding: '8px 12px', background: 'var(--bg-elev)', border: '1px solid var(--line)',
                 borderRadius: 7, textAlign: 'center',
               }}>
                 <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>+{pk.credits.toLocaleString('pt-BR')}</div>
-                <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>R$ {pk.price}</div>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>R$ {pk.price.toLocaleString('pt-BR')}</div>
               </div>
             ))}
           </div>

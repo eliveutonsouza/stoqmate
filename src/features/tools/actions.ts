@@ -149,8 +149,19 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
   };
 }
 
+const EXPORT_KINDS: readonly ExportKind[] = ["catalog", "sales", "profit", "movements", "suppliers", "count-sheet"];
+
 export async function exportCsvAction(kind: ExportKind) {
+  if (!EXPORT_KINDS.includes(kind)) return { error: "Tipo de exportação inválido." };
   const supabase = await createClient();
+  // Mesma regra da tela (/exports é área "reports"): a action é endpoint
+  // público, então confere de novo em vez de confiar no menu escondido.
+  const { data: allowed, error: accessError } = await supabase.rpc("has_access", { p_area: "reports", p_min_level: 1 });
+  if (accessError) {
+    console.error("[exports] has_access", accessError.message);
+    return { error: "Não foi possível gerar o arquivo agora. Tente de novo em instantes." };
+  }
+  if (!allowed) return { error: "Seu perfil não tem permissão para exportar dados." };
   try {
     const { base, headers, rows } = await build(supabase, kind);
     return { filename: csvFilename(base), csv: toCsv(headers, rows) };

@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireStaff } from "@/features/admin/queries";
+import { userMessage, type DbErrorLike } from "@/lib/errors";
+import { textError } from "@/lib/validation";
 
-function friendlyError(message: string) {
+function friendlyError(error: DbErrorLike) {
+  const message = error?.message ?? "";
   const known: Record<string, string> = {
     "not authorized": "Seu usuário não tem acesso ao console da plataforma.",
     "informe o motivo do acesso": "Informe o motivo do acesso.",
@@ -15,7 +18,7 @@ function friendlyError(message: string) {
   for (const [key, friendly] of Object.entries(known)) {
     if (message.includes(key)) return friendly;
   }
-  return message;
+  return userMessage(error, "admin/actions");
 }
 
 export async function startImpersonationAction(input: { tenantId: string; reason: string; ticketRef: string }) {
@@ -23,7 +26,7 @@ export async function startImpersonationAction(input: { tenantId: string; reason
   const { data, error } = await supabase.rpc("fn_start_impersonation", {
     p_tenant_id: input.tenantId, p_reason: input.reason, p_ticket_ref: input.ticketRef || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/admin/stores/detail");
   return { sessionId: data as string };
 }
@@ -31,7 +34,7 @@ export async function startImpersonationAction(input: { tenantId: string; reason
 export async function endImpersonationAction(sessionId: string) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_end_impersonation", { p_session_id: sessionId });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/admin/stores/detail");
   return { ok: true };
 }
@@ -47,7 +50,8 @@ export async function invitePlatformStaffAction(input: { email: string; name: st
   const {
     data: { user: caller },
   } = await supabase.auth.getUser();
-  const { data: callerStaff } = await supabase.from("platform_staff").select("role").eq("user_id", caller?.id).maybeSingle();
+  const { data: callerStaff, error: callerError } = await supabase.from("platform_staff").select("role").eq("user_id", caller?.id).maybeSingle();
+  if (callerError) return { error: userMessage(callerError, "admin/invite.caller") };
   if (callerStaff?.role !== "super_admin") {
     return { error: "Só um Super Admin pode convidar pessoas para a equipe." };
   }
@@ -56,10 +60,10 @@ export async function invitePlatformStaffAction(input: { email: string; name: st
   const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(input.email, {
     data: { full_name: input.name },
   });
-  if (inviteErr) return { error: inviteErr.message };
+  if (inviteErr) return { error: userMessage(inviteErr, "admin/actions") };
 
   const { error: staffErr } = await admin.from("platform_staff").insert({ user_id: invited.user.id, role: input.role });
-  if (staffErr) return { error: staffErr.message };
+  if (staffErr) return { error: userMessage(staffErr, "admin/actions") };
 
   revalidatePath("/admin/users");
   return { ok: true };
@@ -76,7 +80,7 @@ export async function createTenantAction(input: {
   const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(input.ownerEmail, {
     data: { full_name: input.ownerName },
   });
-  if (inviteErr) return { error: inviteErr.message };
+  if (inviteErr) return { error: userMessage(inviteErr, "admin/actions") };
 
   const { data: tenantId, error } = await supabase.rpc("fn_platform_create_tenant", {
     p_name: input.name, p_subdomain: input.subdomain, p_cnpj: input.cnpj || null, p_plan_id: input.planId,
@@ -87,7 +91,7 @@ export async function createTenantAction(input: {
     // A criação do tenant falhou depois de já convidar o usuário — remove o
     // convite órfão pra não deixar uma conta sem rede nenhuma.
     await admin.auth.admin.deleteUser(invited.user.id);
-    return { error: friendlyError(error.message) };
+    return { error: friendlyError(error) };
   }
 
   revalidatePath("/admin/stores");
@@ -103,7 +107,7 @@ export async function updateTenantAction(input: {
     p_tenant_id: input.tenantId, p_name: input.name, p_cnpj: input.cnpj || null, p_plan_id: input.planId, p_status: input.status,
     p_legal_name: input.legalName || null, p_segment: input.segment || null, p_city: input.city || null, p_state: input.state || null,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/admin/stores");
   revalidatePath("/admin/stores/detail");
   return { ok: true };
@@ -123,7 +127,7 @@ export async function updatePlatformSettingsAction(input: {
   const { error } = await supabase.rpc("fn_platform_settings_update", {
     p_trial_days: input.trialDays, p_ai_spend_ceiling_usd: input.aiSpendCeilingUsd, p_ai_alert_pct: input.aiAlertPct,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/admin/settings");
   revalidatePublicPlanPages();
   return { ok: true };
@@ -142,13 +146,18 @@ export async function upsertPlanAction(input: {
   id: string; name: string; tagline: string; who: string; monthlyPrice: number; yearlyPrice: number | null;
   credits: number; limits: Record<string, number | string | null>; popular: boolean; active: boolean;
 }) {
-  const supabase = await createClient();
+  const supabase = await requireStaff();
+  if (!/^[a-z0-9_-]{2,40}$/.test(input.id ?? "")) return { error: "Identificador do plano inválido (use letras minúsculas, números, - ou _)." };
+  if (!(input.monthlyPrice >= 0) || (input.yearlyPrice != null && !(input.yearlyPrice >= 0))) return { error: "Preço não pode ser negativo." };
+  if (!Number.isInteger(input.credits) || input.credits < 0) return { error: "Créditos de IA precisam ser um número inteiro ≥ 0." };
+  const nameError = textError(input.name, "o nome do plano", 2, 60);
+  if (nameError) return { error: nameError };
   const { error } = await supabase.rpc("fn_platform_plan_upsert", {
     p_id: input.id, p_name: input.name, p_tagline: input.tagline, p_who: input.who,
     p_monthly_price: input.monthlyPrice, p_yearly_price: input.yearlyPrice,
     p_credits: input.credits, p_limits: input.limits, p_popular: input.popular, p_active: input.active,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/admin/plans");
   revalidatePublicPlanPages();
   return { id: input.id };

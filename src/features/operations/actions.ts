@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, getTenantId } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
+import { allUuids, isUuid, textError } from "@/lib/validation";
 
 export async function createSupplierAction(input: {
   name: string;
@@ -18,36 +20,31 @@ export async function createSupplierAction(input: {
   paymentTerms?: string;
   notes: string;
 }) {
+  if (!allUuids(input.categoryIds)) return { error: "Categoria inválida." };
+  const nameError = textError(input.name, "o nome do fornecedor", 2, 120);
+  if (nameError) return { error: nameError };
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
 
-  const { data: supplier, error } = await supabase
-    .from("suppliers")
-    .insert({
-      tenant_id: tenantId,
-      name: input.name,
-      cnpj: input.cnpj || null,
-      phone: input.phone || null,
-      whatsapp: input.whatsapp || null,
-      order_email: input.email || null,
-      sales_rep: input.salesRep || null,
-      address: input.address ? { full: input.address } : null,
+  // Fornecedor + categorias numa transação (fn_create_supplier).
+  const { data: supplierId, error } = await supabase.rpc("fn_create_supplier", {
+    p_supplier: {
+      name: input.name.trim(),
+      cnpj: input.cnpj,
+      phone: input.phone,
+      whatsapp: input.whatsapp ?? "",
+      order_email: input.email,
+      sales_rep: input.salesRep ?? "",
+      address: input.address ?? "",
       brands: input.brands ? input.brands.split(",").map((b) => b.trim()).filter(Boolean) : [],
       lead_time_days: input.leadTimeDays,
       min_order_value: input.minOrderValue ?? null,
-      payment_terms: input.paymentTerms || null,
-      notes: input.notes || null,
-    })
-    .select("id")
-    .single();
-  if (error) return { error: error.message };
-
-  if (input.categoryIds.length) {
-    const { error: catError } = await supabase
-      .from("supplier_categories")
-      .insert(input.categoryIds.map((categoryId) => ({ supplier_id: supplier.id, category_id: categoryId })));
-    if (catError) return { error: catError.message };
-  }
+      payment_terms: input.paymentTerms ?? "",
+      notes: input.notes,
+    },
+    p_category_ids: input.categoryIds,
+  });
+  if (error) return { error: userMessage(error, "operations/createSupplier") };
+  const supplier = { id: supplierId as string };
 
   const { error: auditError } = await supabase.rpc("fn_write_audit", {
     p_kind: "supplier",
@@ -62,29 +59,19 @@ export async function createSupplierAction(input: {
   return { id: supplier.id as string };
 }
 
-// Troca os vínculos de categoria sem janela vazia: grava os novos primeiro
-// (upsert idempotente) e só então apaga os que saíram. Antes era apaga-tudo
-// e reinsere — se o insert falhasse, o fornecedor/local ficava sem categoria.
+// Troca os vínculos de categoria numa transação (fn_set_*_categories):
+// grava os novos e apaga os que saíram. Ids chegam validados como uuid —
+// antes iam crus pra dentro de um filtro PostgREST montado com string.
 async function syncCategoryLinks(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  table: "supplier_categories" | "location_categories",
-  ownerColumn: "supplier_id" | "location_id",
+  owner: "supplier" | "location",
   ownerId: string,
   categoryIds: string[],
 ) {
-  if (categoryIds.length) {
-    const { error } = await supabase
-      .from(table)
-      .upsert(categoryIds.map((categoryId) => ({ [ownerColumn]: ownerId, category_id: categoryId })), {
-        onConflict: `${ownerColumn},category_id`,
-        ignoreDuplicates: true,
-      });
-    if (error) return "Não foi possível salvar as categorias. Tente de novo.";
-  }
-  let removal = supabase.from(table).delete().eq(ownerColumn, ownerId);
-  if (categoryIds.length) removal = removal.not("category_id", "in", `(${categoryIds.join(",")})`);
-  const { error } = await removal;
-  return error ? "Não foi possível atualizar as categorias. Tente de novo." : null;
+  const { error } = owner === "supplier"
+    ? await supabase.rpc("fn_set_supplier_categories", { p_supplier_id: ownerId, p_category_ids: categoryIds })
+    : await supabase.rpc("fn_set_location_categories", { p_location_id: ownerId, p_category_ids: categoryIds });
+  return error ? userMessage(error, `operations/syncCategoryLinks.${owner}`) : null;
 }
 
 export async function updateSupplierAction(input: {
@@ -103,6 +90,7 @@ export async function updateSupplierAction(input: {
   paymentTerms?: string;
   notes: string;
 }) {
+  if (!isUuid(input.id) || !allUuids(input.categoryIds)) return { error: "Categoria inválida." };
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -122,9 +110,9 @@ export async function updateSupplierAction(input: {
       notes: input.notes || null,
     })
     .eq("id", input.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error, "operations/actions") };
 
-  const linkError = await syncCategoryLinks(supabase, "supplier_categories", "supplier_id", input.id, input.categoryIds);
+  const linkError = await syncCategoryLinks(supabase, "supplier", input.id, input.categoryIds);
   if (linkError) return { error: linkError };
 
   revalidatePath("/suppliers");
@@ -137,7 +125,7 @@ export async function updateSupplierAction(input: {
 export async function setSupplierActiveAction(input: { id: string; active: boolean }) {
   const supabase = await createClient();
   const { error } = await supabase.from("suppliers").update({ active: input.active }).eq("id", input.id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error, "operations/actions") };
   revalidatePath("/suppliers");
   revalidatePath("/stock/entry");
   revalidatePath("/purchase-orders/new");
@@ -157,7 +145,7 @@ export async function createLocationAction(input: {
     .insert({ tenant_id: tenantId, store_id: input.storeId, code: input.code.toUpperCase(), description: input.description || null })
     .select("id")
     .single();
-  if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : error.message };
+  if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : userMessage(error, "operations/actions") };
 
   revalidatePath("/shelves");
   return { id: location.id as string };
@@ -169,15 +157,16 @@ export async function updateLocationAction(input: {
   description: string;
   categoryIds: string[];
 }) {
+  if (!isUuid(input.id) || !allUuids(input.categoryIds)) return { error: "Categoria inválida." };
   const supabase = await createClient();
 
   const { error } = await supabase
     .from("locations")
     .update({ code: input.code.toUpperCase(), description: input.description || null })
     .eq("id", input.id);
-  if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : error.message };
+  if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : userMessage(error, "operations/actions") };
 
-  const linkError = await syncCategoryLinks(supabase, "location_categories", "location_id", input.id, input.categoryIds);
+  const linkError = await syncCategoryLinks(supabase, "location", input.id, input.categoryIds);
   if (linkError) return { error: linkError };
 
   revalidatePath("/shelves");
@@ -187,7 +176,7 @@ export async function updateLocationAction(input: {
 export async function deleteLocationAction(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("locations").delete().eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: userMessage(error, "operations/actions") };
   revalidatePath("/shelves");
   return { ok: true };
 }

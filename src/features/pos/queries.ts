@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { loadStores } from "@/features/stock/queries";
+import { resolveStoreId } from "@/features/shell/queries";
 import { must } from "@/lib/supabase/must";
 
 export async function loadOpenCashSession(storeId: string) {
@@ -94,4 +96,11 @@ export async function loadPosData() {
     cashSessionByStore: Object.fromEntries((openSessions ?? []).map((s) => [s.store_id, s.id])),
     operatorName: profile?.full_name || user?.email || "Operador",
   };
+}
+
+export async function loadCashScreen(requestedStore?: string) {
+  const stores = await loadStores();
+  const storeId = (await resolveStoreId(stores, requestedStore)) ?? '';
+  const session = storeId ? await loadOpenCashSession(storeId) : null;
+  return { stores, storeId, session };
 }

@@ -126,14 +126,6 @@ export const PLANS = [
   },
 ];
 
-// Extra credit packs — priced above cost but below the next tier, so the
-// natural upgrade path stays cheaper than living on overage.
-export const CREDIT_PACKS = [
-  { credits: 250, price: 29 },
-  { credits: 500, price: 49 },
-  { credits: 1500, price: 129 },
-];
-
 // What each plan unlocks. Gating logic:
 //  · manual tools that cost us nothing → open early, they drive adoption
 //  · features that only make sense with several stores → gate by tier, not by cost

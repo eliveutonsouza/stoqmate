@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { finishPendingSignup, hasStaffRow } from "@/features/auth/pending-signup";
+import { postLoginDestination } from "@/features/auth/pending-signup";
 
 // Troca o `code` do link de email (reset de senha) ou do OAuth do Google por
 // uma sessão de verdade via cookies. Rota técnica, não uma tela — ver
@@ -28,16 +28,17 @@ export async function GET(request: Request) {
       // em user_metadata, fechados aqui), ou é login com Google, que não
       // coleta loja/CNPJ/plano e fecha o cadastro em /complete-signup.
       // Staff da plataforma também não tem tenant, e aí isso não se aplica.
-      const [{ data: tenantId }, isStaff, { data: { user } }] = await Promise.all([
-        supabase.rpc("auth_tenant_id"),
-        hasStaffRow(supabase),
-        supabase.auth.getUser(),
-      ]);
-      if (!tenantId && !isStaff) {
-        const pending = user ? await finishPendingSignup(supabase, user) : null;
-        return NextResponse.redirect(`${origin}${pending ?? "/complete-signup"}`);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          return NextResponse.redirect(`${origin}${await postLoginDestination(supabase, user, next)}`);
+        } catch (err) {
+          // Sessão já existe; a leitura de tenant falhou. Manda pro destino e
+          // deixa o proxy decidir — cair em /complete-signup seria errado.
+          console.error("[auth/callback] destino pós-login", err);
+          return NextResponse.redirect(`${origin}${next}`);
+        }
       }
-      return NextResponse.redirect(`${origin}${next}`);
     }
   } else {
     console.error("[auth/callback] chamado sem code", {

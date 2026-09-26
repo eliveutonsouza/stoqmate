@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { useAITask } from '@/features/ai/use-ai-task';
+import { unwrap, useAITask } from '@/features/ai/use-ai-task';
 import { forecastReplenishmentAction } from '@/features/ai/actions';
 import { variantLabel } from '@/lib/attr-colors';
 import { StoreShell } from '@/components/ui/store-shell';
@@ -26,10 +26,10 @@ export function AIForecast({ base }) {
   const task = useAITask();
 
   const run = () => task.run(async () => {
-    const data = await forecastReplenishmentAction(base.map(p => ({
+    const data = unwrap(await forecastReplenishmentAction(base.map(p => ({
       sku: p.sku, name: p.name, attrs: p.attrs, category: p.category?.name ?? '',
       stock: p.stock, sold_30d: p.sold_30d, lead_time_days: p.lead_time_days, suggest_qty: p.suggest_qty,
-    })));
+    }))));
     setResult(data.items || []);
     return data;
   });

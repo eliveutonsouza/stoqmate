@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { must } from '@/lib/supabase/must';
 import { type RawSearchParams, PAGE_SIZE, oneOf, pageParam, pageRange, param, uuidParam } from '@/lib/list-params';
+import { loadStores } from '@/features/stock/queries';
+import { resolveStoreId } from '@/features/shell/queries';
 
 export const PRODUCT_STOCK_FILTERS = ['in', 'low', 'out'] as const;
 
@@ -160,4 +162,11 @@ export async function loadImportScreen() {
     supabase.from('categories').select('id, name, code').order('name'),
   ]);
   return { stores: must(storesRes, 'import.stores') ?? [], categories: must(categoriesRes, 'import.categories') ?? [] };
+}
+
+// Detalhe do produto com saldo/local da loja ativa da sidebar.
+export async function loadProductDetailScreen(id: string) {
+  const [stores, rawDetail] = await Promise.all([loadStores(), loadProductDetail(id)]);
+  if (!rawDetail) return null;
+  return shapeProductDetailForStore(rawDetail, (await resolveStoreId(stores)) ?? '');
 }

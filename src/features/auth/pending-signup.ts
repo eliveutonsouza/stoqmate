@@ -5,8 +5,29 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 // Não usa is_platform_staff(): ela exige 2FA (aal2), e logo após o login por
 // senha o staff ainda está em aal1 — cairia em /complete-signup por engano.
 export async function hasStaffRow(supabase: SupabaseClient): Promise<boolean> {
-  const { data } = await supabase.from("platform_staff").select("user_id").maybeSingle();
+  const { data, error } = await supabase.from("platform_staff").select("user_id").maybeSingle();
+  if (error) throw new Error(`[auth.hasStaffRow] ${error.message}`);
   return Boolean(data);
+}
+
+// Pra onde vai quem acabou de autenticar (senha ou link de email). Falha de
+// leitura lança: antes o erro virava "sem tenant" e um lojista com loja
+// configurada caía em /complete-signup por causa de uma queda de rede.
+export async function postLoginDestination(supabase: SupabaseClient, user: User, next = "/dashboard"): Promise<string> {
+  const [tenantRes, isStaff] = await Promise.all([supabase.rpc("auth_tenant_id"), hasStaffRow(supabase)]);
+  if (tenantRes.error) throw new Error(`[auth.postLoginDestination] ${tenantRes.error.message}`);
+  if (tenantRes.data || isStaff) return next;
+  return (await finishPendingSignup(supabase, user)) ?? "/complete-signup";
+}
+
+// Telefone do cadastro vai pro perfil (coluna liberada pro próprio usuário).
+// Falha aqui não desfaz o cadastro — só registra.
+export async function saveSignupPhone(supabase: SupabaseClient, phone: string | null | undefined) {
+  if (!phone) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase.from("profiles").update({ phone }).eq("id", user.id);
+  if (error) console.error("[auth.saveSignupPhone]", error.message);
 }
 
 export function slugify(name: string) {
@@ -43,7 +64,9 @@ export async function finishPendingSignup(supabase: SupabaseClient, user: User):
       p_cnpj: meta.cnpj || null,
       p_plan_id: meta.plan_id || "controle",
     });
+    if (!error) await saveSignupPhone(supabase, typeof meta.phone === "string" ? meta.phone : null);
     if (!error || error.message.includes("already has a tenant")) return "/onboarding";
+    console.error("[auth.finishPendingSignup] fn_complete_signup", error.message);
   }
 
   return null;

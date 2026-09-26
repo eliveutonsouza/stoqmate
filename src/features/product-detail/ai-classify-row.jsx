@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from 'react';
-import { useAITask } from '@/features/ai/use-ai-task';
+import { unwrap, useAITask } from '@/features/ai/use-ai-task';
 import { classifyProductAction } from '@/features/ai/actions';
 import { AIChip } from '@/features/ai/ai-chip';
 import { TextInput } from '@/components/ui/text-input';
@@ -11,16 +11,16 @@ import { ConfidenceBar } from '@/features/ai/confidence-bar';
 import { AIWhy } from '@/features/ai/ai-why';
 
 export function AIClassifyRow({ categories, onApply }) {
-  const [raw, setRaw] = React.useState('Fone de ouvido Bluetooth com cancelamento de ruído, preto, 128 GB — Foneclear');
+  const [raw, setRaw] = React.useState('');
   const [sug, setSug] = React.useState(null);
   const [applied, setApplied] = React.useState(false);
   const task = useAITask();
 
   const classify = () => task.run(async () => {
-    const data = await classifyProductAction({
+    const data = unwrap(await classifyProductAction({
       description: raw,
       categories: categories.map((c) => ({ name: c.name, unit: c.unit, attributes: c.attributes.map((a) => ({ key: a.key, values: a.values })) })),
-    });
+    }));
     setSug(data); setApplied(false);
     return data;
   });
@@ -40,7 +40,7 @@ export function AIClassifyRow({ categories, onApply }) {
         <div style={{ flex: 1 }}>
           <TextInput value={raw} onChange={(e) => setRaw(e.target.value)} placeholder="Ex.: camiseta algodão pima branca tamanho M" />
         </div>
-        <button onClick={classify} disabled={task.state === 'running'} className="btn btn-primary"
+        <button onClick={classify} disabled={task.state === 'running' || raw.trim().length < 3} className="btn btn-primary"
           style={{ flexShrink: 0, opacity: task.state === 'running' ? 0.6 : 1 }}>
           <I.Sparkle size={13} /> {task.state === 'running' ? 'Analisando…' : 'Classificar'}
         </button>

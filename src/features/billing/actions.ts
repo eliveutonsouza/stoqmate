@@ -3,10 +3,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getStripe } from "@/lib/stripe";
 import { siteOrigin } from "@/lib/site-origin";
 
+const READ_ERROR = "Não foi possível ler a assinatura agora. Tente de novo em instantes.";
 const STRIPE_ERROR = "Não foi possível falar com o provedor de pagamento agora. Tente de novo em instantes.";
 
 type BillingAccess =
@@ -15,71 +15,80 @@ type BillingAccess =
 
 async function requireBillingAccess(): Promise<BillingAccess> {
   const supabase = await createClient();
-  const [{ data: allowed }, { data: tenantId }] = await Promise.all([
+  const [allowedRes, tenantRes] = await Promise.all([
     supabase.rpc("has_access", { p_area: "billing", p_min_level: 2 }),
     supabase.rpc("auth_tenant_id"),
   ]);
-  if (!allowed || !tenantId) {
+  if (allowedRes.error || tenantRes.error) {
+    console.error("[billing.requireBillingAccess]", allowedRes.error?.message ?? tenantRes.error?.message);
+    return { supabase: null, tenantId: null, error: READ_ERROR };
+  }
+  if (!allowedRes.data || !tenantRes.data) {
     return { supabase: null, tenantId: null, error: "Seu perfil não tem permissão para gerenciar a assinatura." };
   }
-  return { supabase, tenantId: tenantId as string, error: null };
+  return { supabase, tenantId: tenantRes.data as string, error: null };
 }
 
-// Idempotente sob concorrência: dois checkouts simultâneos criavam 2
-// customers no Stripe e o segundo insert falhava em silêncio, deixando o
-// checkout apontado pra um customer sem mapeamento (o webhook não achava o
-// tenant e a assinatura paga sumia). Agora o insert ignora conflito, relê o
-// vencedor e descarta o customer perdedor no Stripe.
-async function ensureStripeCustomer(tenantId: string): Promise<string> {
-  const admin = createServiceRoleClient();
-  const { data: existing } = await admin.from("billing_customers").select("stripe_customer_id").eq("tenant_id", tenantId).maybeSingle();
-  if (existing) return existing.stripe_customer_id;
+// Customer do Stripe da rede, criado na 1ª compra. Tudo com a sessão do
+// usuário (RLS de billing + duas RPCs definer estreitas) — sem service-role
+// em código de tenant. Idempotente sob concorrência: fn_link_billing_customer
+// grava só se não houver mapeamento e devolve o vencedor; o perdedor apaga o
+// customer que acabou de criar no Stripe.
+async function ensureStripeCustomer(supabase: SupabaseClient, tenantId: string): Promise<string> {
+  const existing = await supabase.from("billing_customers").select("stripe_customer_id").eq("tenant_id", tenantId).maybeSingle();
+  if (existing.error) throw new Error(`[billing.customer.read] ${existing.error.message}`);
+  if (existing.data) return existing.data.stripe_customer_id;
 
-  const [{ data: tenant }, { data: owner }] = await Promise.all([
-    admin.from("tenants").select("name").eq("id", tenantId).maybeSingle(),
-    admin.from("store_users").select("user_id").eq("tenant_id", tenantId).eq("role", "proprietario").order("created_at").limit(1).maybeSingle(),
+  const [tenantRes, emailRes] = await Promise.all([
+    supabase.from("tenants").select("name").eq("id", tenantId).maybeSingle(),
+    supabase.rpc("fn_billing_owner_email"),
   ]);
-  const { data: ownerUser } = owner ? await admin.auth.admin.getUserById(owner.user_id) : { data: null };
+  if (tenantRes.error) throw new Error(`[billing.customer.tenant] ${tenantRes.error.message}`);
+  if (emailRes.error) throw new Error(`[billing.customer.email] ${emailRes.error.message}`);
 
   const stripe = getStripe();
   const customer = await stripe.customers.create({
-    name: tenant?.name ?? "Rede Stoqmate",
-    email: ownerUser?.user?.email ?? undefined,
+    name: tenantRes.data?.name ?? "Rede Stoqmate",
+    email: (emailRes.data as string | null) ?? undefined,
     metadata: { tenant_id: tenantId },
   });
 
-  const { error: insertError } = await admin
-    .from("billing_customers")
-    .upsert({ tenant_id: tenantId, stripe_customer_id: customer.id }, { onConflict: "tenant_id", ignoreDuplicates: true });
-  if (insertError) throw new Error(insertError.message);
-
-  const { data: winner } = await admin.from("billing_customers").select("stripe_customer_id").eq("tenant_id", tenantId).single();
-  if (!winner) throw new Error("billing customer mapping missing");
-  if (winner.stripe_customer_id !== customer.id) {
-    await stripe.customers.del(customer.id).catch(() => undefined);
+  const linked = await supabase.rpc("fn_link_billing_customer", { p_stripe_customer_id: customer.id });
+  if (linked.error || !linked.data) {
+    await stripe.customers.del(customer.id).catch((err) => console.error("[billing.customer.cleanup]", customer.id, err));
+    throw new Error(`[billing.customer.link] ${linked.error?.message ?? "sem mapeamento"}`);
   }
-  return winner.stripe_customer_id;
+  if (linked.data !== customer.id) {
+    await stripe.customers.del(customer.id).catch((err) => console.error("[billing.customer.cleanup]", customer.id, err));
+  }
+  return linked.data as string;
 }
 
 export async function createCheckoutSessionAction(input: { planId: string; cycle: "monthly" | "yearly" }) {
-  const { tenantId, error } = await requireBillingAccess();
+  const { supabase, tenantId, error } = await requireBillingAccess();
   if (!tenantId) return { error };
   if (input.cycle !== "monthly" && input.cycle !== "yearly") return { error: "Ciclo de cobrança inválido." };
 
-  const admin = createServiceRoleClient();
-  const [{ data: plan }, { data: current }] = await Promise.all([
-    admin.from("plans").select("stripe_price_monthly_id, stripe_price_yearly_id").eq("id", input.planId).eq("active", true).maybeSingle(),
-    admin.from("subscriptions").select("id").eq("tenant_id", tenantId).in("status", ["active", "trialing", "past_due"]).limit(1).maybeSingle(),
+  const [planRes, currentRes] = await Promise.all([
+    supabase.from("plans").select("stripe_price_monthly_id, stripe_price_yearly_id").eq("id", input.planId).eq("active", true).maybeSingle(),
+    supabase.from("subscriptions").select("id").eq("tenant_id", tenantId).in("status", ["active", "trialing", "past_due", "unpaid", "paused"]).limit(1).maybeSingle(),
   ]);
+  // Falha ao ler a assinatura atual não pode virar "não tem assinatura" —
+  // abriria um 2º checkout cobrando em paralelo.
+  if (planRes.error || currentRes.error) {
+    console.error("[billing.checkout]", planRes.error?.message ?? currentRes.error?.message);
+    return { error: READ_ERROR };
+  }
+  const plan = planRes.data;
   if (!plan) return { error: "Plano não encontrado." };
   // Trocar de plano com assinatura viva é no Customer Portal — um 2º
   // checkout criaria uma 2ª assinatura cobrando em paralelo.
-  if (current) return { error: "Esta rede já tem uma assinatura ativa. Use \"Gerenciar assinatura\" para trocar de plano." };
+  if (currentRes.data) return { error: "Esta rede já tem uma assinatura ativa. Use \"Gerenciar assinatura\" para trocar de plano." };
   const priceId = input.cycle === "yearly" ? plan.stripe_price_yearly_id : plan.stripe_price_monthly_id;
   if (!priceId) return { error: "Este plano não tem preço configurado no Stripe." };
 
   try {
-    const customerId = await ensureStripeCustomer(tenantId);
+    const customerId = await ensureStripeCustomer(supabase, tenantId);
     const origin = await siteOrigin();
     const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
@@ -98,16 +107,19 @@ export async function createCheckoutSessionAction(input: { planId: string; cycle
 }
 
 export async function createPackCheckoutSessionAction(packId: string) {
-  const { tenantId, error } = await requireBillingAccess();
+  const { supabase, tenantId, error } = await requireBillingAccess();
   if (!tenantId) return { error };
 
-  const admin = createServiceRoleClient();
-  const { data: pack } = await admin.from("credit_packs").select("*").eq("id", packId).eq("active", true).maybeSingle();
+  const { data: pack, error: packError } = await supabase.from("credit_packs").select("*").eq("id", packId).eq("active", true).maybeSingle();
+  if (packError) {
+    console.error("[billing.pack]", packError.message);
+    return { error: READ_ERROR };
+  }
   if (!pack) return { error: "Pacote não encontrado." };
   if (!pack.stripe_price_id) return { error: "Este pacote não tem preço configurado no Stripe." };
 
   try {
-    const customerId = await ensureStripeCustomer(tenantId);
+    const customerId = await ensureStripeCustomer(supabase, tenantId);
     const origin = await siteOrigin();
     const session = await getStripe().checkout.sessions.create({
       mode: "payment",
@@ -141,7 +153,7 @@ async function liveBilling(supabase: SupabaseClient, tenantId: string) {
       .maybeSingle(),
     supabase.from("billing_customers").select("stripe_customer_id").eq("tenant_id", tenantId).maybeSingle(),
   ]);
-  if (subRes.error || customerRes.error) return { error: "Não foi possível ler a assinatura agora. Tente de novo em instantes." } as const;
+  if (subRes.error || customerRes.error) return { error: READ_ERROR } as const;
   return {
     error: null,
     subscription: subRes.data as LiveSubscription | null,
@@ -251,11 +263,14 @@ export async function updatePaymentMethodAction() {
 }
 
 export async function createPortalSessionAction() {
-  const { tenantId, error } = await requireBillingAccess();
+  const { supabase, tenantId, error } = await requireBillingAccess();
   if (!tenantId) return { error };
 
-  const admin = createServiceRoleClient();
-  const { data: billing } = await admin.from("billing_customers").select("stripe_customer_id").eq("tenant_id", tenantId).maybeSingle();
+  const { data: billing, error: billingError } = await supabase.from("billing_customers").select("stripe_customer_id").eq("tenant_id", tenantId).maybeSingle();
+  if (billingError) {
+    console.error("[billing.portal]", billingError.message);
+    return { error: READ_ERROR };
+  }
   if (!billing) return { error: "Nenhuma assinatura encontrada para esta rede ainda." };
 
   try {

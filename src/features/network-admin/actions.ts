@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
+import { userMessage } from "@/lib/errors";
 
 export async function createStoreAction(input: { name: string; type: string; city: string; cnpj: string }) {
   const supabase = await createClient();
@@ -14,7 +15,7 @@ export async function createStoreAction(input: { name: string; type: string; cit
     const limit = limitKindFromError(error.message);
     if (limit) redirect(`/limit-reached?kind=${limit}`);
     if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para criar unidades." };
-    return { error: error.message };
+    return { error: userMessage(error, "network-admin/actions") };
   }
   revalidatePath("/settings/units");
   return { id: data as string };

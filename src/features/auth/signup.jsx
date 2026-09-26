@@ -18,7 +18,7 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
   const chosen = activePlans.find(p => p.id === plan) || activePlans[0];
   const firstCharge = new Date(trialEndsOn).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' });
   const [form, setForm] = React.useState({ fullName: '', phone: '', email: '', password: '', storeName: '', cnpj: '' });
-  const [terms, setTerms] = React.useState(true);
+  const [terms, setTerms] = React.useState(false);
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -30,7 +30,7 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
     if (form.password.length < 8) { setError('A senha precisa ter no mínimo 8 caracteres.'); return; }
     if (form.storeName.trim().length < 2) { setError('Informe o nome da loja.'); return; }
     startTransition(async () => {
-      const result = await signUpAction({ ...form, planId: plan });
+      const result = await signUpAction({ ...form, planId: plan, acceptedTerms: terms });
       if (result?.error) setError(result.error);
     });
   };

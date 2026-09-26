@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { loadPricingPreview } from "@/features/analysis/queries";
+import { userMessage } from "@/lib/errors";
 
 export async function previewPricingAction(scope: "supplier" | "category" | "brand", scopeValue: string) {
   return loadPricingPreview(scope, scopeValue);
@@ -22,7 +23,7 @@ export async function bulkPriceUpdateAction(input: {
   });
   if (error) {
     if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para reajustar preços." };
-    return { error: error.message };
+    return { error: userMessage(error, "analysis/actions") };
   }
   revalidatePath("/products");
   return data as { count: number; avg_margin_before: number | null; avg_margin_after: number | null };

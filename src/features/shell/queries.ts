@@ -92,3 +92,13 @@ export const loadAdminShell = cache(async () => {
 export async function loadActiveStoreId() {
   return (await loadStoreShell())?.activeStore?.id ?? null;
 }
+
+// Loja de uma tela com seletor de unidade: a pedida na URL (se for da rede),
+// senão a ativa da sidebar, senão a primeira. Antes as telas pegavam
+// stores[0] (ordem alfabética) e ignoravam o seletor da sidebar.
+export async function resolveStoreId(stores: { id: string }[], requested?: string | null) {
+  if (requested && stores.some((s) => s.id === requested)) return requested;
+  const active = await loadActiveStoreId();
+  if (active && stores.some((s) => s.id === active)) return active;
+  return stores[0]?.id ?? null;
+}

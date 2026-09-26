@@ -2,16 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, getTenantId } from "@/lib/supabase/server";
+import { userMessage } from "@/lib/errors";
+import { isUuid } from "@/lib/validation";
 
 export async function applyEnrichmentAction(items: { sku: string; filled: Record<string, string | null> }[]) {
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
 
-  const { data: products } = await supabase
+  const { data: products, error: readError } = await supabase
     .from("products")
     .select("id, sku, attrs")
     .eq("tenant_id", tenantId)
     .in("sku", items.map((i) => i.sku));
+  if (readError) return { error: userMessage(readError, "ai-flows/applyEnrichment.read") };
   const productBySku = Object.fromEntries((products ?? []).map((p) => [p.sku, p]));
 
   for (const item of items) {
@@ -25,7 +28,7 @@ export async function applyEnrichmentAction(items: { sku: string; filled: Record
       .from("products")
       .update({ attrs: { ...(product.attrs as Record<string, string>), ...values } })
       .eq("id", product.id);
-    if (error) return { error: error.message };
+    if (error) return { error: userMessage(error, "ai-flows/actions") };
   }
 
   revalidatePath("/products");
@@ -50,49 +53,42 @@ export async function confirmInvoiceEntryAction(input: {
   }[];
   invoiceRef: string;
 }) {
+  if (!isUuid(input.storeId)) return { error: "Unidade inválida." };
+  if (!Array.isArray(input.items) || input.items.length === 0) return { error: "Nenhum item para lançar." };
+  if (input.items.length > 300) return { error: "Nota com itens demais para uma entrada só (máximo 300)." };
+  const badItem = input.items.find((i) => !Number.isInteger(i.qty) || i.qty <= 0 || !(Number(i.unitCost) >= 0) || !i.sku);
+  if (badItem) return { error: `Quantidade ou custo inválido no item ${badItem.sku || badItem.productName}.` };
+
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
   const notes = input.invoiceRef ? `Entrada por leitura de nota — NF ${input.invoiceRef}` : "Entrada por leitura de nota";
 
-  const existingSkus = input.items.filter((i) => i.match === "existing").map((i) => i.sku);
-  const [{ data: existingProducts }, { data: categories }] = await Promise.all([
-    existingSkus.length
-      ? supabase.from("products").select("id, sku").eq("tenant_id", tenantId).in("sku", existingSkus)
-      : Promise.resolve({ data: [] }),
-    supabase.from("categories").select("id, name").eq("tenant_id", tenantId),
-  ]);
-  const productIdBySku = Object.fromEntries((existingProducts ?? []).map((p) => [p.sku, p.id]));
-  const categoryIdByName = Object.fromEntries((categories ?? []).map((c) => [c.name.toLowerCase(), c.id]));
+  const needsCategory = input.items.some((i) => i.match === "new");
+  let categoryIdByName: Record<string, string> = {};
+  if (needsCategory) {
+    const { data: categories, error } = await supabase.from("categories").select("id, name");
+    if (error) return { error: userMessage(error, "ai-flows/confirmInvoice.categories") };
+    categoryIdByName = Object.fromEntries((categories ?? []).map((c) => [c.name.toLowerCase(), c.id]));
+  }
 
+  const items = [];
   for (const item of input.items) {
-    let productId: string | null = null;
-
-    if (item.match === "existing") {
-      productId = productIdBySku[item.sku] ?? null;
-      if (!productId) return { error: `SKU ${item.sku} não encontrado no catálogo.` };
-    } else {
-      const categoryId = categoryIdByName[item.category.toLowerCase()];
+    let categoryId: string | null = null;
+    if (item.match === "new") {
+      categoryId = categoryIdByName[item.category.toLowerCase()] ?? null;
       if (!categoryId) return { error: `Categoria "${item.category}" não existe — cadastre-a antes de confirmar.` };
-
-      // A nota só traz custo — preço de venda nasce igual ao custo (margem
-      // 0%) até o lojista ajustar no catálogo; evita gravar sale_price
-      // zerado, que pareceria um produto de graça.
-      const { data: created, error: createError } = await supabase
-        .from("products")
-        .insert({
-          tenant_id: tenantId, category_id: categoryId, sku: item.sku, brand: "", name: item.productName,
-          attrs: item.attributes, cost_price: item.unitCost, sale_price: item.unitCost, min_stock: 0,
-        })
-        .select("id")
-        .single();
-      if (createError) return { error: createError.message };
-      productId = created.id;
     }
-
-    const { error: entryError } = await supabase.rpc("fn_stock_entry", {
-      p_store_id: input.storeId, p_product_id: productId, p_qty: item.qty, p_unit_cost: item.unitCost, p_notes: notes,
+    items.push({
+      match: item.match === "new" ? "new" : "existing", sku: item.sku, product_name: item.productName,
+      category_id: categoryId, attributes: item.attributes ?? {}, qty: item.qty, unit_cost: item.unitCost,
     });
-    if (entryError) return { error: entryError.message };
+  }
+
+  // Tudo ou nada: cadastro dos produtos novos + entradas numa transação
+  // (fn_confirm_invoice_entry). Antes uma falha no meio deixava metade da
+  // nota lançada.
+  const { error } = await supabase.rpc("fn_confirm_invoice_entry", { p_store_id: input.storeId, p_items: items, p_notes: notes });
+  if (error) {
+    return { error: userMessage(error, "ai-flows/confirmInvoice", { "duplicate key": "Um SKU novo da nota já existe no catálogo — marque-o como existente." }) };
   }
 
   revalidatePath("/stock/history");

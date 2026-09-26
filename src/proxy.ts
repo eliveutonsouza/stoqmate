@@ -63,7 +63,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith(ADMIN_PREFIX)) {
-    const { data: isStaff } = await supabase.rpc("is_platform_staff");
+    const { data: isStaff, error: staffError } = await supabase.rpc("is_platform_staff");
+    // Falha de leitura ≠ "não é staff": mandar pro login faria o admin
+    // achar que a senha/2FA caiu. Continua fechado, mas mostra erro.
+    if (staffError) return redirectTo("/error");
     if (!isStaff) {
       return redirectTo("/login/admin");
     }
@@ -80,7 +83,8 @@ export async function proxy(request: NextRequest) {
   const ctx = (ctxRows as { role: string | null; access: SessionAccess }[] | null)?.[0];
   const access = ctx?.access ?? "no_tenant";
   if (access === "no_tenant") {
-    const { data: isStaff } = await supabase.rpc("is_platform_staff");
+    const { data: isStaff, error: staffError } = await supabase.rpc("is_platform_staff");
+    if (staffError) return redirectTo("/error");
     if (isStaff) return redirectTo(ADMIN_PREFIX);
   }
   const target = gateStoreRoute(pathname, { role: ctx?.role ?? null, access });

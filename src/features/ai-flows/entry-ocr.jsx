@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { useAITask } from '@/features/ai/use-ai-task';
+import { unwrap, useAITask } from '@/features/ai/use-ai-task';
 import { extractInvoiceAction } from '@/features/ai/actions';
 import { confirmInvoiceEntryAction } from '@/features/ai-flows/actions';
 import { StoreShell } from '@/components/ui/store-shell';
@@ -49,7 +49,7 @@ export function EntryOCR({ stores, quota }) {
     const form = new FormData();
     if (mode === 'text') form.set('text', text);
     else if (file) form.set('file', file);
-    const data = await extractInvoiceAction(form);
+    const data = unwrap(await extractInvoiceAction(form));
     setRows(data.items || []);
     return data;
   });

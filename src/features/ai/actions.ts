@@ -3,6 +3,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { aiCompleteJSON, type AiAttachment } from "@/lib/anthropic";
 import { loadOcrContext } from "@/features/ai-flows/queries";
+import { GENERIC_ERROR, userMessage } from "@/lib/errors";
+
+// Server Action que lança tem a mensagem trocada por um texto genérico no
+// build de produção — o lojista nunca via "créditos insuficientes". Toda
+// action exportada devolve { data } ou { error }; UserFacingError carrega
+// texto pensado pra pessoa, qualquer outra exceção vira genérico + log.
+class UserFacingError extends Error {}
+
+type AiResult<T> = { data: T; error?: undefined } | { data?: undefined; error: string };
+
+async function asResult<T>(context: string, fn: () => Promise<T>): Promise<AiResult<T>> {
+  try {
+    return { data: await fn() };
+  } catch (err) {
+    if (err instanceof UserFacingError) return { error: err.message };
+    console.error(`[ai] ${context}`, err);
+    return { error: GENERIC_ERROR };
+  }
+}
 
 // Custo em crédito é fixo por operação; sem teto, um prompt gigante sairia
 // pelo preço de um pequeno. ~60k caracteres ≈ 15k tokens de entrada.
@@ -17,8 +36,8 @@ function logIfFailed(what: string, opId: string, res: { error: { message: string
 
 async function requireAi(supabase: Awaited<ReturnType<typeof createClient>>, minLevel: number) {
   const { data: allowed, error } = await supabase.rpc("has_access", { p_area: "ai", p_min_level: minLevel });
-  if (error) throw new Error("Não foi possível verificar sua permissão agora. Tente de novo.");
-  if (!allowed) throw new Error("Seu perfil não tem permissão para usar IA aqui.");
+  if (error) throw new UserFacingError("Não foi possível verificar sua permissão agora. Tente de novo.");
+  if (!allowed) throw new UserFacingError("Seu perfil não tem permissão para usar IA aqui.");
 }
 
 // Débito -> chamada -> log. Se a chamada à Anthropic falhar depois do
@@ -41,13 +60,13 @@ async function runAiOp({
   attachment?: AiAttachment;
 }) {
   if (prompt.length > MAX_PROMPT_CHARS) {
-    throw new Error("Entrada grande demais para a IA. Reduza o texto ou a quantidade de itens.");
+    throw new UserFacingError("Entrada grande demais para a IA. Reduza o texto ou a quantidade de itens.");
   }
   const supabase = await createClient();
   await requireAi(supabase, minLevel);
 
   const { error: debitError } = await supabase.rpc("fn_ai_debit_credits", { p_op_id: opId });
-  if (debitError) throw new Error(debitError.message);
+  if (debitError) throw new UserFacingError(userMessage(debitError, "ai/debit"));
 
   const startedAt = Date.now();
   try {
@@ -79,15 +98,15 @@ async function runAiOp({
   }
 }
 
-export async function askInventoryAction(question: string) {
+async function askInventoryActionImpl(question: string) {
   if (question.trim().length > MAX_QUESTION_CHARS) {
-    throw new Error(`Pergunta longa demais (máximo ${MAX_QUESTION_CHARS} caracteres).`);
+    throw new UserFacingError(`Pergunta longa demais (máximo ${MAX_QUESTION_CHARS} caracteres).`);
   }
   const supabase = await createClient();
   await requireAi(supabase, 1);
 
-  const { data: categories } = await supabase.from("categories").select("name").order("name");
-  const { data: products } = await supabase
+  const categoriesRes = await supabase.from("categories").select("name").order("name");
+  const productsRes = await supabase
     .from("products")
     .select(`
       sku, brand, name, attrs, cost_price, sale_price, min_stock,
@@ -95,6 +114,12 @@ export async function askInventoryAction(question: string) {
       stock_balances(qty)
     `)
     .eq("active", true);
+  // Sem catálogo não há o que consultar — e o crédito ainda não foi debitado.
+  if (categoriesRes.error || productsRes.error) {
+    throw new Error(`catálogo: ${categoriesRes.error?.message ?? productsRes.error?.message}`);
+  }
+  const categories = categoriesRes.data;
+  const products = productsRes.data;
 
   const rows = (products ?? []).map((p) => {
     const stock = (p.stock_balances as unknown as { qty: number }[]).reduce((s, b) => s + b.qty, 0);
@@ -112,7 +137,7 @@ export async function askInventoryAction(question: string) {
   });
 
   const { error: debitError } = await supabase.rpc("fn_ai_debit_credits", { p_op_id: "ask" });
-  if (debitError) throw new Error(debitError.message);
+  if (debitError) throw new UserFacingError(userMessage(debitError, "ai/debit"));
 
   type FilterSpec = {
     title?: string; note?: string; confidence?: number;
@@ -200,7 +225,7 @@ Devolva JSON com a especificação. Nada de contagens ou valores calculados.
   return { spec, rows: result, metric, metricKind: spec.metric ?? "count" };
 }
 
-export async function classifyProductAction(input: {
+async function classifyProductActionImpl(input: {
   description: string;
   categories: { name: string; unit: string; attributes: { key: string; values: string[] }[] }[];
 }) {
@@ -218,7 +243,7 @@ export async function classifyProductAction(input: {
   });
 }
 
-export async function enrichCatalogAction(
+async function enrichCatalogActionImpl(
   targets: { sku: string; categoryName: string; name: string; known: Record<string, string>; missing: string[] }[],
   categories: { name: string; unit: string; attributes: { key: string; values: string[] }[] }[],
 ) {
@@ -238,7 +263,7 @@ export async function enrichCatalogAction(
   });
 }
 
-export async function forecastReplenishmentAction(
+async function forecastReplenishmentActionImpl(
   base: { sku: string; name: string; attrs: Record<string, string>; category: string; stock: number; sold_30d: number; lead_time_days: number; suggest_qty: number }[],
 ) {
   const hint = base
@@ -260,23 +285,23 @@ const OCR_MAX_BYTES = 3.5 * 1024 * 1024;
 
 // Nota fiscal por texto colado, foto ou PDF (DANFE). O catálogo usado para
 // casar SKUs é lido aqui no servidor, não recebido do navegador.
-export async function extractInvoiceAction(form: FormData) {
+async function extractInvoiceActionImpl(form: FormData) {
   const text = String(form.get("text") ?? "").trim();
   const file = form.get("file");
 
   let attachment: AiAttachment | undefined;
   if (file instanceof File && file.size > 0) {
-    if (file.size > OCR_MAX_BYTES) throw new Error("Arquivo maior que 3,5 MB. Envie uma foto menor ou o PDF da nota.");
+    if (file.size > OCR_MAX_BYTES) throw new UserFacingError("Arquivo maior que 3,5 MB. Envie uma foto menor ou o PDF da nota.");
     const data = Buffer.from(await file.arrayBuffer()).toString("base64");
     if (file.type === "application/pdf") {
       attachment = { kind: "pdf", data };
     } else if ((OCR_IMAGE_TYPES as readonly string[]).includes(file.type)) {
       attachment = { kind: "image", mediaType: file.type as (typeof OCR_IMAGE_TYPES)[number], data };
     } else {
-      throw new Error("Formato não aceito. Envie foto (JPG, PNG, WEBP) ou PDF.");
+      throw new UserFacingError("Formato não aceito. Envie foto (JPG, PNG, WEBP) ou PDF.");
     }
   } else if (!text) {
-    throw new Error("Cole o texto da nota ou envie uma foto/PDF.");
+    throw new UserFacingError("Cole o texto da nota ou envie uma foto/PDF.");
   }
 
   const context = await loadOcrContext();
@@ -298,4 +323,24 @@ export async function extractInvoiceAction(form: FormData) {
     maxTokens: 2000,
     attachment,
   });
+}
+
+export async function askInventoryAction(question: string) {
+  return asResult("ask", () => askInventoryActionImpl(question));
+}
+
+export async function classifyProductAction(input: Parameters<typeof classifyProductActionImpl>[0]) {
+  return asResult("classify", () => classifyProductActionImpl(input));
+}
+
+export async function enrichCatalogAction(...args: Parameters<typeof enrichCatalogActionImpl>) {
+  return asResult("enrich", () => enrichCatalogActionImpl(...args));
+}
+
+export async function forecastReplenishmentAction(base: Parameters<typeof forecastReplenishmentActionImpl>[0]) {
+  return asResult("forecast", () => forecastReplenishmentActionImpl(base));
+}
+
+export async function extractInvoiceAction(form: FormData) {
+  return asResult("ocr", () => extractInvoiceActionImpl(form));
 }

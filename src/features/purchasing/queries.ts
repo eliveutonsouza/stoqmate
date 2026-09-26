@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
 import { loadStores } from "@/features/stock/queries";
+import { resolveStoreId } from "@/features/shell/queries";
 
 export async function loadReplenishmentSuggestions(storeId: string) {
   const supabase = await createClient();
@@ -57,4 +58,14 @@ export async function loadPurchaseOrderNew(params: { store?: string; supplier?: 
 
   const supplierId = suppliers.some((s) => s.id === params.supplier) ? params.supplier! : suppliers[0]?.id ?? "";
   return { stores, storeId, suppliers, supplierId, suggestions, qtyOverrides };
+}
+
+export async function loadPurchaseOrdersScreen(requestedStore?: string) {
+  const stores = await loadStores();
+  const storeId = (await resolveStoreId(stores, requestedStore)) ?? '';
+  const [suggestions, openOrders] = await Promise.all([
+    storeId ? loadReplenishmentSuggestions(storeId) : Promise.resolve([]),
+    loadOpenPurchaseOrders(),
+  ]);
+  return { stores, storeId, suggestions, openOrders };
 }

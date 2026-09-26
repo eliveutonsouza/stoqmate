@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { userMessage, type DbErrorLike } from "@/lib/errors";
 
-function friendlyError(message: string) {
+function friendlyError(error: DbErrorLike) {
+  const message = error?.message ?? "";
   const known: Record<string, string> = {
     "not authorized": "Seu perfil não tem permissão para essa operação.",
     "informe ao menos um item": "Adicione pelo menos um item ao pedido.",
@@ -16,7 +18,7 @@ function friendlyError(message: string) {
   for (const [key, friendly] of Object.entries(known)) {
     if (message.includes(key)) return friendly;
   }
-  return message;
+  return userMessage(error, "purchasing/actions");
 }
 
 export async function createPurchaseOrderAction(input: {
@@ -34,7 +36,7 @@ export async function createPurchaseOrderAction(input: {
     p_notes: input.notes || null,
     p_freight: input.freight,
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/purchase-orders");
   return { id: data as string };
 }
@@ -51,7 +53,7 @@ export async function receivePurchaseOrderAction(input: {
       ...(i.unitCost !== undefined ? { unit_cost: i.unitCost } : {}),
     })),
   });
-  if (error) return { error: friendlyError(error.message) };
+  if (error) return { error: friendlyError(error) };
   revalidatePath("/purchase-orders");
   revalidatePath("/stock/history");
   revalidatePath("/products");
