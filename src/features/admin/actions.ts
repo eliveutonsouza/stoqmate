@@ -50,7 +50,8 @@ export async function invitePlatformStaffAction(input: { email: string; name: st
   const {
     data: { user: caller },
   } = await supabase.auth.getUser();
-  const { data: callerStaff, error: callerError } = await supabase.from("platform_staff").select("role").eq("user_id", caller?.id).maybeSingle();
+  if (!caller) return { error: "Sessão expirada. Entre de novo." };
+  const { data: callerStaff, error: callerError } = await supabase.from("platform_staff").select("role").eq("user_id", caller.id).maybeSingle();
   if (callerError) return { error: userMessage(callerError, "admin/invite.caller") };
   if (callerStaff?.role !== "super_admin") {
     return { error: "Só um Super Admin pode convidar pessoas para a equipe." };
@@ -62,7 +63,7 @@ export async function invitePlatformStaffAction(input: { email: string; name: st
   });
   if (inviteErr) return { error: userMessage(inviteErr, "admin/actions") };
 
-  const { error: staffErr } = await admin.from("platform_staff").insert({ user_id: invited.user.id, role: input.role });
+  const { error: staffErr } = await admin.from("platform_staff").insert({ user_id: invited.user.id, role: input.role as (typeof STAFF_ROLES)[number] });
   if (staffErr) return { error: userMessage(staffErr, "admin/actions") };
 
   revalidatePath("/admin/users");

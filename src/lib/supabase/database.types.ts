@@ -853,6 +853,8 @@ export type Database = {
       notifications: {
         Row: {
           created_at: string
+          email_error: string | null
+          emailed_at: string | null
           id: string
           kind: string
           message: string
@@ -865,6 +867,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_error?: string | null
+          emailed_at?: string | null
           id?: string
           kind: string
           message: string
@@ -877,6 +881,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_error?: string | null
+          emailed_at?: string | null
           id?: string
           kind?: string
           message?: string
@@ -2201,91 +2207,102 @@ export type Database = {
       }
       auth_tenant_id: { Args: never; Returns: string }
       fn_abc_report: {
-        Args: { p_end: string; p_start: string; p_store_id?: string }
+        Args: { p_end: string | null; p_start: string | null; p_store_id?: string | null }
         Returns: Json
       }
       fn_accept_invite: {
-        Args: { p_full_name: string; p_token: string }
+        Args: { p_full_name: string | null; p_token: string | null }
         Returns: string
       }
       fn_ai_apply_plan_change: {
-        Args: { p_plan_id: string; p_renews_at?: string; p_tenant_id: string }
+        Args: { p_plan_id: string | null; p_renews_at?: string | null; p_tenant_id: string | null }
         Returns: undefined
       }
       fn_ai_credit_pack_purchase: {
         Args: {
-          p_pack_id: string
-          p_stripe_checkout_session_id: string
-          p_tenant_id: string
+          p_pack_id: string | null
+          p_stripe_checkout_session_id: string | null
+          p_tenant_id: string | null
         }
         Returns: undefined
       }
-      fn_ai_debit_credits: { Args: { p_op_id: string }; Returns: number }
-      fn_ai_refund_credits: { Args: { p_op_id: string }; Returns: number }
+      fn_ai_debit_credits: { Args: { p_op_id: string | null }; Returns: number }
+      fn_ai_refund_credits: { Args: { p_op_id: string | null }; Returns: number }
       fn_ai_renew_cycle: { Args: never; Returns: number }
       fn_attribute_sales_report: {
         Args: {
-          p_category_id: string
-          p_end: string
-          p_start: string
-          p_store_id?: string
+          p_category_id: string | null
+          p_end: string | null
+          p_start: string | null
+          p_store_id?: string | null
         }
         Returns: Json
       }
       fn_billing_owner_email: { Args: never; Returns: string }
       fn_bulk_import_products: {
-        Args: { p_items: Json; p_on_duplicate?: string; p_store_id: string }
+        Args: { p_items: Json | null; p_on_duplicate?: string | null; p_store_id: string | null }
         Returns: Json
       }
       fn_bulk_price_update: {
         Args: {
-          p_mode: string
-          p_pct: number
-          p_rounding: string
-          p_scope: string
-          p_scope_value: string
+          p_mode: string | null
+          p_pct: number | null
+          p_rounding: string | null
+          p_scope: string | null
+          p_scope_value: string | null
         }
         Returns: Json
       }
       fn_cash_session_close: {
         Args: {
-          p_counted_amount: number
-          p_discrepancy_detail?: string
-          p_discrepancy_reason?: string
-          p_session_id: string
+          p_counted_amount: number | null
+          p_discrepancy_detail?: string | null
+          p_discrepancy_reason?: string | null
+          p_session_id: string | null
         }
         Returns: undefined
       }
       fn_cash_session_movement: {
         Args: {
-          p_amount: number
-          p_kind: string
-          p_note: string
-          p_session_id: string
+          p_amount: number | null
+          p_kind: string | null
+          p_note: string | null
+          p_session_id: string | null
         }
         Returns: string
       }
       fn_cash_session_open: {
-        Args: { p_opening_amount: number; p_store_id: string }
+        Args: { p_opening_amount: number | null; p_store_id: string | null }
         Returns: string
+      }
+      fn_claim_notification_emails: {
+        Args: { p_limit?: number | null }
+        Returns: {
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          recipients: string[]
+          title: string
+        }[]
       }
       fn_complete_onboarding: {
         Args: {
-          p_brand_color: string
-          p_categories: Json
-          p_fiscal_mode: string
-          p_logo_url: string
-          p_store_name: string
+          p_brand_color: string | null
+          p_categories: Json | null
+          p_fiscal_mode: string | null
+          p_logo_url: string | null
+          p_store_name: string | null
         }
         Returns: undefined
       }
       fn_complete_signup: {
         Args: {
-          p_cnpj?: string
-          p_full_name: string
-          p_plan_id?: string
-          p_store_name: string
-          p_subdomain: string
+          p_cnpj?: string | null
+          p_full_name: string | null
+          p_plan_id?: string | null
+          p_store_name: string | null
+          p_subdomain: string | null
         }
         Returns: {
           new_store_id: string
@@ -2293,108 +2310,116 @@ export type Database = {
         }[]
       }
       fn_confirm_invoice_entry: {
-        Args: { p_items: Json; p_notes: string; p_store_id: string }
+        Args: { p_items: Json | null; p_notes: string | null; p_store_id: string | null }
         Returns: number
       }
       fn_confirm_sale: {
         Args: {
-          p_cash_session_id: string
-          p_customer_id: string
-          p_discount_approval_id?: string
-          p_installments: number
-          p_items: Json
-          p_notes: string
-          p_order_discount_amount?: number
-          p_payment_method: string
-          p_store_id: string
+          p_cash_session_id: string | null
+          p_customer_id: string | null
+          p_discount_approval_id?: string | null
+          p_installments: number | null
+          p_items: Json | null
+          p_notes: string | null
+          p_order_discount_amount?: number | null
+          p_payment_method: string | null
+          p_store_id: string | null
         }
         Returns: string
       }
       fn_create_category: {
-        Args: { p_attributes: Json; p_category: Json }
+        Args: { p_attributes: Json | null; p_category: Json | null }
         Returns: string
       }
       fn_create_store: {
         Args: {
-          p_city: string
-          p_cnpj?: string
-          p_name: string
-          p_type: string
+          p_city: string | null
+          p_cnpj?: string | null
+          p_name: string | null
+          p_type: string | null
         }
         Returns: string
       }
       fn_create_supplier: {
-        Args: { p_category_ids: string[]; p_supplier: Json }
+        Args: { p_category_ids: string[] | null; p_supplier: Json | null }
         Returns: string
       }
       fn_customer_create: {
         Args: {
-          p_doc?: string
-          p_email?: string
-          p_name: string
-          p_notes?: string
-          p_phone?: string
+          p_doc?: string | null
+          p_email?: string | null
+          p_name: string | null
+          p_notes?: string | null
+          p_phone?: string | null
         }
         Returns: string
       }
       fn_customer_credit_adjust: {
-        Args: { p_customer_id: string; p_delta: number; p_reason: string }
+        Args: { p_customer_id: string | null; p_delta: number | null; p_reason: string | null }
         Returns: number
       }
       fn_customers_list: {
         Args: {
-          p_limit?: number
-          p_offset?: number
-          p_term?: string
-          p_with_credit?: boolean
+          p_limit?: number | null
+          p_offset?: number | null
+          p_term?: string | null
+          p_with_credit?: boolean | null
         }
         Returns: Json
       }
       fn_effective_price: {
-        Args: { p_product_id: string }
+        Args: { p_product_id: string | null }
         Returns: {
           price: number
           promotion_id: string
           promotion_name: string
         }[]
       }
+      fn_effective_prices: {
+        Args: { p_product_ids: string[] | null }
+        Returns: {
+          price: number
+          product_id: string
+          promotion_name: string
+        }[]
+      }
       fn_end_impersonation: {
-        Args: { p_session_id: string }
+        Args: { p_session_id: string | null }
         Returns: undefined
       }
       fn_grant_discount_approval: {
-        Args: { p_max_pct: number; p_store_id: string }
+        Args: { p_max_pct: number | null; p_store_id: string | null }
         Returns: string
       }
       fn_invite_preview: {
-        Args: { p_token: string }
+        Args: { p_token: string | null }
         Returns: {
           email: string
           role: Database["public"]["Enums"]["store_role"]
           tenant_name: string
         }[]
       }
-      fn_like_escape: { Args: { p: string }; Returns: string }
+      fn_like_escape: { Args: { p: string | null }; Returns: string }
       fn_link_billing_customer: {
-        Args: { p_stripe_customer_id: string }
+        Args: { p_stripe_customer_id: string | null }
         Returns: string
       }
       fn_mark_notifications_read: {
-        Args: { p_ids?: string[] }
+        Args: { p_ids?: string[] | null }
         Returns: undefined
       }
       fn_monthly_profit: {
-        Args: { p_months?: number; p_store_id?: string }
+        Args: { p_months?: number | null; p_store_id?: string | null }
         Returns: Json
       }
       fn_notify_low_stock: {
         Args: {
-          p_after_qty: number
-          p_before_qty: number
-          p_min_stock: number
-          p_product_id: string
-          p_store_id: string
-          p_tenant_id: string
+          p_after_qty: number | null
+          p_before_qty: number | null
+          p_min_stock: number | null
+          p_product_id: string | null
+          p_store_id: string | null
+          p_tenant_id: string | null
         }
         Returns: undefined
       }
@@ -2413,21 +2438,21 @@ export type Database = {
       }
       fn_platform_create_tenant: {
         Args: {
-          p_city: string
-          p_cnpj: string
-          p_legal_name: string
-          p_name: string
-          p_owner_full_name: string
-          p_owner_user_id: string
-          p_plan_id: string
-          p_segment: string
-          p_state: string
-          p_subdomain: string
+          p_city: string | null
+          p_cnpj: string | null
+          p_legal_name: string | null
+          p_name: string | null
+          p_owner_full_name: string | null
+          p_owner_user_id: string | null
+          p_plan_id: string | null
+          p_segment: string | null
+          p_state: string | null
+          p_subdomain: string | null
         }
         Returns: string
       }
       fn_platform_growth_by_month: {
-        Args: { p_months?: number }
+        Args: { p_months?: number | null }
         Returns: {
           canceled_tenants: number
           month: string
@@ -2435,7 +2460,7 @@ export type Database = {
         }[]
       }
       fn_platform_mrr_trend: {
-        Args: { p_months?: number }
+        Args: { p_months?: number | null }
         Returns: {
           month: string
           mrr: number
@@ -2443,92 +2468,96 @@ export type Database = {
       }
       fn_platform_plan_upsert: {
         Args: {
-          p_active: boolean
-          p_credits: number
-          p_id: string
-          p_limits: Json
-          p_monthly_price: number
-          p_name: string
-          p_popular: boolean
-          p_tagline: string
-          p_who: string
-          p_yearly_price: number
+          p_active: boolean | null
+          p_credits: number | null
+          p_id: string | null
+          p_limits: Json | null
+          p_monthly_price: number | null
+          p_name: string | null
+          p_popular: boolean | null
+          p_tagline: string | null
+          p_who: string | null
+          p_yearly_price: number | null
         }
         Returns: undefined
       }
       fn_platform_settings_update: {
         Args: {
-          p_ai_alert_pct: number
-          p_ai_spend_ceiling_usd: number
-          p_trial_days: number
+          p_ai_alert_pct: number | null
+          p_ai_spend_ceiling_usd: number | null
+          p_trial_days: number | null
         }
         Returns: undefined
       }
       fn_platform_trial_days: { Args: never; Returns: number }
       fn_platform_update_tenant: {
         Args: {
-          p_city: string
-          p_cnpj: string
-          p_legal_name: string
-          p_name: string
-          p_plan_id: string
-          p_segment: string
-          p_state: string
-          p_status: string
-          p_tenant_id: string
+          p_city: string | null
+          p_cnpj: string | null
+          p_legal_name: string | null
+          p_name: string | null
+          p_plan_id: string | null
+          p_segment: string | null
+          p_state: string | null
+          p_status: string | null
+          p_tenant_id: string | null
         }
         Returns: undefined
       }
       fn_products_facets: { Args: never; Returns: Json }
       fn_products_list: {
         Args: {
-          p_brand?: string
-          p_category_id?: string
-          p_limit?: number
-          p_location_id?: string
-          p_offset?: number
-          p_stock?: string
-          p_term?: string
+          p_brand?: string | null
+          p_category_id?: string | null
+          p_limit?: number | null
+          p_location_id?: string | null
+          p_offset?: number | null
+          p_stock?: string | null
+          p_term?: string | null
         }
         Returns: Json
       }
       fn_products_sold_since: {
-        Args: { p_since: string; p_store_id: string }
+        Args: { p_since: string | null; p_store_id: string | null }
         Returns: string[]
       }
       fn_promotion_create: {
         Args: {
-          p_category_id: string
-          p_ends_at?: string
-          p_name: string
-          p_product_id: string
-          p_promo_price: number
-          p_scope_type: string
-          p_starts_at: string
-          p_until_stock?: boolean
+          p_category_id: string | null
+          p_ends_at?: string | null
+          p_name: string | null
+          p_product_id: string | null
+          p_promo_price: number | null
+          p_scope_type: string | null
+          p_starts_at: string | null
+          p_until_stock?: boolean | null
         }
         Returns: string
       }
       fn_promotion_set_active: {
-        Args: { p_active: boolean; p_id: string }
+        Args: { p_active: boolean | null; p_id: string | null }
         Returns: undefined
       }
       fn_purchase_order_create: {
         Args: {
-          p_freight?: number
-          p_items: Json
-          p_notes?: string
-          p_store_id: string
-          p_supplier_id: string
+          p_freight?: number | null
+          p_items: Json | null
+          p_notes?: string | null
+          p_store_id: string | null
+          p_supplier_id: string | null
         }
         Returns: string
       }
       fn_purchase_order_receive: {
-        Args: { p_items: Json; p_order_id: string }
+        Args: { p_items: Json | null; p_order_id: string | null }
+        Returns: undefined
+      }
+      fn_record_notification_email_result: {
+        Args: { p_error: string | null; p_id: string | null }
         Returns: undefined
       }
       fn_replenishment_suggestions: {
-        Args: { p_store_id: string }
+        Args: { p_store_id: string | null }
         Returns: {
           attrs: Json
           brand: string
@@ -2547,14 +2576,14 @@ export type Database = {
           supplier_name: string
         }[]
       }
-      fn_request_access: { Args: { p_route: string }; Returns: undefined }
+      fn_request_access: { Args: { p_route: string | null }; Returns: undefined }
       fn_request_account_deletion: { Args: never; Returns: undefined }
       fn_sales_report: {
-        Args: { p_end: string; p_start: string; p_store_id?: string }
+        Args: { p_end: string | null; p_start: string | null; p_store_id?: string | null }
         Returns: Json
       }
       fn_search_products: {
-        Args: { p_limit?: number; p_term: string }
+        Args: { p_limit?: number | null; p_term: string | null }
         Returns: {
           attrs: Json
           barcode: string
@@ -2581,83 +2610,83 @@ export type Database = {
         }[]
       }
       fn_set_location_categories: {
-        Args: { p_category_ids: string[]; p_location_id: string }
+        Args: { p_category_ids: string[] | null; p_location_id: string | null }
         Returns: undefined
       }
       fn_set_supplier_categories: {
-        Args: { p_category_ids: string[]; p_supplier_id: string }
+        Args: { p_category_ids: string[] | null; p_supplier_id: string | null }
         Returns: undefined
       }
       fn_shell_counts: { Args: never; Returns: Json }
       fn_start_impersonation: {
-        Args: { p_reason: string; p_tenant_id: string; p_ticket_ref?: string }
+        Args: { p_reason: string | null; p_tenant_id: string | null; p_ticket_ref?: string | null }
         Returns: string
       }
       fn_stock_adjustment: {
         Args: {
-          p_counted_qty: number
-          p_justification: string
-          p_product_id: string
-          p_reason: string
-          p_store_id: string
+          p_counted_qty: number | null
+          p_justification: string | null
+          p_product_id: string | null
+          p_reason: string | null
+          p_store_id: string | null
         }
         Returns: string
       }
       fn_stock_count_submit: {
         Args: {
-          p_category_id: string
-          p_items: Json
-          p_justification: string
-          p_location_id: string
-          p_reason: string
-          p_store_id: string
+          p_category_id: string | null
+          p_items: Json | null
+          p_justification: string | null
+          p_location_id: string | null
+          p_reason: string | null
+          p_store_id: string | null
         }
         Returns: string
       }
       fn_stock_entry: {
         Args: {
-          p_notes?: string
-          p_product_id: string
-          p_qty: number
-          p_store_id: string
-          p_unit_cost: number
+          p_notes?: string | null
+          p_product_id: string | null
+          p_qty: number | null
+          p_store_id: string | null
+          p_unit_cost: number | null
         }
         Returns: string
       }
       fn_stock_exchange: {
         Args: {
-          p_delivered_product_id: string
-          p_notes?: string
-          p_qty: number
-          p_reason: string
-          p_returned_product_id: string
-          p_store_id: string
+          p_delivered_product_id: string | null
+          p_notes?: string | null
+          p_qty: number | null
+          p_reason: string | null
+          p_returned_product_id: string | null
+          p_store_id: string | null
         }
         Returns: string
       }
       fn_stock_lock: {
-        Args: { p_product_id: string; p_store_id: string }
+        Args: { p_product_id: string | null; p_store_id: string | null }
         Returns: number
       }
       fn_stock_movements_list: {
         Args: {
-          p_kind?: string
-          p_limit?: number
-          p_offset?: number
-          p_store_id?: string
-          p_term?: string
+          p_kind?: string | null
+          p_limit?: number | null
+          p_offset?: number | null
+          p_store_id?: string | null
+          p_term?: string | null
         }
         Returns: Json
       }
       fn_stock_overview: { Args: never; Returns: Json }
       fn_stock_return: {
         Args: {
-          p_notes?: string
-          p_product_id: string
-          p_qty: number
-          p_reason: string
-          p_restock: boolean
-          p_store_id: string
+          p_notes?: string | null
+          p_product_id: string | null
+          p_qty: number | null
+          p_reason: string | null
+          p_restock: boolean | null
+          p_store_id: string | null
         }
         Returns: string
       }
@@ -2671,23 +2700,23 @@ export type Database = {
       }
       fn_suppliers_list: {
         Args: {
-          p_category_id?: string
-          p_lead?: string
-          p_limit?: number
-          p_offset?: number
-          p_term?: string
+          p_category_id?: string | null
+          p_lead?: string | null
+          p_limit?: number | null
+          p_offset?: number | null
+          p_term?: string | null
         }
         Returns: Json
       }
       fn_team_cancel_invite: {
-        Args: { p_invite_id: string }
+        Args: { p_invite_id: string | null }
         Returns: undefined
       }
       fn_team_invite: {
         Args: {
-          p_email: string
-          p_full_name: string
-          p_role: Database["public"]["Enums"]["store_role"]
+          p_email: string | null
+          p_full_name: string | null
+          p_role: Database["public"]["Enums"]["store_role"] | null
         }
         Returns: string
       }
@@ -2715,71 +2744,71 @@ export type Database = {
           token: string
         }[]
       }
-      fn_team_remove: { Args: { p_user_id: string }; Returns: undefined }
+      fn_team_remove: { Args: { p_user_id: string | null }; Returns: undefined }
       fn_team_set_role: {
         Args: {
-          p_role: Database["public"]["Enums"]["store_role"]
-          p_user_id: string
+          p_role: Database["public"]["Enums"]["store_role"] | null
+          p_user_id: string | null
         }
         Returns: undefined
       }
       fn_transfer_dispatch: {
         Args: {
-          p_carrier?: string
-          p_destination_store_id: string
-          p_items: Json
-          p_notes?: string
-          p_origin_store_id: string
-          p_reason: string
+          p_carrier?: string | null
+          p_destination_store_id: string | null
+          p_items: Json | null
+          p_notes?: string | null
+          p_origin_store_id: string | null
+          p_reason: string | null
         }
         Returns: string
       }
       fn_transfer_receive: {
         Args: {
-          p_discrepancy_detail?: string
-          p_discrepancy_reason?: string
-          p_items: Json
-          p_transfer_id: string
+          p_discrepancy_detail?: string | null
+          p_discrepancy_reason?: string | null
+          p_items: Json | null
+          p_transfer_id: string | null
         }
         Returns: undefined
       }
       fn_update_branding: {
-        Args: { p_brand_color: string; p_logo_url: string }
+        Args: { p_brand_color: string | null; p_logo_url: string | null }
         Returns: undefined
       }
       fn_update_company_data: {
-        Args: { p_cnpj: string; p_name: string }
+        Args: { p_cnpj: string | null; p_name: string | null }
         Returns: undefined
       }
-      fn_update_fiscal_mode: { Args: { p_mode: string }; Returns: undefined }
+      fn_update_fiscal_mode: { Args: { p_mode: string | null }; Returns: undefined }
       fn_write_ai_usage: {
         Args: {
-          p_cost_usd: number
-          p_error_message?: string
-          p_latency_ms?: number
-          p_model: string
-          p_op_id: string
-          p_status: string
-          p_tokens_in: number
-          p_tokens_out: number
+          p_cost_usd: number | null
+          p_error_message?: string | null
+          p_latency_ms?: number | null
+          p_model: string | null
+          p_op_id: string | null
+          p_status: string | null
+          p_tokens_in: number | null
+          p_tokens_out: number | null
         }
         Returns: undefined
       }
       fn_write_audit: {
         Args: {
-          p_kind: string
-          p_message: string
-          p_target_id?: string
-          p_target_type?: string
+          p_kind: string | null
+          p_message: string | null
+          p_target_id?: string | null
+          p_target_type?: string | null
         }
         Returns: undefined
       }
       has_access: {
-        Args: { p_area: string; p_min_level?: number }
+        Args: { p_area: string | null; p_min_level?: number | null }
         Returns: boolean
       }
       has_platform_role: {
-        Args: { p_roles: Database["public"]["Enums"]["platform_role"][] }
+        Args: { p_roles: Database["public"]["Enums"]["platform_role"][] | null }
         Returns: boolean
       }
       is_platform_staff: { Args: never; Returns: boolean }

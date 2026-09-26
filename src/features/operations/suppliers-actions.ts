@@ -24,9 +24,10 @@ export async function exportSuppliersCsvAction(input: { q?: string | null; categ
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_suppliers_list", supplierListArgs(filters, EXPORT_LIMIT, 0));
   if (error) return { error: "Não foi possível exportar os fornecedores." };
-  const rows = (data?.rows ?? []) as SupplierRow[];
+  const list = data as { rows?: SupplierRow[]; total?: number } | null;
+  const rows = list?.rows ?? [];
   return {
-    total: Number(data?.total ?? 0),
+    total: Number(list?.total ?? 0),
     exported: rows.length,
     csv: toCsv(
       ["Nome", "CNPJ", "Telefone", "Email de pedidos", "Categorias", "Marcas", "Prazo (dias)", "Status"],

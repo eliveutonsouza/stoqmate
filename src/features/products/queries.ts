@@ -96,11 +96,10 @@ export async function loadProductDetail(id: string) {
 
   const [balancesRes, siblingsRes, movementsRes, categoryAttributesRes] = await Promise.all([
     supabase.from("stock_balances").select("store_id, qty, store:stores(id, name)").eq("product_id", id),
-    supabase
-      .from("products")
-      .select("id, sku, attrs, stock_balances(store_id, qty)")
-      .eq("category_id", categoryId)
-      .eq("brand", product.brand)
+    // brand pode ser null: `.eq(col, null)` vira `= null` e nunca casa.
+    (product.brand == null
+      ? supabase.from("products").select("id, sku, attrs, stock_balances(store_id, qty)").eq("category_id", categoryId).is("brand", null)
+      : supabase.from("products").select("id, sku, attrs, stock_balances(store_id, qty)").eq("category_id", categoryId).eq("brand", product.brand))
       .eq("name", product.name)
       .order("sku"),
     supabase
@@ -116,7 +115,7 @@ export async function loadProductDetail(id: string) {
   const movements = must(movementsRes, "products/queries.loadProductDetail.movements");
   const categoryAttributes = must(categoryAttributesRes, "products/queries.loadProductDetail.categoryAttributes");
 
-  const userIds = [...new Set((movements ?? []).map((m) => m.created_by).filter(Boolean))];
+  const userIds = [...new Set((movements ?? []).map((m) => m.created_by).filter((id): id is string => Boolean(id)))];
   const profiles = userIds.length ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "products.profiles") : [];
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
 

@@ -9,7 +9,7 @@ export async function loadAuditLog() {
     .order("created_at", { ascending: false })
     .limit(200), "tools/queries.loadAuditLog.entries");
 
-  const userIds = [...new Set((entries ?? []).map((e) => e.created_by).filter(Boolean))];
+  const userIds = [...new Set((entries ?? []).map((e) => e.created_by).filter((id): id is string => Boolean(id)))];
   const profiles = userIds.length
     ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "tools/queries.profiles")
     : [];

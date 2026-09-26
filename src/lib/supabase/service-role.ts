@@ -1,3 +1,4 @@
+import type { Database } from "@/lib/supabase/database.types";
 import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { supabaseEnv } from "@/lib/supabase/env";
@@ -11,5 +12,5 @@ export function createServiceRoleClient() {
   const { url } = supabaseEnv();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!serviceRoleKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY não está definida.");
-  return createSupabaseClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  return createSupabaseClient<Database>(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
 }

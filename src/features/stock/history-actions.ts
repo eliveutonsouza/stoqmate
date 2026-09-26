@@ -32,8 +32,9 @@ export async function exportStockHistoryCsvAction(input: { q?: string | null; ki
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_stock_movements_list", movementListArgs(filters, EXPORT_LIMIT, 0));
   if (error) return { error: "Não foi possível exportar o histórico." };
-  const rows = (data?.rows ?? []) as MovementRow[];
-  const total = Number(data?.total ?? 0);
+  const list = data as { rows?: MovementRow[]; total?: number } | null;
+  const rows = list?.rows ?? [];
+  const total = Number(list?.total ?? 0);
   return {
     total,
     exported: rows.length,

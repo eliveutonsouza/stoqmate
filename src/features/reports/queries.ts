@@ -34,11 +34,21 @@ export async function loadReportStores() {
   return must(await supabase.from("stores").select("id, name").order("name"), "loadReportStores") ?? [];
 }
 
+// Forma do jsonb de fn_sales_report (20260924230100_report_store_filter.sql).
+type Row = { [key: string]: unknown };
+export type SalesReportJson = {
+  revenue: number; cost: number; sale_count: number; units: number;
+  daily_series: ({ date: string; revenue: number } & Row)[];
+  by_store: ({ store_id: string; revenue: number } & Row)[];
+  by_category: ({ category_id: string } & Row)[];
+  by_product: ({ sku: string; name: string; category_name: string; units: number; cost: number; revenue: number } & Row)[];
+};
+
 // Sem `filters`: últimos 30 dias da rede inteira (dashboard e rede usam assim).
 export async function loadSalesReport(filters?: ReportFilters) {
   const supabase = await createClient();
   const { start, end } = last30Days();
-  const data = must(await supabase.rpc("fn_sales_report", rangeArgs(filters)), "loadSalesReport");
+  const data = must(await supabase.rpc("fn_sales_report", rangeArgs(filters)), "loadSalesReport") as SalesReportJson | null;
   return {
     range: { start, end },
     revenue: data?.revenue ?? 0,

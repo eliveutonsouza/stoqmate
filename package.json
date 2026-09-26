@@ -11,7 +11,7 @@
     "test:e2e": "playwright test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/database.types.ts"
+    "db:types": "node scripts/gen-db-types.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

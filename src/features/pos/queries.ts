@@ -29,7 +29,7 @@ export async function loadOpenCashSession(storeId: string) {
   const sales = must(salesRes, "pos/queries.loadOpenCashSession.sales");
 
   const userIds = Array.from(
-    new Set([session.created_by, ...(movements ?? []).map((m) => m.created_by)].filter(Boolean)),
+    new Set([session.created_by, ...(movements ?? []).map((m) => m.created_by)].filter((id): id is string => Boolean(id))),
   );
   const profiles = userIds.length
     ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "pos/queries.profiles")

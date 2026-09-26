@@ -7,12 +7,18 @@ import { createClient } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
 import { userMessage } from "@/lib/errors";
 import { isOwnStorageUrl, textError } from "@/lib/validation";
+import type { Database } from "@/lib/supabase/database.types";
+
+type StoreRole = Database["public"]["Enums"]["store_role"];
+const STORE_ROLES: readonly StoreRole[] = ["vendedor", "estoquista", "financeiro", "proprietario"];
+const isStoreRole = (r: unknown): r is StoreRole => (STORE_ROLES as readonly unknown[]).includes(r);
 
 export async function inviteTeamMemberAction(input: {
   email: string;
   fullName: string;
   role: string;
 }) {
+  if (!isStoreRole(input.role)) return { error: "Perfil inválido." };
   const supabase = await createClient();
   const { data: token, error } = await supabase.rpc("fn_team_invite", {
     p_email: input.email,
@@ -30,6 +36,7 @@ export async function inviteTeamMemberAction(input: {
 }
 
 export async function setTeamRoleAction(userId: string, role: string) {
+  if (!isStoreRole(role)) return { error: "Perfil inválido." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_team_set_role", { p_user_id: userId, p_role: role });
   if (error) return { error: userMessage(error, "settings/actions") };

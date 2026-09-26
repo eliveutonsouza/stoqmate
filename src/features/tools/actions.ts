@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { toCsv, csvFilename, type CsvCell } from "@/lib/csv";
 import { last30Days } from "@/features/reports/queries";
+import type { SalesReportJson } from "@/features/reports/queries";
 
 export type ExportKind = "catalog" | "sales" | "profit" | "movements" | "suppliers" | "count-sheet";
 
@@ -68,7 +69,7 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
     const { start, end } = last30Days();
     const { data: report, error } = await supabase.rpc("fn_sales_report", { p_start: start.toISOString(), p_end: end.toISOString() });
     if (error) throw new Error(error.message);
-    const byProduct = (report?.by_product ?? []) as { sku: string; name: string; category_name: string; units: number; cost: number; revenue: number }[];
+    const byProduct = ((report as SalesReportJson | null)?.by_product ?? []) as { sku: string; name: string; category_name: string; units: number; cost: number; revenue: number }[];
     return {
       base: "lucratividade",
       headers: ["SKU", "Produto", "Categoria", "Vendidos", "Custo", "Receita", "Lucro"],

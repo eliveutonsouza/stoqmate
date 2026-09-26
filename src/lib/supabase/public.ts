@@ -1,3 +1,4 @@
+import type { Database } from "@/lib/supabase/database.types";
 import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { supabaseEnv } from "@/lib/supabase/env";
@@ -7,5 +8,5 @@ import { supabaseEnv } from "@/lib/supabase/env";
 // tornaria a rota dinâmica. Só enxerga o que o RLS libera pro papel anon.
 export function createPublicClient() {
   const { url, anonKey } = supabaseEnv();
-  return createSupabaseClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  return createSupabaseClient<Database>(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
 }

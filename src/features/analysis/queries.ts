@@ -10,7 +10,7 @@ export async function loadNetworkData() {
     supabase.from("stores").select("id, name, type").order("name"),
     supabase.from("stock_balances").select("product_id, store_id, qty, product:products(sku, name, brand, attrs, category:categories(id, name, icon, color))"),
   ]);
-  const overview = must(overviewRes, "analysis.loadNetworkData.overview");
+  const overview = must(overviewRes, "analysis.loadNetworkData.overview") as { total_qty: number; rupture_count: number } | null;
   const stores = must(storesRes, "analysis.loadNetworkData.stores");
   const balanceRows = must(balanceRowsRes, "analysis.loadNetworkData.balanceRows");
 
