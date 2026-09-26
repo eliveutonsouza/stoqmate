@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { OPEN_ROUTES } from "@/lib/permissions";
 import { gateStoreRoute, type SessionAccess } from "@/lib/access-gate";
 import { supabaseEnv } from "@/lib/supabase/env";
+import { buildCsp, createNonce } from "@/lib/csp";
 
 // Rotas públicas são exatamente OPEN_ROUTES do RBAC (marketing + auth +
 // system) — mesma fonte que o cliente já usa em can()/areaFor(), não uma
@@ -24,12 +25,28 @@ export async function proxy(request: NextRequest) {
     pathname === "/login/admin" ||
     pathname.startsWith("/auth/callback");
 
+  const { url, anonKey } = supabaseEnv();
+  const cspBase = { supabaseUrl: url, dev: process.env.NODE_ENV === "development", https: request.nextUrl.protocol === "https:" };
+
   if (isPublic) {
-    return NextResponse.next();
+    const res = NextResponse.next();
+    res.headers.set("Content-Security-Policy", buildCsp(cspBase));
+    return res;
   }
 
-  let response = NextResponse.next({ request });
-  const { url, anonKey } = supabaseEnv();
+  // App autenticado: nonce por request. O Next lê o nonce do header CSP da
+  // REQUISIÇÃO e aplica nos próprios <script>; o da resposta é o que o
+  // navegador faz valer.
+  const csp = buildCsp({ ...cspBase, nonce: createNonce() });
+  const next = () => {
+    const headers = new Headers(request.headers);
+    headers.set("Content-Security-Policy", csp);
+    const res = NextResponse.next({ request: { headers } });
+    res.headers.set("Content-Security-Policy", csp);
+    return res;
+  };
+
+  let response = next();
 
   const supabase = createServerClient(
     url,
@@ -41,7 +58,7 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
+          response = next();
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },

@@ -1,10 +1,8 @@
 import type { NextConfig } from "next";
 
-// Headers de segurança que não dependem de nonce. CSP completo (script-src)
-// fica de fora por enquanto: exige nonce por request no Next e quebraria os
-// scripts inline do framework se feito pela metade.
+// Headers de segurança fixos. A Content-Security-Policy é montada por
+// request no proxy (src/lib/csp.ts): nonce no app autenticado.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
