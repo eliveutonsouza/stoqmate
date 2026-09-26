@@ -149,7 +149,7 @@ export function Customers({ filters, pageSize, rows, total, stats }) {
           <Field label="CPF ou CNPJ"><TextInput mono value={f.doc} onChange={(e) => set('doc', e.target.value)} placeholder="000.000.000-00" /></Field>
           <Field label="Telefone"><TextInput mono value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="(11) 90000-0000" /></Field>
         </div>
-        <Field label="Email" hint="Para enviar comprovante e avisar de promoções."><TextInput type="email" value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="cliente@email.com" /></Field>
+        <Field label="Email" hint="Opcional. Fica no cadastro para contato."><TextInput type="email" value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="cliente@email.com" /></Field>
         <Field label="Observações"><TextareaInput value={f.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Ex.: compra sempre para a obra, pede nota no CNPJ." /></Field>
       </Modal>
     </StoreShell>

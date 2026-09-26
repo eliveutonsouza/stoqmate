@@ -79,7 +79,7 @@ export function ProductDetail({ detail }) {
               {[
                 { l: 'Nesta unidade', v: `${currentStock}`, s: `${c.unit_plural} · mín. ${p.min_stock}` },
                 ...(hasCost ? [{ l: 'Preço de compra', v: brl(p.cost_price), s: 'atual' }] : []),
-                { l: 'Preço de venda', v: brl(p.sale_price), s: 'sem promoção ativa' },
+                { l: 'Preço de venda', v: brl(p.sale_price), s: p.promotion_name ? `promoção "${p.promotion_name}": ${brl(p.effective_price)}` : 'sem promoção ativa' },
                 ...(hasCost ? [{ l: 'Margem', v: margin.toFixed(1) + '%', s: brl(p.sale_price - p.cost_price) + ' por unidade', tone: margin > 0 ? 'success' : 'danger' }] : []),
               ].map((m, i) => (
                 <div key={i} style={{ padding: '14px 16px' }}>

@@ -86,8 +86,17 @@ export async function loadProduct(id: string) {
     .maybeSingle(), "products/queries.loadProduct.data");
   if (!data) return null;
   // Custo só pra quem tem a área "money"; vendedor recebe null.
-  const costById = await productCostMap(supabase, [data.id]);
-  return { ...data, cost_price: costById.get(data.id) ?? null };
+  const [costById, effective] = await Promise.all([
+    productCostMap(supabase, [data.id]),
+    supabase.rpc("fn_effective_prices", { p_product_ids: [data.id] }),
+  ]);
+  const promo = (must(effective, "products/queries.loadProduct.effective") ?? [])[0];
+  return {
+    ...data,
+    cost_price: costById.get(data.id) ?? null,
+    effective_price: promo ? Number(promo.price) : Number(data.sale_price),
+    promotion_name: promo?.promotion_name ?? null,
+  };
 }
 
 // Sem dependência de storeId (só usado depois, na hora de exibir) — deixa o

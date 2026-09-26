@@ -97,11 +97,11 @@ function CustomerField({ customer, onChange }) {
   );
 }
 
-export function StockSale({ stores, cashSessionByStore, initialProduct }) {
+export function StockSale({ stores, cashSessionByStore, initialProduct, initialCustomer }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
   const isManager = MANAGER_ROLES.includes(useShell()?.user?.roleId);
-  const [customer, setCustomer] = React.useState(null);
+  const [customer, setCustomer] = React.useState(initialCustomer ?? null);
   const [approval, setApproval] = React.useState(null);
   const [approvalOpen, setApprovalOpen] = React.useState(false);
   const [manager, setManager] = React.useState({ email: '', password: '' });

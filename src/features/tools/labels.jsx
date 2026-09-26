@@ -44,12 +44,12 @@ function LabelContent({ p, fields, template }) {
   );
 }
 
-export function Labels() {
+export function Labels({ initialProducts }) {
   const navigate = useNavigate();
   const [template, setTemplate] = React.useState('shelf');
   const [fields, setFields] = React.useState({ name: true, sku: true, barcode: true, price: true, variant: true });
   const toggle = (k) => setFields(f => ({ ...f, [k]: !f[k] }));
-  const [queue, setQueue] = React.useState([]);
+  const [queue, setQueue] = React.useState(() => (initialProducts ?? []).map((product) => ({ product, copies: 1 })));
 
   const tpl = TEMPLATES.find(t => t.k === template);
   const totalLabels = queue.reduce((s, q) => s + q.copies, 0);

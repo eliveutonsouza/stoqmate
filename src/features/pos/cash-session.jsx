@@ -151,7 +151,7 @@ export function CashSession({ stores, storeId, session }) {
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Contagem de gaveta</h3>
                 <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>
-                  Conte por cédula. O sistema não mostra o esperado até você fechar — contagem cega evita viés.
+                  Conte por cédula. A diferença para o esperado aparece assim que a contagem é preenchida.
                 </p>
               </div>
               <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
@@ -273,7 +273,7 @@ export function CashSession({ stores, storeId, session }) {
             <TextInput mono prefix="R$" type="number" value={movementAmount} onChange={(e) => setMovementAmount(+e.target.value || 0)} />
           </Field>
           <Field label="Observação">
-            <TextInput value={movementNote} onChange={(e) => setMovementNote(e.target.value)} placeholder="Ex.: troco do cofre" />
+            <TextInput value={movementNote} onChange={(e) => setMovementNote(e.target.value)} placeholder={movementModal === 'supply' ? 'Ex.: troco trazido do cofre' : 'Ex.: depósito no cofre'} />
           </Field>
         </Modal>
       </Page>

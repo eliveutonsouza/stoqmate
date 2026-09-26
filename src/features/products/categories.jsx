@@ -10,6 +10,8 @@ import { colorHex, isColorValue } from '@/lib/attr-colors';
 import { Field } from '@/components/ui/field';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextInput } from '@/components/ui/text-input';
+import { useRouter } from 'next/navigation';
+import { addAttributeValuesAction } from '@/features/products/actions';
 import { Modal } from '@/components/ui/modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { createCategoryAction } from '@/features/products/actions';
@@ -176,6 +178,7 @@ export function Categories({ initialCategories }) {
                               ))}
                               {a.values.length > 6 && <span style={{ fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>+{a.values.length - 6}</span>}
                             </div>
+                            <AddValues attributeId={a.id} label={a.label} />
                           </td>
                           <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{a.values.length}</td>
                         </tr>
@@ -242,5 +245,37 @@ export function Categories({ initialCategories }) {
         )}
       </Modal>
     </StoreShell>
+  );
+}
+
+// Acrescenta valores a um atributo existente (ex.: cor nova). Só adiciona:
+// remover ou renomear quebraria produtos e SKUs já cadastrados.
+function AddValues({ attributeId, label }) {
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const [text, setText] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [pending, startTransition] = React.useTransition();
+
+  const submit = () => {
+    setError('');
+    const values = text.split(',').map((v) => v.trim()).filter(Boolean);
+    startTransition(async () => {
+      const res = await addAttributeValuesAction({ attributeId, values }).catch(() => ({ error: 'Não foi possível salvar agora. Tente de novo.' }));
+      if (res?.error) { setError(res.error); return; }
+      setText(''); setOpen(false); router.refresh();
+    });
+  };
+
+  if (!open) {
+    return <button type="button" onClick={() => setOpen(true)} className="btn btn-ghost btn-sm" style={{ marginTop: 6, paddingLeft: 0 }}><I.Plus size={11} /> Adicionar valor</button>;
+  }
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      <TextInput id={null} aria-label={`Novos valores de ${label}`} value={text} onChange={(e) => setText(e.target.value)} placeholder="Novos valores, separados por vírgula" style={{ height: 28, minWidth: 220 }} />
+      <button type="submit" disabled={pending || !text.trim()} className="btn btn-primary btn-sm">{pending ? 'Salvando…' : 'Adicionar'}</button>
+      <button type="button" onClick={() => { setOpen(false); setError(''); }} className="btn btn-ghost btn-sm">Cancelar</button>
+      {error && <span role="alert" style={{ fontSize: 11.5, color: 'var(--danger)', width: '100%' }}>{error}</span>}
+    </form>
   );
 }

@@ -72,7 +72,12 @@ export function BulkPricing({ suppliers, categories, brands }) {
   });
   const avgOld = rows.length ? rows.reduce((s, r) => s + r.oldMargin, 0) / rows.length : 0;
   const avgNew = rows.length ? rows.reduce((s, r) => s + r.newMargin, 0) / rows.length : 0;
-  const canApply = scopeValue && rows.length > 0 && (mode !== 'margin' || pct < 100);
+  // Depois de aplicar, o mesmo reajuste não pode ser reaplicado por um segundo
+  // clique (somaria de novo sobre o preço já reajustado); mudar qualquer
+  // parâmetro libera o botão.
+  const paramsKey = [scope, scopeValue, mode, pct, rounding].join('|');
+  const alreadyApplied = result?.key === paramsKey;
+  const canApply = scopeValue && rows.length > 0 && (mode !== 'margin' || pct < 100) && !alreadyApplied;
 
   const apply = () => {
     setError('');
@@ -86,7 +91,7 @@ export function BulkPricing({ suppliers, categories, brands }) {
         return;
       }
       if (res?.error) { setError(res.error); return; }
-      setResult(res);
+      setResult({ ...res, key: paramsKey });
       try {
         setProducts(await previewPricingAction(scope, scopeValue));
       } catch (e) {
@@ -252,7 +257,7 @@ export function BulkPricing({ suppliers, categories, brands }) {
             )}
 
             <button onClick={apply} disabled={!canApply || pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%', opacity: canApply && !pending ? 1 : 0.5 }}>
-              {pending ? 'Aplicando…' : `Aplicar a ${rows.length} SKUs`}
+              {pending ? 'Aplicando…' : alreadyApplied ? 'Reajuste aplicado' : `Aplicar a ${rows.length} SKUs`}
             </button>
             <button onClick={() => navigate('/products')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Voltar</button>
 

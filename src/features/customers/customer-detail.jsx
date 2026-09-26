@@ -61,7 +61,7 @@ export function CustomerDetail({ detail }) {
         actions={(
           <>
             <button onClick={() => setCreditOpen(true)} className="btn btn-outline btn-sm"><I.Credit size={13} /> Ajustar crédito</button>
-            <button onClick={() => navigate('/stock/sale')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova venda</button>
+            <button onClick={() => navigate(`/stock/sale?customer=${c.id}`)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova venda</button>
           </>
         )}
       />
@@ -173,7 +173,7 @@ export function CustomerDetail({ detail }) {
 
             <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
               <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>O que costuma comprar</h3>
-              <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--fg-muted)' }}>Base para avisar de reposição e promoção.</p>
+              <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--fg-muted)' }}>Produtos que este cliente mais levou.</p>
               {topProducts.length === 0 ? (
                 <div style={{ fontSize: 12.5, color: 'var(--fg-muted)' }}>Sem histórico ainda.</div>
               ) : (

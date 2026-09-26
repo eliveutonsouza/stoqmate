@@ -69,6 +69,20 @@ export async function loadTransferToReceive(id?: string) {
 // Produto pré-selecionado quando a tela vem do detalhe do produto
 // (?product=<id>). Mesmo formato do ProductPicker (fn_search_products:
 // saldos por loja, preço efetivo, custo só pra quem vê).
+// Fila de etiquetas pré-montada (?products=id,id — até 50).
+export async function loadLabelProducts(raw?: string) {
+  const ids = (raw ?? "").split(",").filter((id) => isUuid(id)).slice(0, 50);
+  const rows = await Promise.all(ids.map((id) => loadMovementProduct(id)));
+  return rows.filter((p): p is NonNullable<typeof p> => Boolean(p));
+}
+
+// Cliente pré-selecionado na venda (?customer=<id>, vindo da ficha do cliente).
+export async function loadSaleCustomer(customerId?: string) {
+  if (!isUuid(customerId)) return null;
+  const supabase = await createClient();
+  return must(await supabase.from("customers").select("id, name, doc, phone").eq("id", customerId).maybeSingle(), "stock.saleCustomer") ?? null;
+}
+
 export async function loadMovementProduct(productId?: string) {
   if (!isUuid(productId)) return null;
   const supabase = await createClient();

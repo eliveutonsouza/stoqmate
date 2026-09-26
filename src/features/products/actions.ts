@@ -6,8 +6,7 @@ import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
 import { userMessage } from "@/lib/errors";
-import { textError } from "@/lib/validation";
-import { isOwnStorageUrl } from "@/lib/validation";
+import { isOwnStorageUrl, isUuid, textError } from "@/lib/validation";
 import { productCostMap } from "@/lib/supabase/costs";
 
 export async function createCategoryAction(input: {
@@ -209,4 +208,32 @@ export async function uploadProductPhotoAction(formData: FormData) {
 
   const { data } = supabase.storage.from("product-photos").getPublicUrl(path);
   return { url: data.publicUrl };
+}
+
+// Esquema da categoria: só ACRESCENTA valores a um atributo (ex.: cor nova).
+// Remover ou renomear valor deixaria produtos com atributo órfão e SKU
+// inconsistente — fica de fora de propósito.
+export async function addAttributeValuesAction(input: { attributeId: string; values: string[] }) {
+  if (!isUuid(input.attributeId)) return { error: "Atributo inválido." };
+  const incoming = (Array.isArray(input.values) ? input.values : [])
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter((v) => v.length > 0 && v.length <= 40);
+  if (!incoming.length) return { error: "Informe ao menos um valor (até 40 caracteres)." };
+
+  const supabase = await createClient();
+  const { data: attr, error: readError } = await supabase.from("category_attributes").select("id, values").eq("id", input.attributeId).maybeSingle();
+  if (readError) return { error: userMessage(readError, "products/addAttributeValues.read") };
+  if (!attr) return { error: "Atributo não encontrado." };
+
+  const current = (attr.values ?? []) as string[];
+  const lower = new Set(current.map((v) => v.toLowerCase()));
+  const added = incoming.filter((v) => !lower.has(v.toLowerCase()) && lower.add(v.toLowerCase()));
+  if (!added.length) return { error: "Esses valores já existem neste atributo." };
+  if (current.length + added.length > 200) return { error: "Limite de 200 valores por atributo." };
+
+  const { error } = await supabase.from("category_attributes").update({ values: [...current, ...added] }).eq("id", attr.id);
+  if (error) return { error: userMessage(error, "products/addAttributeValues") };
+  revalidatePath("/categories");
+  revalidatePath("/products/new");
+  return { added };
 }

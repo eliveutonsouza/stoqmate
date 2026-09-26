@@ -57,6 +57,18 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
       : { label: 'Reativar', onSelect: () => runAction(() => setProductActiveAction({ id: p.id, active: true })) },
   ];
 
+  // Ações em lote da seleção (só a página atual).
+  const selectedRows = rows.filter((p) => selected.has(p.id));
+  const printSelected = () => navigate(`/labels?products=${selectedRows.map((p) => p.id).join(',')}`);
+  const deactivateSelected = () => runAction(async () => {
+    for (const p of selectedRows.filter((r) => r.active)) {
+      const result = await setProductActiveAction({ id: p.id, active: false });
+      if (result?.error) return result;
+    }
+    setSelected(new Set());
+    return null;
+  });
+
   const activeCat = filters.category ? categories.find((c) => c.id === filters.category) ?? null : null;
   const activeLocation = filters.location ? locations.find((l) => l.id === filters.location) ?? null : null;
   const hasFilters = !!(filters.q || filters.category || filters.brand || filters.stock || filters.location);
@@ -137,6 +149,12 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--fg-muted)' }}>
                   {hasFilters && <button type="button" onClick={clearFilters} className="btn btn-ghost btn-sm">Limpar filtros</button>}
                   {selectedCount > 0 ? `${selectedCount} selecionado(s)` : `${total} de ${catalogTotal}`}
+                  {selectedCount > 0 && (
+                    <>
+                      <button type="button" onClick={printSelected} className="btn btn-outline btn-sm">Imprimir etiquetas</button>
+                      <button type="button" onClick={deactivateSelected} className="btn btn-outline btn-sm" style={{ color: 'var(--danger)' }}>Desativar</button>
+                    </>
+                  )}
                 </span>
               )}
             />
