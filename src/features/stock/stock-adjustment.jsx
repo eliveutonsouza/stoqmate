@@ -66,7 +66,7 @@ export function StockAdjustment({ stores }) {
               tone={diff === 0 ? 'success' : diff > 0 ? 'warning' : 'danger'}
             />
           </div>
-          {diff !== 0 && product && (
+          {diff !== 0 && product && product.cost_price != null && (
             <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
               <SummaryRow label={diff < 0 ? 'Valor da perda' : 'Valor da sobra'} value={brl(lossValue)} tone={diff < 0 ? 'danger' : undefined} />
               <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, lineHeight: 1.5 }}>

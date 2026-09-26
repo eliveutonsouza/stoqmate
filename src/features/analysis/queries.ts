@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
 import { loadSalesReport } from "@/features/reports/queries";
+import { productCostMap } from "@/lib/supabase/costs";
 
 export async function loadNetworkData() {
   const supabase = await createClient();
@@ -71,12 +72,13 @@ export async function loadPricingPreview(scope: "supplier" | "category" | "brand
   if (!scopeValue) return [];
   let query = supabase
     .from("products")
-    .select("id, sku, name, brand, attrs, cost_price, sale_price, category:categories(id, name, icon, color)")
+    .select("id, sku, name, brand, attrs, sale_price, category:categories(id, name, icon, color)")
     .eq("active", true)
     .limit(500);
   if (scope === "supplier") query = query.eq("supplier_id", scopeValue);
   else if (scope === "category") query = query.eq("category_id", scopeValue);
   else query = query.eq("brand", scopeValue);
-  const data = must(await query, "analysis/queries.loadPricingPreview.data");
-  return data ?? [];
+  const data = must(await query, "analysis/queries.loadPricingPreview.data") ?? [];
+  const costById = await productCostMap(supabase, data.map((p) => p.id));
+  return data.map((p) => ({ ...p, cost_price: costById.get(p.id) ?? null }));
 }

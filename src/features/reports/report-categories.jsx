@@ -27,7 +27,7 @@ export function ReportCategories({ report, filters, stores }) {
     report.byProduct.map((p, i) => [
       i + 1, p.sku, p.name, p.brand, p.category_name, p.units, p.revenue, p.cost,
       p.units > 0 ? p.revenue / p.units : 0,
-      p.revenue > 0 ? ((p.revenue - p.cost) / p.revenue) * 100 : 0,
+      p.cost == null ? null : p.revenue > 0 ? ((p.revenue - p.cost) / p.revenue) * 100 : 0,
     ]),
   ));
 
@@ -136,7 +136,8 @@ export function ReportCategories({ report, filters, stores }) {
               </thead>
               <tbody>
                 {report.byProduct.slice(0, 20).map((p, i) => {
-                  const margin = p.revenue > 0 ? ((p.revenue - p.cost) / p.revenue) * 100 : 0;
+                  // Custo vem null pra quem não vê custo (vendedor): sem margem.
+                  const margin = p.cost == null ? null : p.revenue > 0 ? ((p.revenue - p.cost) / p.revenue) * 100 : 0;
                   return (
                     <tr key={p.product_id}>
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{i + 1}</td>
@@ -160,7 +161,7 @@ export function ReportCategories({ report, filters, stores }) {
                       </td>
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{brl(p.revenue)}</td>
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{brl(p.units > 0 ? p.revenue / p.units : 0)}</td>
-                      <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: margin >= 45 ? 'var(--success)' : 'var(--fg-muted)' }}>{margin.toFixed(0)}%</td>
+                      <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: margin != null && margin >= 45 ? 'var(--success)' : 'var(--fg-muted)' }}>{margin == null ? '—' : `${margin.toFixed(0)}%`}</td>
                     </tr>
                   );
                 })}

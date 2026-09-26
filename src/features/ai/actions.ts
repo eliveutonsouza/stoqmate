@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { aiCompleteJSON, type AiAttachment } from "@/lib/anthropic";
 import { loadOcrContext } from "@/features/ai-flows/queries";
 import { GENERIC_ERROR, userMessage } from "@/lib/errors";
+import { productCostMap } from "@/lib/supabase/costs";
 
 // Server Action que lança tem a mensagem trocada por um texto genérico no
 // build de produção — o lojista nunca via "créditos insuficientes". Toda
@@ -109,7 +110,7 @@ async function askInventoryActionImpl(question: string) {
   const productsRes = await supabase
     .from("products")
     .select(`
-      sku, brand, name, attrs, cost_price, sale_price, min_stock,
+      id, sku, brand, name, attrs, sale_price, min_stock,
       category:categories(name), supplier:suppliers(name), default_location:locations(code),
       stock_balances(qty)
     `)
@@ -120,10 +121,11 @@ async function askInventoryActionImpl(question: string) {
   }
   const categories = categoriesRes.data;
   const products = productsRes.data;
+  const costById = await productCostMap(supabase, (products ?? []).map((p) => p.id));
 
   const rows = (products ?? []).map((p) => {
     const stock = (p.stock_balances as unknown as { qty: number }[]).reduce((s, b) => s + b.qty, 0);
-    const cost = Number(p.cost_price);
+    const cost = costById.get(p.id) ?? 0;
     const sale = Number(p.sale_price);
     const category = p.category as unknown as { name: string } | null;
     const supplier = p.supplier as unknown as { name: string } | null;

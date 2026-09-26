@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toCsv, csvFilename, type CsvCell } from "@/lib/csv";
 import { last30Days } from "@/features/reports/queries";
 import type { SalesReportJson } from "@/features/reports/queries";
+import { movementCostMap, productCostMap } from "@/lib/supabase/costs";
 
 export type ExportKind = "catalog" | "sales" | "profit" | "movements" | "suppliers" | "count-sheet";
 
@@ -35,15 +36,16 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
   if (kind === "catalog") {
     const data = await fetchAll((from, to) => supabase
       .from("products")
-      .select("sku, barcode, brand, name, cost_price, sale_price, min_stock, category:categories(name), supplier:suppliers(name), default_location:locations(code)")
+      .select("id, sku, barcode, brand, name, sale_price, min_stock, category:categories(name), supplier:suppliers(name), default_location:locations(code)")
       .order("sku").range(from, to));
+    const costById = await productCostMap(supabase, data.map((p) => p.id));
     return {
       base: "catalogo",
       headers: ["SKU", "Código de barras", "Marca", "Nome", "Categoria", "Fornecedor", "Local", "Preço de compra", "Preço de venda", "Estoque mínimo"],
       rows: data.map((p) => [
         p.sku, p.barcode, p.brand, p.name,
         one<{ name: string }>(p.category)?.name, one<{ name: string }>(p.supplier)?.name, one<{ code: string }>(p.default_location)?.code,
-        p.cost_price, p.sale_price, p.min_stock,
+        costById.get(p.id) ?? null, p.sale_price, p.min_stock,
       ]),
     };
   }
@@ -82,9 +84,10 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
     since.setDate(since.getDate() - 90);
     const data = await fetchAll((from, to) => supabase
       .from("stock_movements")
-      .select("created_at, kind, qty, before_qty, after_qty, unit_cost, unit_price, reason, justification, product:products(sku, name), store:stores(name)")
+      .select("id, created_at, kind, qty, before_qty, after_qty, unit_price, reason, justification, product:products(sku, name), store:stores(name)")
       .gte("created_at", since.toISOString())
       .order("created_at").range(from, to));
+    const costById = await movementCostMap(supabase, data.map((m) => m.id));
     return {
       base: "movimentacoes-90-dias",
       headers: ["Data", "Unidade", "Tipo", "SKU", "Produto", "Quantidade", "Saldo antes", "Saldo depois", "Custo un.", "Preço un.", "Motivo", "Justificativa"],
@@ -92,7 +95,7 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
         const product = one<{ sku: string; name: string }>(m.product);
         return [
           date(m.created_at), one<{ name: string }>(m.store)?.name, MOVEMENT_LABEL[m.kind] ?? m.kind,
-          product?.sku, product?.name, m.qty, m.before_qty, m.after_qty, m.unit_cost, m.unit_price, m.reason, m.justification,
+          product?.sku, product?.name, m.qty, m.before_qty, m.after_qty, costById.get(m.id) ?? null, m.unit_price, m.reason, m.justification,
         ];
       }),
     };
@@ -163,6 +166,15 @@ export async function exportCsvAction(kind: ExportKind) {
     return { error: "Não foi possível gerar o arquivo agora. Tente de novo em instantes." };
   }
   if (!allowed) return { error: "Seu perfil não tem permissão para exportar dados." };
+  // Lucratividade é custo × venda: só pra quem vê custo (área "money").
+  if (kind === "profit") {
+    const { data: canSeeCost, error: costError } = await supabase.rpc("fn_can_see_cost");
+    if (costError) {
+      console.error("[exports] fn_can_see_cost", costError.message);
+      return { error: "Não foi possível gerar o arquivo agora. Tente de novo em instantes." };
+    }
+    if (!canSeeCost) return { error: "Seu perfil não tem acesso a custo e lucratividade." };
+  }
   try {
     const { base, headers, rows } = await build(supabase, kind);
     return { filename: csvFilename(base), csv: toCsv(headers, rows) };

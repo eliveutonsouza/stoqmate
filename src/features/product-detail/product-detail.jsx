@@ -16,7 +16,9 @@ export function ProductDetail({ detail }) {
   const { product: p, stockByStore, currentStock, siblings, movements } = detail;
   const c = p.category;
   const [photoOpen, setPhotoOpen] = React.useState(false);
-  const margin = p.sale_price > 0 ? ((p.sale_price - p.cost_price) / p.sale_price) * 100 : 0;
+  // cost_price vem null pra quem não vê custo (vendedor) — sem custo, sem margem.
+  const hasCost = p.cost_price != null;
+  const margin = hasCost && p.sale_price > 0 ? ((p.sale_price - p.cost_price) / p.sale_price) * 100 : 0;
 
   const variantAttrs = c.category_attributes ?? [];
   const variantAttr = variantAttrs[variantAttrs.length - 1];
@@ -76,9 +78,9 @@ export function ProductDetail({ detail }) {
             <div className="g4 kpi-strip">
               {[
                 { l: 'Nesta unidade', v: `${currentStock}`, s: `${c.unit_plural} · mín. ${p.min_stock}` },
-                { l: 'Preço de compra', v: brl(p.cost_price), s: 'atual' },
+                ...(hasCost ? [{ l: 'Preço de compra', v: brl(p.cost_price), s: 'atual' }] : []),
                 { l: 'Preço de venda', v: brl(p.sale_price), s: 'sem promoção ativa' },
-                { l: 'Margem', v: margin.toFixed(1) + '%', s: brl(p.sale_price - p.cost_price) + ' por unidade', tone: margin > 0 ? 'success' : 'danger' },
+                ...(hasCost ? [{ l: 'Margem', v: margin.toFixed(1) + '%', s: brl(p.sale_price - p.cost_price) + ' por unidade', tone: margin > 0 ? 'success' : 'danger' }] : []),
               ].map((m, i) => (
                 <div key={i} style={{ padding: '14px 16px' }}>
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{m.l}</div>

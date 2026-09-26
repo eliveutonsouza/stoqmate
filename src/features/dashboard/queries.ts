@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loadSalesReport, last30Days } from "@/features/reports/queries";
 import { loadLowStockItems } from "@/features/stock/queries";
 import type { SalesReportJson } from "@/features/reports/queries";
+import { movementCostMap } from "@/lib/supabase/costs";
 
 // jsonb de fn_stock_overview.
 type StockOverviewJson = { total_qty: number; sku_count: number; low_stock_count: number; total_cost_value: number; rupture_count: number };
@@ -23,7 +24,7 @@ export async function loadDashboardData() {
     supabase
       .from("stock_movements")
       .select(`
-        id, kind, qty, unit_cost, unit_price, created_at, reason, created_by,
+        id, kind, qty, unit_price, created_at, reason, created_by,
         product:products(id, sku, name, category:categories(id, name, icon, color)),
         store:stores(id, name)
       `)
@@ -35,7 +36,9 @@ export async function loadDashboardData() {
   const prevReport = must(prevReportRes, "dashboard.prevReport") as SalesReportJson | null;
   const overview = must(overviewRes, "dashboard.overview") as StockOverviewJson | null;
   const stores = must(storesRes, "dashboard.stores");
-  const movements = must(movementsRes, "dashboard.movements");
+  const movementRows = must(movementsRes, "dashboard.movements") ?? [];
+  const movementCost = await movementCostMap(supabase, movementRows.map((m) => m.id));
+  const movements = movementRows.map((m) => ({ ...m, unit_cost: movementCost.get(m.id) ?? null }));
   const balanceRows = must(balanceRes, "dashboard.balances") as { store_id: string; sku_count: number; qty: number }[] | null;
 
   const userIds = [...new Set((movements ?? []).map((m) => m.created_by).filter((id): id is string => Boolean(id)))];

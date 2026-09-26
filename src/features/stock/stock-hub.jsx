@@ -39,7 +39,7 @@ export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems
         <div className="g4 kpi-strip">
           {[
             { l: 'Itens em estoque', v: overview.total_qty.toLocaleString('pt-BR'), s: 'toda a rede' },
-            { l: 'Valor de custo', v: brl(overview.total_cost_value), s: 'a preço de custo' },
+            ...(overview.total_cost_value == null ? [] : [{ l: 'Valor de custo', v: brl(overview.total_cost_value), s: 'a preço de custo' }]),
             { l: 'SKUs em ruptura', v: `${overview.rupture_count}`, s: 'saldo zerado', tone: overview.rupture_count > 0 ? 'danger' : undefined },
             { l: 'SKUs em alerta', v: `${overview.low_stock_count}`, s: 'abaixo do mínimo', tone: overview.low_stock_count > 0 ? 'warning' : undefined },
           ].map((m, i) => (

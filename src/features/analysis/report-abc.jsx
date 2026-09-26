@@ -31,7 +31,9 @@ export function ReportABC({ rows: input, periodDays, filters, stores }) {
     return [...acc, { ...r, cum, cumPct, cls, cover, turns }];
   }, []);
   const counts = { A: rows.filter((r) => r.cls === 'A').length, B: rows.filter((r) => r.cls === 'B').length, C: rows.filter((r) => r.cls === 'C').length };
-  const stockByClass = ['A', 'B', 'C'].map((c) => rows.filter((r) => r.cls === c).reduce((s, r) => s + r.stock_value, 0));
+  // stock_value vem null pra quem não vê custo (vendedor): some o capital em estoque.
+  const hasCost = rows.some((r) => r.stock_value != null);
+  const stockByClass = ['A', 'B', 'C'].map((c) => rows.filter((r) => r.cls === c).reduce((s, r) => s + (r.stock_value ?? 0), 0));
   const totalStock = stockByClass.reduce((a, b) => a + b, 0) || 1;
   const maxRevenue = Math.max(1, ...rows.map((r) => r.revenue));
   const CLS = { A: ['var(--success)', 'var(--success-soft)'], B: ['var(--warning)', 'var(--warning-soft)'], C: ['var(--danger)', 'var(--danger-soft)'] };
@@ -62,10 +64,10 @@ export function ReportABC({ rows: input, periodDays, filters, stores }) {
           <>
             <div className="g4 kpi-strip">
               {[
-                { l: 'Classe A', v: `${counts.A} produtos`, s: `70% da receita · ${brl(stockByClass[0])} em estoque`, tone: 'ok' },
-                { l: 'Classe B', v: `${counts.B} produtos`, s: `20% da receita · ${brl(stockByClass[1])} em estoque` },
-                { l: 'Classe C', v: `${counts.C} produtos`, s: `10% da receita · ${brl(stockByClass[2])} em estoque`, tone: 'warn' },
-                { l: 'Capital parado em C', v: ((stockByClass[2] / totalStock) * 100).toFixed(0) + '%', s: 'do valor total de estoque', tone: 'warn' },
+                { l: 'Classe A', v: `${counts.A} produtos`, s: hasCost ? `70% da receita · ${brl(stockByClass[0])} em estoque` : '70% da receita', tone: 'ok' },
+                { l: 'Classe B', v: `${counts.B} produtos`, s: hasCost ? `20% da receita · ${brl(stockByClass[1])} em estoque` : '20% da receita' },
+                { l: 'Classe C', v: `${counts.C} produtos`, s: hasCost ? `10% da receita · ${brl(stockByClass[2])} em estoque` : '10% da receita', tone: 'warn' },
+                ...(hasCost ? [{ l: 'Capital parado em C', v: ((stockByClass[2] / totalStock) * 100).toFixed(0) + '%', s: 'do valor total de estoque', tone: 'warn' }] : []),
               ].map((m, i) => (
                 <div key={i} style={{ padding: '16px 18px' }}>
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>

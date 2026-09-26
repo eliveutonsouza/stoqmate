@@ -2253,6 +2253,7 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_can_see_cost: { Args: never; Returns: boolean }
       fn_cash_session_close: {
         Args: {
           p_counted_amount: number | null
@@ -2412,6 +2413,17 @@ export type Database = {
         Args: { p_months?: number | null; p_store_id?: string | null }
         Returns: Json
       }
+      fn_movement_costs: {
+        Args: { p_movement_ids: string[] | null }
+        Returns: {
+          movement_id: string
+          unit_cost: number
+        }[]
+      }
+      fn_movement_unit_cost: {
+        Args: { p_movement_id: string | null }
+        Returns: number
+      }
       fn_notify_low_stock: {
         Args: {
           p_after_qty: number | null
@@ -2503,6 +2515,14 @@ export type Database = {
           p_tenant_id: string | null
         }
         Returns: undefined
+      }
+      fn_product_cost: { Args: { p_product_id: string | null }; Returns: number }
+      fn_product_costs: {
+        Args: { p_product_ids: string[] | null }
+        Returns: {
+          cost_price: number
+          product_id: string
+        }[]
       }
       fn_products_facets: { Args: never; Returns: Json }
       fn_products_list: {

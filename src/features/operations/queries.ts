@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
+import { productCostMap } from "@/lib/supabase/costs";
 
 export async function loadSupplierDetail(id: string) {
   const supabase = await createClient();
@@ -13,13 +14,13 @@ export async function loadSupplierDetail(id: string) {
   const [purchasesRes, productsRes, productCountRes] = await Promise.all([
     supabase
       .from("purchase_orders")
-      .select("id, status, freight, created_at, received_at, purchase_order_items(qty_ordered, product:products(cost_price))")
+      .select("id, status, freight, created_at, received_at, purchase_order_items(qty_ordered, unit_cost)")
       .eq("supplier_id", id)
       .order("created_at", { ascending: false })
       .limit(10),
     supabase
       .from("products")
-      .select("id, sku, name, attrs, cost_price, stock_balances(qty)")
+      .select("id, sku, name, attrs, stock_balances(qty)")
       .eq("supplier_id", id)
       .order("name")
       .limit(50),
@@ -37,12 +38,10 @@ export async function loadSupplierDetail(id: string) {
           / receivedOrders.length,
       )
     : null;
-  // PostgREST devolve o embed `product` como array quando não consegue provar
-  // cardinalidade 1 pelo schema — mesmo caso já tratado em loadSubscriptionDetail.
-  const costOf = (item: { product: { cost_price: number } | { cost_price: number }[] | null }) => {
-    const p = Array.isArray(item.product) ? item.product[0] : item.product;
-    return p?.cost_price ?? 0;
-  };
+  // Valor do pedido pelo custo registrado no próprio item (o custo de
+  // cadastro do produto é fechado pra leitura e pode ter mudado depois).
+  const costOf = (item: { unit_cost: number | null }) => Number(item.unit_cost ?? 0);
+  const costById = await productCostMap(supabase, (products ?? []).map((p) => p.id));
 
   const yearAgo = new Date();
   yearAgo.setFullYear(yearAgo.getFullYear() - 1);
@@ -66,6 +65,7 @@ export async function loadSupplierDetail(id: string) {
     })),
     products: (products ?? []).map((p) => ({
       ...p,
+      cost_price: costById.get(p.id) ?? null,
       stock: (p.stock_balances ?? []).reduce((s: number, b: { qty: number }) => s + b.qty, 0),
     })),
   };
@@ -109,15 +109,18 @@ export async function loadSupplierFormData(id?: string) {
   return { categories: categories ?? [], supplier };
 }
 
+// `products(count)` monta a linha inteira de products e a coluna de custo é
+// fechada pra leitura (20260926120000_cost_visibility) — busca só os ids e
+// devolve no mesmo formato [{ count }] que a tela já usa.
 export async function loadShelvesScreen() {
   const supabase = await createClient();
   const [locationsRes, productsRes, storesRes] = await Promise.all([
-    supabase.from("locations").select("id, code, description, store_id, products(count)").order("code"),
+    supabase.from("locations").select("id, code, description, store_id, products(id)").order("code"),
     supabase.from("products").select("id, sku, name, attrs, default_location_id, category:categories(id, name, code, icon, color)").order("name"),
     supabase.from("stores").select("id, name").order("name"),
   ]);
   return {
-    locations: must(locationsRes, "shelves.locations") ?? [],
+    locations: (must(locationsRes, "shelves.locations") ?? []).map(({ products, ...l }) => ({ ...l, products: [{ count: products?.length ?? 0 }] })),
     products: must(productsRes, "shelves.products") ?? [],
     stores: must(storesRes, "shelves.stores") ?? [],
   };

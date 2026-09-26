@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { must } from '@/lib/supabase/must';
 import { type RawSearchParams, PAGE_SIZE, oneOf, pageParam, pageRange, param, uuidParam } from '@/lib/list-params';
+import { movementCostMap } from "@/lib/supabase/costs";
 
 export const MOVEMENT_KINDS = ['sale', 'entry', 'return', 'exchange', 'transfer', 'adjustment', 'count'] as const;
 
@@ -100,7 +101,7 @@ export async function loadMovementDetail(id: string) {
   const movement = must(await supabase
     .from('stock_movements')
     .select(`
-      id, kind, qty, unit_cost, unit_price, before_qty, after_qty, reason, justification,
+      id, kind, qty, unit_price, before_qty, after_qty, reason, justification,
       reference_type, reference_id, created_at, created_by,
       product:products(id, sku, name, brand, attrs, category:categories(id, name, icon, color)),
       store:stores(id, name)
@@ -108,6 +109,7 @@ export async function loadMovementDetail(id: string) {
     .eq('id', id)
     .maybeSingle(), "stock/queries.loadMovementDetail.movement");
   if (!movement) return null;
+  const unitCost = (await movementCostMap(supabase, [movement.id])).get(movement.id) ?? null;
 
   const [profileRes, balanceRes] = await Promise.all([
     movement.created_by
@@ -123,7 +125,7 @@ export async function loadMovementDetail(id: string) {
   const profile = must(profileRes, "stock/queries.loadMovementDetail.profile");
   const balance = must(balanceRes, "stock/queries.loadMovementDetail.balance");
 
-  return { ...movement, byName: profile?.full_name || 'Usuário', currentQty: balance?.qty ?? movement.after_qty };
+  return { ...movement, unit_cost: unitCost, byName: profile?.full_name || 'Usuário', currentQty: balance?.qty ?? movement.after_qty };
 }
 
 export async function loadLowStockItems(limit = 6) {

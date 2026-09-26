@@ -8,6 +8,7 @@ import { limitKindFromError } from "@/lib/plan-limits";
 import { userMessage } from "@/lib/errors";
 import { textError } from "@/lib/validation";
 import { isOwnStorageUrl } from "@/lib/validation";
+import { productCostMap } from "@/lib/supabase/costs";
 
 export async function createCategoryAction(input: {
   name: string;
@@ -167,12 +168,14 @@ export async function duplicateProductAction(id: string) {
   const supabase = await createClient();
   const { data: src, error: readError } = await supabase
     .from("products")
-    .select("tenant_id, category_id, sku, brand, name, attrs, cost_price, sale_price, min_stock, supplier_id, default_location_id, notes, photo_url")
+    .select("tenant_id, category_id, sku, brand, name, attrs, sale_price, min_stock, supplier_id, default_location_id, notes, photo_url")
     .eq("id", id)
     .maybeSingle();
   if (readError || !src) return { error: "Produto não encontrado." };
+  const costById = await productCostMap(supabase, [id]);
+  if (!costById.has(id)) return { error: "Seu perfil não tem permissão para duplicar produtos." };
 
-  const { data: taken, error: takenError } = await supabase.from("products").select("sku").like("sku", `${src.sku.replace(/[\%_]/g, "\$&")}-COPIA%`);
+  const { data: taken, error: takenError } = await supabase.from("products").select("sku").like("sku", `${src.sku.replace(/[\\%_]/g, "\\$&")}-COPIA%`);
   if (takenError) return { error: userMessage(takenError, "products/duplicate.taken") };
   const used = new Set((taken ?? []).map((t) => t.sku));
   let sku = `${src.sku}-COPIA`;
@@ -180,7 +183,7 @@ export async function duplicateProductAction(id: string) {
 
   const { data: copy, error } = await supabase
     .from("products")
-    .insert({ ...src, sku, name: `${src.name} (cópia)` })
+    .insert({ ...src, cost_price: costById.get(id), sku, name: `${src.name} (cópia)` })
     .select("id")
     .single();
   if (error) {

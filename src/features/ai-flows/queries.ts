@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
 import { loadStores } from "@/features/stock/queries";
 import { resolveStoreId } from "@/features/shell/queries";
+import { productCostMap } from "@/lib/supabase/costs";
 
 // Produtos com pelo menos 1 atributo do esquema da categoria ainda vazio —
 // substitui o array mockado GAPS. "Vazio" = chave do esquema ausente de
@@ -49,7 +50,7 @@ export async function loadAnomalies(storeId: string) {
     supabase.rpc("fn_replenishment_suggestions", { p_store_id: storeId }),
     supabase
       .from("stock_balances")
-      .select("product_id, qty, product:products(sku, name, brand, attrs, cost_price, category:categories(id, name, icon, color))")
+      .select("product_id, qty, product:products(sku, name, brand, attrs, category:categories(id, name, icon, color))")
       .eq("store_id", storeId),
     supabase.rpc("fn_products_sold_since", { p_store_id: storeId, p_since: since.toISOString() }),
   ]);
@@ -65,11 +66,12 @@ export async function loadAnomalies(storeId: string) {
     }));
 
   const soldRecently = new Set((recentSales ?? []) as string[]);
+  const costById = await productCostMap(supabase, (balances ?? []).map((b) => b.product_id));
   const deadStock = (balances ?? [])
     .filter((b) => b.qty > 0 && !soldRecently.has(b.product_id))
     .map((b) => ({
       productId: b.product_id, qty: b.qty, product: b.product,
-      value: b.qty * ((b.product as unknown as { cost_price: number } | null)?.cost_price ?? 0),
+      value: b.qty * (costById.get(b.product_id) ?? 0),
     }))
     .filter((d) => d.value > 0)
     .sort((a, b) => b.value - a.value)
@@ -82,11 +84,12 @@ export async function loadOcrContext() {
   const supabase = await createClient();
   const [categoriesRes, productsRes] = await Promise.all([
     supabase.from("categories").select("id, name, unit, category_attributes(key, label, values)").order("name"),
-    supabase.from("products").select("sku, brand, name, attrs, cost_price").eq("active", true).limit(300),
+    supabase.from("products").select("id, sku, brand, name, attrs").eq("active", true).limit(300),
   ]);
   const categories = must(categoriesRes, "ai-flows/queries.loadOcrContext.categories");
-  const products = must(productsRes, "ai-flows/queries.loadOcrContext.products");
-  return { categories: categories ?? [], products: products ?? [] };
+  const products = must(productsRes, "ai-flows/queries.loadOcrContext.products") ?? [];
+  const costById = await productCostMap(supabase, products.map((p) => p.id));
+  return { categories: categories ?? [], products: products.map((p) => ({ ...p, cost_price: costById.get(p.id) ?? null })) };
 }
 
 // Telas de IA que dependem de loja usam a loja ativa da sidebar.

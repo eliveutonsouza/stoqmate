@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
+import { productCostMap } from "@/lib/supabase/costs";
 
 export async function loadPromotions() {
   const supabase = await createClient();
@@ -20,12 +21,16 @@ export async function loadPromotion(id: string) {
     .from("promotions")
     .select(`
       id, name, scope_type, promo_price, starts_at, ends_at, until_stock, active, created_at,
-      product:products(id, sku, name, sale_price, cost_price, category:categories(id, name, code, icon, color)),
+      product:products(id, sku, name, sale_price, category:categories(id, name, code, icon, color)),
       category:categories(id, name, code, icon, color)
     `)
     .eq("id", id)
     .maybeSingle(), "operations/promotions-queries.loadPromotion.data");
-  return data ?? null;
+  if (!data) return null;
+  const product = data.product as unknown as { id: string } | null;
+  if (!product) return data;
+  const costById = await productCostMap(supabase, [product.id]);
+  return { ...data, product: { ...product, cost_price: costById.get(product.id) ?? null } };
 }
 
 export async function loadPromotionFormCategories() {

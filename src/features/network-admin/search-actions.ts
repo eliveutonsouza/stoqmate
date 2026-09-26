@@ -16,7 +16,7 @@ export async function globalSearchAction(term: string) {
     supabase.rpc("fn_search_products", { p_term: clean, p_limit: 5 }),
     supabase
       .from("stock_movements")
-      .select("id, kind, qty, unit_price, unit_cost, created_at, product:products!inner(id, sku, name), store:stores(name)")
+      .select("id, kind, qty, unit_price, created_at, product:products!inner(id, sku, name), store:stores(name)")
       .ilike("product.name", like)
       .order("created_at", { ascending: false })
       .limit(5),

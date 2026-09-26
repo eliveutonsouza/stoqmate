@@ -3,6 +3,7 @@ import { must } from '@/lib/supabase/must';
 import { type RawSearchParams, PAGE_SIZE, oneOf, pageParam, pageRange, param, uuidParam } from '@/lib/list-params';
 import { loadStores } from '@/features/stock/queries';
 import { resolveStoreId } from '@/features/shell/queries';
+import { productCostMap } from "@/lib/supabase/costs";
 
 export const PRODUCT_STOCK_FILTERS = ['in', 'low', 'out'] as const;
 
@@ -76,14 +77,17 @@ export async function loadProduct(id: string) {
   const data = must(await supabase
     .from("products")
     .select(`
-      id, sku, barcode, brand, name, attrs, cost_price, sale_price, min_stock, notes, photo_url, created_at,
+      id, sku, barcode, brand, name, attrs, sale_price, min_stock, notes, photo_url, created_at,
       category:categories(id, name, code, icon, color, unit, unit_plural),
       supplier:suppliers(id, name),
       default_location:locations(id, code)
     `)
     .eq("id", id)
     .maybeSingle(), "products/queries.loadProduct.data");
-  return data ?? null;
+  if (!data) return null;
+  // Custo só pra quem tem a área "money"; vendedor recebe null.
+  const costById = await productCostMap(supabase, [data.id]);
+  return { ...data, cost_price: costById.get(data.id) ?? null };
 }
 
 // Sem dependência de storeId (só usado depois, na hora de exibir) — deixa o
@@ -143,15 +147,19 @@ export function shapeProductDetailForStore(detail: NonNullable<Awaited<ReturnTyp
   };
 }
 
+// `products(count)` monta a linha inteira de products e a coluna de custo é
+// fechada pra leitura (20260926120000_cost_visibility) — busca só os ids e
+// devolve no mesmo formato [{ count }] que a tela já usa.
 export async function loadCategoriesScreen() {
   const supabase = await createClient();
-  return must(
+  const rows = must(
     await supabase
       .from('categories')
-      .select('id, name, icon, color, unit, unit_plural, code, active, category_attributes(id, key, label, type, values, position), products(count)')
+      .select('id, name, icon, color, unit, unit_plural, code, active, category_attributes(id, key, label, type, values, position), products(id)')
       .order('name'),
     'categories.list',
   ) ?? [];
+  return rows.map(({ products, ...c }) => ({ ...c, products: [{ count: products?.length ?? 0 }] }));
 }
 
 export async function loadImportScreen() {
