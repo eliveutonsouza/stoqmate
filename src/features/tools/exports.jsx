@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import { unstable_rethrow } from 'next/navigation';
 import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
@@ -31,12 +32,16 @@ export function Exports() {
       setPendingKind(null);
       if (result?.error) { setError(result.error); return; }
       downloadCsv(result.filename, result.csv);
+    }).catch((e) => {
+      setPendingKind(null);
+      try { unstable_rethrow(e); } catch { return; } // redirect do Next: o router já navega
+      setError('Não foi possível gerar o arquivo. Verifique a conexão e tente de novo.');
     });
   };
 
   return (
     <StoreShell route="/exports" breadcrumb={['Exportações']} navigate={navigate}>
-      <PageHeader title="Exportações" sub="Gere um CSV agora com o dado atual — envio agendado por email chega numa próxima etapa" />
+      <PageHeader title="Exportações" sub="Gere um CSV agora com o dado atual. Envio agendado por email ainda não está disponível." />
       <Page>
         {error && (
           <div style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>

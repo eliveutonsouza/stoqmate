@@ -39,7 +39,7 @@ export function AdminStores({ tenants }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <StoreAvatar name={t.name} />
                         <div>
-                          <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/admin/stores/detail?id=${t.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{t.name}</a>
+                          <a href={`/admin/stores/detail?id=${t.id}`} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(`/admin/stores/detail?id=${t.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{t.name}</a>
                           <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{t.cnpj || 'sem CNPJ'}</div>
                         </div>
                       </div>

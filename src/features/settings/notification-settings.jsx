@@ -6,26 +6,13 @@ import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { SettingsLayout } from '@/components/ui/settings-layout';
 import { I } from '@/components/icons';
-import { saveNotificationPreferencesAction } from '@/features/network-admin/notifications-actions';
 
+// O canal de email ainda não existe (nenhum provedor de envio configurado).
+// As preferências antigas continuam no banco, mas a tela não as edita até o
+// envio existir — prometer email que nunca chega é pior que não oferecer.
 export function NotificationSettings({ preferences }) {
   const navigate = useNavigate();
-  const [prefs, setPrefs] = React.useState(preferences);
-  const [error, setError] = React.useState('');
-  const [saved, setSaved] = React.useState(false);
-  const [pending, startTransition] = React.useTransition();
-
-  const toggle = (key) => { setSaved(false); setPrefs((p) => p.map((r) => (r.key === key ? { ...r, email: !r.email } : r))); };
-  const emailOn = prefs.filter((r) => r.email).length;
-
-  const save = () => {
-    setError(''); setSaved(false);
-    startTransition(async () => {
-      const result = await saveNotificationPreferencesAction(prefs.map((p) => ({ key: p.key, email: p.email })));
-      if (result?.error) { setError(result.error); return; }
-      setSaved(true);
-    });
-  };
+  const prefs = preferences;
 
   return (
     <StoreShell route="/settings/notifications" breadcrumb={['Configurações', 'Avisos']} navigate={navigate}>
@@ -33,9 +20,9 @@ export function NotificationSettings({ preferences }) {
       <SettingsLayout route="/settings/notifications" navigate={navigate}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '11px 14px', background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 8 }}>
           <span style={{ fontSize: 12.5, color: 'var(--fg-muted)', flex: 1, lineHeight: 1.5 }}>
-            Todo evento sempre aparece na caixa de avisos do painel. Aqui você escolhe quais também chegam por email.
+            Todo evento aparece na caixa de avisos do painel. O envio dos avisos por email ainda não está disponível.
           </span>
-          <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{emailOn} de {prefs.length} por email</span>
+          <span className="badge">Email em breve</span>
         </div>
 
         <div className="card table-scroll">
@@ -48,7 +35,11 @@ export function NotificationSettings({ preferences }) {
           </div>
           <table className="table">
             <thead>
-              <tr><th>Evento</th><th style={{ textAlign: 'center', width: 100 }}>Email</th></tr>
+              <tr>
+                <th>Evento</th>
+                <th style={{ textAlign: 'center', width: 110 }}>No painel</th>
+                <th style={{ textAlign: 'center', width: 110 }}>Email <span style={{ fontWeight: 400, color: 'var(--fg-faint)' }}>· em breve</span></th>
+              </tr>
             </thead>
             <tbody>
               {prefs.map((r) => (
@@ -58,18 +49,15 @@ export function NotificationSettings({ preferences }) {
                     <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>{r.desc}</div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <input type="checkbox" checked={r.email} onChange={() => toggle(r.key)} />
+                    <input type="checkbox" checked readOnly disabled aria-label="Sempre no painel" />
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={false} readOnly disabled title="Em breve" aria-label="Email — em breve" style={{ cursor: 'not-allowed' }} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div style={{ padding: '12px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            {error && <span style={{ fontSize: 12, color: 'var(--danger)', flex: 1 }}>{error}</span>}
-            {saved && <span style={{ fontSize: 12, color: 'var(--success)', flex: 1 }}>Preferências salvas.</span>}
-            {!error && !saved && <span style={{ flex: 1 }} />}
-            <button onClick={save} disabled={pending} className="btn btn-primary btn-sm">{pending ? 'Salvando…' : 'Salvar preferências'}</button>
-          </div>
         </div>
       </SettingsLayout>
     </StoreShell>

@@ -30,17 +30,17 @@ export function ForgotPassword() {
           <p style={{ margin: '8px 0 28px', fontSize: 14, color: 'var(--fg-muted)' }}>
             Informe o email da conta e enviaremos um link de redefinição válido por 1 hora.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Field label="Email">
               <TextInput type="email" placeholder="voce@sualoja.com.br" value={email} onChange={(e) => setEmail(e.target.value)} style={{ height: 36 }} />
             </Field>
-            <button onClick={submit} disabled={pending} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>
+            <button type="submit" disabled={pending} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>
               {pending ? 'Enviando…' : 'Enviar link de redefinição'}
             </button>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login'); }} style={{ fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 6 }}>
+            <a href="/login" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/login'); }} style={{ fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 6 }}>
               ← Voltar ao login
             </a>
-          </div>
+          </form>
         </>
       ) : (
         <>

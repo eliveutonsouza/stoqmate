@@ -24,7 +24,7 @@ export function SettingsLayout({ navigate, children }) {
         {items.map(it => {
           const active = pathname === it.r;
           return (
-            <a key={it.r} href="#" onClick={(e) => { e.preventDefault(); navigate(it.r); }} style={{
+            <a key={it.r} href={it.r} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(it.r); }} style={{
               display: 'flex', alignItems: 'center', gap: 9,
               padding: '7px 10px', borderRadius: 6,
               background: active ? 'var(--bg-elev)' : 'transparent',

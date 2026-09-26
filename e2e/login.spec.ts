@@ -22,3 +22,23 @@ test("credencial inválida mostra 'Email ou senha incorretos.'", async ({ page }
   await expect(page.getByText("Email ou senha incorretos.")).toBeVisible();
   await expect(page).toHaveURL("/login");
 });
+
+test("Enter no campo de senha envia o login", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByPlaceholder("voce@sualoja.com.br").fill(QA_EMAIL);
+  await page.getByPlaceholder("••••••••").fill(QA_PASSWORD);
+  await page.getByPlaceholder("••••••••").press("Enter");
+  await expect(page).toHaveURL("/dashboard");
+});
+
+test("termos e privacidade abrem sem login e estão linkados no cadastro", async ({ page }) => {
+  await page.goto("/terms");
+  await expect(page.getByRole("heading", { name: "Termos de uso" })).toBeVisible();
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading", { name: "Política de privacidade" })).toBeVisible();
+
+  await page.goto("/signup");
+  await expect(page.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/terms");
+  await expect(page.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/privacy");
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+});

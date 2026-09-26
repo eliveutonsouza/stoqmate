@@ -15,6 +15,7 @@ import { TextInput } from '@/components/ui/text-input';
 import { Field } from '@/components/ui/field';
 import { SelectInput } from '@/components/ui/select-input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LabelBarcode } from '@/features/tools/label-barcode';
 
 const TEMPLATES = [
   { k: 'shelf', t: 'Etiqueta de prateleira', d: '70 × 40 mm', wmm: 70, hmm: 40 },
@@ -34,10 +35,9 @@ function LabelContent({ p, fields, template }) {
         <div style={{ fontSize: template === 'price' ? 22 : 14, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>{brl(p.sale_price)}</div>
       )}
       {fields.barcode && p.barcode && (
-        <div style={{ display: 'flex', gap: 1, height: 16, alignItems: 'flex-end', marginTop: 2 }}>
-          {[2,1,1,3,1,2,1,1,2,3,1,1,2,1,3,1,2,1,1,2].map((w, i) => (
-            <div key={i} style={{ width: w, height: '100%', background: i % 2 ? 'transparent' : '#16140F' }}></div>
-          ))}
+        <div style={{ marginTop: 2 }}>
+          <LabelBarcode value={p.barcode} height={template === 'barcode' ? 34 : 16} />
+          <div style={{ fontSize: 6.5, fontFamily: 'monospace', letterSpacing: '0.08em', marginTop: 1 }}>{p.barcode}</div>
         </div>
       )}
     </>

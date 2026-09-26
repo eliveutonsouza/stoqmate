@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { useRouter } from 'next/navigation';
+import { unstable_rethrow, useRouter } from 'next/navigation';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
@@ -36,9 +36,18 @@ export function Promotions({ promotions }) {
     ended: withStatus.filter((p) => p.status === 'ended').length,
   };
 
+  const [error, setError] = React.useState('');
+
   const toggle = (p) => startTransition(async () => {
-    await setPromotionActiveAction({ id: p.id, active: !p.active });
-    router.refresh();
+    setError('');
+    try {
+      const result = await setPromotionActiveAction({ id: p.id, active: !p.active });
+      if (result?.error) { setError(result.error); return; }
+      router.refresh();
+    } catch (e) {
+      unstable_rethrow(e);
+      setError('Não foi possível salvar. Verifique a conexão e tente de novo.');
+    }
   });
 
   return (
@@ -57,6 +66,9 @@ export function Promotions({ promotions }) {
         onTab={setTab}
       />
       <Page>
+        {error && (
+          <div role="alert" style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>
+        )}
         <div className="card table-scroll">
           {rows.length === 0 ? (
             <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhuma promoção aqui.</div>
@@ -75,7 +87,7 @@ export function Promotions({ promotions }) {
                   const st = statusMap[p.status];
                   return (
                     <tr key={p.id}>
-                      <td><a href="#" onClick={(e) => { e.preventDefault(); navigate(`/promotions/edit?id=${p.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</a></td>
+                      <td><a href={`/promotions/edit?id=${p.id}`} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(`/promotions/edit?id=${p.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</a></td>
                       <td>
                         {p.scope_type === 'product' && p.product ? (
                           <span style={{ fontSize: 12 }}>{p.product.sku} · {p.product.name}</span>

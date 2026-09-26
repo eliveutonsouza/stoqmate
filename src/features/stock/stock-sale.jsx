@@ -5,7 +5,7 @@ import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
 import { I } from '@/components/icons';
-import { useDefaultStoreId } from '@/components/layout/shell-context';
+import { useDefaultStoreId, useShell } from '@/components/layout/shell-context';
 import { Page } from '@/components/ui/page-container';
 import { MovementNav } from '@/features/stock/movement-nav';
 import { ProductThumb } from '@/components/ui/product-thumb';
@@ -21,7 +21,7 @@ import { TextInput } from '@/components/ui/text-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { Modal } from '@/components/ui/modal';
-import { confirmSaleAction } from '@/features/pos/actions';
+import { confirmSaleAction, requestDiscountApprovalAction, searchCustomersAction } from '@/features/pos/actions';
 
 const PAYMENTS = [
   { label: 'Dinheiro', value: 'dinheiro' },
@@ -32,9 +32,81 @@ const PAYMENTS = [
   { label: 'Dividido', value: 'dividido' },
 ];
 
+// Espelha has_access('money', 2) do banco: financeiro e proprietário vendem
+// com qualquer desconto e veem custo/margem; os demais precisam de aprovação
+// acima de 20% (fn_confirm_sale confere de novo no servidor).
+const MANAGER_ROLES = ['financeiro', 'proprietario'];
+const APPROVAL_THRESHOLD = 20;
+
+// Cliente da venda: busca por nome, CPF/CNPJ, telefone ou email. Lista
+// inline (não flutuante) pra não ser cortada pelo overflow do FormCard.
+function CustomerField({ customer, onChange }) {
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState([]);
+  const [status, setStatus] = React.useState('idle');
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      setStatus('loading');
+      const res = await searchCustomersAction(q).catch(() => ({ error: 'Não foi possível buscar clientes agora.' }));
+      if (cancelled) return;
+      if (res.error) { setError(res.error); setResults([]); setStatus('error'); return; }
+      setError(''); setResults(res.rows); setStatus('done');
+    }, 250);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [query]);
+
+  if (customer) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', border: '1px solid var(--line-strong)', borderRadius: 6, background: 'var(--bg-elev)' }}>
+        <I.Users size={13} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>{customer.name}</div>
+          {(customer.doc || customer.phone) && <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{customer.doc || customer.phone}</div>}
+        </div>
+        <button type="button" onClick={() => onChange(null)} className="btn btn-ghost btn-sm">Trocar</button>
+      </div>
+    );
+  }
+
+  const q = query.trim();
+  return (
+    <div>
+      <TextInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Consumidor final — ou busque por nome, CPF/CNPJ ou telefone" />
+      {q.length >= 2 && (
+        <div style={{ marginTop: 6, border: '1px solid var(--line)', borderRadius: 7, overflow: 'hidden' }}>
+          {status === 'loading' && <div style={{ padding: '8px 11px', fontSize: 12, color: 'var(--fg-muted)' }}>Buscando…</div>}
+          {status === 'error' && <div role="alert" style={{ padding: '8px 11px', fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
+          {status === 'done' && results.length === 0 && (
+            <div style={{ padding: '8px 11px', fontSize: 12, color: 'var(--fg-muted)' }}>Nenhum cliente encontrado. Cadastre em Clientes.</div>
+          )}
+          {status === 'done' && results.map((c) => (
+            <button key={c.id} type="button" onClick={() => { onChange(c); setQuery(''); setResults([]); setStatus('idle'); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 11px', background: 'transparent', borderBottom: '1px solid var(--line-soft)' }}>
+              <div style={{ fontSize: 12.5, fontWeight: 500 }}>{c.name}</div>
+              {(c.doc || c.phone) && <div style={{ fontSize: 10.5, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{c.doc || c.phone}</div>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StockSale({ stores, cashSessionByStore }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
+  const isManager = MANAGER_ROLES.includes(useShell()?.user?.roleId);
+  const [customer, setCustomer] = React.useState(null);
+  const [approval, setApproval] = React.useState(null);
+  const [approvalOpen, setApprovalOpen] = React.useState(false);
+  const [manager, setManager] = React.useState({ email: '', password: '' });
+  const [approvalError, setApprovalError] = React.useState('');
+  const [approving, setApproving] = React.useState(false);
   const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [cart, setCart] = React.useState([]);
   const [orderOff, setOrderOff] = React.useState({ mode: 'pct', value: 0 });
@@ -52,12 +124,14 @@ export function StockSale({ stores, cashSessionByStore }) {
   const removeLine = (i) => setCart(c => c.filter((_, j) => j !== i));
   const addItem = (p) => setCart(c => {
     const at = c.findIndex(l => l.id === p.id);
-    return at >= 0 ? c.map((l, j) => (j === at ? { ...l, qty: l.qty + 1 } : l)) : [...c, { ...p, qty: 1, off: 0 }];
+    // Preço cobrado = preço efetivo do banco (promoção ativa, se houver).
+    const price = Number(p.effective_price ?? p.sale_price);
+    return at >= 0 ? c.map((l, j) => (j === at ? { ...l, qty: l.qty + 1 } : l)) : [...c, { ...p, price, qty: 1, off: 0 }];
   });
 
-  const lineNet = (l) => l.qty * l.sale_price * (1 - l.off / 100);
-  const gross = cart.reduce((s, l) => s + l.qty * l.sale_price, 0);
-  const lineOffTotal = cart.reduce((s, l) => s + l.qty * l.sale_price * (l.off / 100), 0);
+  const lineNet = (l) => l.qty * l.price * (1 - l.off / 100);
+  const gross = cart.reduce((s, l) => s + l.qty * l.price, 0);
+  const lineOffTotal = cart.reduce((s, l) => s + l.qty * l.price * (l.off / 100), 0);
   const afterLines = gross - lineOffTotal;
   const orderOffValue = orderOff.mode === 'pct' ? afterLines * (orderOff.value / 100) : Math.min(orderOff.value, afterLines);
   const net = afterLines - orderOffValue;
@@ -69,22 +143,47 @@ export function StockSale({ stores, cashSessionByStore }) {
   const cashSessionId = cashSessionByStore[storeId] ?? null;
   const needsCashSession = payment === 'dinheiro' && !cashSessionId;
   const canConfirm = cart.length > 0 && overstock.length === 0 && !needsCashSession;
+  // Arredonda como o banco (2 casas) pra não pedir aprovação por centavo.
+  const offPct = Math.round(totalOffPct * 100) / 100;
+  const needsApproval = !isManager && offPct > APPROVAL_THRESHOLD;
+  const approvalCovers = Boolean(approval && approval.storeId === storeId && approval.maxPct >= offPct);
+
+  const requestApproval = () => {
+    setApprovalError('');
+    setApproving(true);
+    requestDiscountApprovalAction({ ...manager, storeId, maxPct: offPct })
+      .then((res) => {
+        if (res?.error) { setApprovalError(res.error); return; }
+        setApproval({ id: res.approvalId, maxPct: offPct, storeId });
+        setManager({ email: '', password: '' });
+        setApprovalOpen(false);
+      })
+      .catch(() => setApprovalError('Não foi possível validar o gestor agora. Tente de novo.'))
+      .finally(() => setApproving(false));
+  };
 
   const confirm = () => {
     setError('');
     if (!canConfirm) return;
+    if (needsApproval && !approvalCovers) { setApprovalOpen(true); return; }
     startTransition(async () => {
       const result = await confirmSaleAction({
         storeId,
-        customerId: null,
+        customerId: customer?.id ?? null,
         paymentMethod: payment,
         installments: payment === 'credito' ? parseInt(installments, 10) || 1 : 1,
         cashSessionId: payment === 'dinheiro' ? cashSessionId : null,
         notes,
-        items: cart.map((l) => ({ productId: l.id, qty: l.qty, unitPrice: l.sale_price, discountPct: l.off })),
+        items: cart.map((l) => ({ productId: l.id, qty: l.qty, unitPrice: l.price, discountPct: l.off })),
         orderDiscountAmount: orderOffValue,
+        discountApprovalId: needsApproval ? approval?.id ?? null : null,
       });
-      if (result?.error) { setError(result.error); return; }
+      if (result?.error) {
+        // Aprovação é de uso único; erro ligado a ela exige pedir de novo.
+        if (/aprova/i.test(result.error)) setApproval(null);
+        setError(result.error);
+        return;
+      }
       navigate(`/receipt?id=${result.id}`);
     });
   };
@@ -151,7 +250,14 @@ export function StockSale({ stores, cashSessionByStore }) {
                             </div>
                           </td>
                           <td><AttrChip value={variantLabel(l.attrs || {})} /></td>
-                          <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{brl(l.sale_price)}</td>
+                          <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>
+                            {l.price < Number(l.sale_price) ? (
+                              <span title={l.promotion_name ? `Promoção: ${l.promotion_name}` : 'Promoção ativa'}>
+                                <s style={{ opacity: 0.6 }}>{brl(Number(l.sale_price))}</s>{' '}
+                                <span style={{ color: 'var(--success)', fontWeight: 500 }}>{brl(l.price)}</span>
+                              </span>
+                            ) : brl(l.price)}
+                          </td>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                               <button onClick={() => l.qty > 1 ? setLine(i, { qty: l.qty - 1 }) : removeLine(i)}
@@ -200,8 +306,8 @@ export function StockSale({ stores, cashSessionByStore }) {
               <Field label="Unidade" span={1}>
                 <SelectInput value={storeId} onChange={setStoreId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
               </Field>
-              <Field label="Cliente" span={2} hint="Cadastro de clientes chega na próxima etapa — por ora, venda de consumidor final.">
-                <TextInput value="Consumidor final" disabled />
+              <Field label="Cliente" span={2} hint="Opcional. Sem cliente, a venda sai como consumidor final.">
+                <CustomerField customer={customer} onChange={setCustomer} />
               </Field>
               <Field label="Observações" span={3}>
                 <TextareaInput value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: cliente pediu nota no CNPJ da empresa." />
@@ -221,8 +327,9 @@ export function StockSale({ stores, cashSessionByStore }) {
                 <SummaryRow label="Total a cobrar" value={brl(net)} strong />
               </div>
               {totalOffPct > 0 && (
-                <div style={{ fontSize: 11, color: totalOffPct > 20 ? 'var(--warning)' : 'var(--fg-muted)', marginTop: 6 }}>
-                  Desconto total de {totalOffPct.toFixed(1)}%{totalOffPct > 20 ? ' — exige aprovação do gestor.' : '.'}
+                <div style={{ fontSize: 11, color: needsApproval && !approvalCovers ? 'var(--warning)' : 'var(--fg-muted)', marginTop: 6 }}>
+                  Desconto total de {totalOffPct.toFixed(1)}%
+                  {needsApproval ? (approvalCovers ? ` — aprovado pelo gestor (até ${approval.maxPct}%).` : ' — exige aprovação do gestor.') : '.'}
                 </div>
               )}
               <button onClick={() => setDiscountOpen(true)} className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 12 }}>
@@ -275,11 +382,12 @@ export function StockSale({ stores, cashSessionByStore }) {
             <button onClick={confirm} className="btn btn-primary btn-lg"
               disabled={!canConfirm || pending}
               style={{ justifyContent: 'center', width: '100%', opacity: canConfirm && !pending ? 1 : 0.45 }}>
-              {overstock.length ? 'Estoque insuficiente' : needsCashSession ? 'Abra o caixa primeiro' : pending ? 'Confirmando…' : cart.length ? `Confirmar venda · ${brl(net)}` : 'Carrinho vazio'}
+              {overstock.length ? 'Estoque insuficiente' : needsCashSession ? 'Abra o caixa primeiro' : pending ? 'Confirmando…'
+                : !cart.length ? 'Carrinho vazio' : needsApproval && !approvalCovers ? 'Pedir aprovação do gestor' : `Confirmar venda · ${brl(net)}`}
             </button>
             <button onClick={() => navigate('/stock')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Cancelar atendimento</button>
 
-            <div className="card" style={{ padding: 16 }}>
+            {isManager && <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Margem do atendimento</div>
               <SummaryRow label="Custo da mercadoria" value={brl(cost)} />
               <SummaryRow label="Lucro bruto" value={brl(profit)} tone={profit > 0 ? 'success' : 'danger'} />
@@ -287,7 +395,7 @@ export function StockSale({ stores, cashSessionByStore }) {
               <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 8, lineHeight: 1.5 }}>
                 Visível apenas para Gestor Financeiro e Proprietário.
               </div>
-            </div>
+            </div>}
           </div>
         </div>
 
@@ -315,7 +423,7 @@ export function StockSale({ stores, cashSessionByStore }) {
           </Field>
 
           {orderOff.mode === 'pct' ? (
-            <Field label="Percentual" hint="Descontos acima de 20% exigem aprovação do gestor.">
+            <Field label="Percentual" hint={isManager ? undefined : 'Descontos acima de 20% exigem aprovação do gestor.'}>
               <div style={{ display: 'flex', gap: 6 }}>
                 {[0, 5, 10, 15, 20].map(v => (
                   <button key={v} onClick={() => setOrderOff(d => ({ ...d, value: v }))} style={{
@@ -343,11 +451,35 @@ export function StockSale({ stores, cashSessionByStore }) {
               <SummaryRow label="Total final" value={brl(net)} strong />
             </div>
             <div style={{ fontSize: 11, color: profit > 0 ? 'var(--fg-muted)' : 'var(--danger)', marginTop: 8 }}>
-              {profit > 0
+              {!isManager ? null : profit > 0
                 ? `Margem após descontos: ${((profit / net) * 100 || 0).toFixed(1)}%`
                 : 'Atenção: este desconto vende abaixo do custo.'}
             </div>
           </div>
+        </Modal>
+
+        <Modal
+          open={approvalOpen} onClose={() => { setApprovalOpen(false); setApprovalError(''); }}
+          title="Aprovação do gestor"
+          desc={`Desconto de ${offPct.toFixed(1)}% passa do limite de ${APPROVAL_THRESHOLD}%. Um gestor (financeiro ou proprietário) confirma com o próprio login — sua sessão continua aberta.`}
+          footer={(
+            <>
+              <button type="button" onClick={() => { setApprovalOpen(false); setApprovalError(''); }} className="btn btn-ghost">Cancelar</button>
+              <button type="submit" form="discount-approval" disabled={approving || !manager.email || !manager.password} className="btn btn-primary">
+                {approving ? 'Validando…' : 'Aprovar desconto'}
+              </button>
+            </>
+          )}
+        >
+          <form id="discount-approval" onSubmit={(e) => { e.preventDefault(); requestApproval(); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Field label="Email do gestor">
+              <TextInput type="email" autoComplete="off" value={manager.email} onChange={(e) => setManager((m) => ({ ...m, email: e.target.value }))} />
+            </Field>
+            <Field label="Senha do gestor">
+              <TextInput type="password" autoComplete="new-password" value={manager.password} onChange={(e) => setManager((m) => ({ ...m, password: e.target.value }))} />
+            </Field>
+            {approvalError && <div role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{approvalError}</div>}
+          </form>
         </Modal>
       </Page>
     </StoreShell>

@@ -1,10 +1,12 @@
 # Rotas — contrato congelado
 
-Fonte da verdade: `src/app/**/page.tsx`. 111 rotas em 5 route groups. Rota
+Fonte da verdade: `src/app/**/page.tsx`. 113 rotas em 5 route groups. Rota
 nova entra nesta tabela no mesmo commit que adiciona o `page.tsx` — não é
 opcional. (`/settings/billing` removida em 2026-09-21: duplicava
 `/settings/subscription`, que já usa Stripe Customer Portal real —
-autorizado pelo dev.)
+autorizado pelo dev. `/terms` e `/privacy` adicionadas em 2026-09-26: textos
+legais exigidos pela LGPD e linkados no aceite do cadastro — autorizado pelo
+dev.)
 
 Até a Fase 1 do backend Supabase, todas as rotas eram SSG (100% estático,
 sem dado dinâmico). Isso mudou a partir da Fase 2: toda rota cujo
@@ -18,7 +20,7 @@ autorização do desenvolvedor (ver `CLAUDE.md`).
 
 ## `(marketing)` — público, sem chrome de app
 
-`/`, `/pricing`
+`/`, `/pricing`, `/terms`, `/privacy`
 
 ## `(auth)` — público, fluxo de conta
 
@@ -26,8 +28,9 @@ autorização do desenvolvedor (ver `CLAUDE.md`).
 `/invite`, `/checkout`, `/onboarding`, `/verify-email`, `/trial-ended`,
 `/complete-signup`
 
-`/complete-signup` é a única rota de `(auth)` que **exige sessão** e por isso
-fica fora de `OPEN_ROUTES` (todas as outras são públicas). Existe porque o
+`/complete-signup` é a única rota de `(auth)` que **exige sessão**. Ela está
+em `OPEN_ROUTES` (nenhum perfil RBAC é barrado), mas `src/proxy.ts` a trata
+como exceção via `NEEDS_SESSION` e exige usuário logado. Existe porque o
 login com Google entrega um usuário autenticado sem tenant — o OAuth não
 coleta nome da loja, CNPJ nem plano, que `fn_complete_signup` exige. Quem já
 tem tenant é redirecionado pra `/dashboard` pelo próprio `page.tsx`.
@@ -75,7 +78,7 @@ tem tenant é redirecionado pra `/dashboard` pelo próprio `page.tsx`.
 reserva o path literal `/404` pra própria máquina de erro), `/error`,
 `/offline`, `/session-expired`, `/access-denied`
 
-## Route Handlers técnicos (não contam nas 111 rotas — não são `page.tsx`)
+## Route Handlers técnicos (não contam nas 113 rotas — não são `page.tsx`)
 
 `src/app/auth/callback/route.ts` — troca o `code` de um link de email (reset
 de senha) ou do OAuth do Google por uma sessão via cookie. Nunca renderiza

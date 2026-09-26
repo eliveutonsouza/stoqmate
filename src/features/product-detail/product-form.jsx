@@ -302,7 +302,7 @@ export function ProductForm({ categories, suppliers, locations, product }) {
               <span style={{ color: 'var(--fg-muted)', flexShrink: 0, marginTop: 1 }}><I.Sliders size={14} /></span>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
                 Faltando um atributo em <strong>{cat.name}</strong>?{' '}
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/categories'); }} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Edite o esquema da categoria</a>{' '}
+                <a href="/categories" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/categories'); }} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Edite o esquema da categoria</a>{' '}
                 e ele aparece aqui na hora.
               </div>
             </div>

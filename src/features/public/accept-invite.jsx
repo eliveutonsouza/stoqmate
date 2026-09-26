@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { unstable_rethrow, useSearchParams } from 'next/navigation';
 import { useNavigate } from '@/hooks/use-navigate';
 import { AuthShell } from '@/features/auth/auth-shell';
 import { I } from '@/components/icons';
@@ -19,7 +19,8 @@ function AcceptInviteInner() {
   const params = useSearchParams();
   const token = params.get('token') || '';
 
-  const [status, setStatus] = React.useState(() => (token ? 'loading' : 'invalid')); // loading|valid|invalid
+  const [status, setStatus] = React.useState(() => (token ? 'loading' : 'invalid')); // loading|valid|invalid|error
+  const [attempt, setAttempt] = React.useState(0);
   const [preview, setPreview] = React.useState(null);
   const [name, setName] = React.useState('');
   const [pwd, setPwd] = React.useState('');
@@ -29,24 +30,44 @@ function AcceptInviteInner() {
 
   React.useEffect(() => {
     if (!token) return;
+    // Falha de rede/servidor não é convite inválido: só "sem linha" é.
     createClient().rpc('fn_invite_preview', { p_token: token }).then(({ data, error: rpcError }) => {
-      if (rpcError || !data?.length) { setStatus('invalid'); return; }
+      if (rpcError) { setStatus('error'); return; }
+      if (!data?.length) { setStatus('invalid'); return; }
       setPreview(data[0]);
       setStatus('valid');
-    });
-  }, [token]);
+    }).catch(() => setStatus('error'));
+  }, [token, attempt]);
+
+  const retry = () => { setStatus('loading'); setAttempt((n) => n + 1); };
 
   const submit = () => {
     if (!valid) return;
     setError('');
     startTransition(async () => {
-      const result = await acceptInviteAction({ token, email: preview.email, fullName: name, password: pwd });
-      if (result?.error) setError(result.error);
+      try {
+        const result = await acceptInviteAction({ token, email: preview.email, fullName: name, password: pwd });
+        if (result?.error) setError(result.error);
+      } catch (e) {
+        unstable_rethrow(e); // redirect() do Next sobe como exceção — deixa passar.
+        setError('Não foi possível concluir. Verifique a conexão e tente de novo.');
+      }
     });
   };
 
   if (status === 'loading') {
     return <AuthShell navigate={navigate}><p style={{ fontSize: 14, color: 'var(--fg-muted)' }}>Carregando convite…</p></AuthShell>;
+  }
+  if (status === 'error') {
+    return (
+      <AuthShell navigate={navigate}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, letterSpacing: '-0.025em' }}>Não foi possível carregar o convite</h1>
+        <p role="alert" style={{ margin: '10px 0 24px', fontSize: 14, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
+          Falha de conexão ao verificar o link. O convite pode continuar válido — tente de novo em instantes.
+        </p>
+        <button onClick={retry} className="btn btn-primary">Tentar de novo</button>
+      </AuthShell>
+    );
   }
   if (status === 'invalid') {
     return (

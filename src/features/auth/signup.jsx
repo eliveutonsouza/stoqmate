@@ -47,9 +47,9 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
               {trialDays} dias grátis. Nenhuma cobrança agora — só pedimos o cartão no fim do período de teste.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <FormCard title="Dados de acesso" cols={2}>
-                <Field label="Seu nome" required span={1}><TextInput value={form.fullName} onChange={set('fullName')} placeholder="Mariana Souza" style={{ height: 36 }} /></Field>
+                <Field label="Seu nome" required span={1}><TextInput value={form.fullName} onChange={set('fullName')} placeholder="Seu nome completo" style={{ height: 36 }} /></Field>
                 <Field label="Telefone" span={1}><TextInput value={form.phone} onChange={set('phone')} placeholder="(11) 98888-0000" mono style={{ height: 36 }} /></Field>
                 <Field label="Email de trabalho" required span={2}><TextInput type="email" value={form.email} onChange={set('email')} placeholder="voce@sualoja.com.br" style={{ height: 36 }} /></Field>
                 <Field label="Senha" required hint="Mínimo 8 caracteres" span={2}><TextInput type="password" value={form.password} onChange={set('password')} placeholder="••••••••" style={{ height: 36 }} /></Field>
@@ -62,7 +62,7 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
 
               <label style={{ display: 'flex', gap: 9, fontSize: 12, color: 'var(--fg-muted)', alignItems: 'flex-start', lineHeight: 1.5 }}>
                 <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} style={{ marginTop: 2 }} />
-                <span>Concordo com os <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Termos de uso</a> e com a <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Política de privacidade</a>, incluindo o tratamento de dados conforme a LGPD.</span>
+                <span>Concordo com os <a href="/terms" target="_blank" rel="noopener" style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Termos de uso</a> e com a <a href="/privacy" target="_blank" rel="noopener" style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Política de privacidade</a>, incluindo o tratamento de dados conforme a LGPD.</span>
               </label>
 
               {error && (
@@ -71,10 +71,10 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
                 </div>
               )}
 
-              <button onClick={submit} disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>
+              <button type="submit" disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>
                 {pending ? 'Criando…' : <>Criar loja e configurar <I.ArrowRight size={14} /></>}
               </button>
-            </div>
+            </form>
           </div>
 
           {/* Order summary */}

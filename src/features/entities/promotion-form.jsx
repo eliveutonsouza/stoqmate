@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import { unstable_rethrow } from 'next/navigation';
 import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
@@ -52,7 +53,9 @@ function PromotionCreateForm({ categories }) {
     setError('');
     if (!canSubmit) return;
     startTransition(async () => {
-      const result = await createPromotionAction({
+      let result;
+      try {
+        result = await createPromotionAction({
         name,
         scopeType: scope,
         productId: scope === 'product' ? product.id : null,
@@ -61,7 +64,12 @@ function PromotionCreateForm({ categories }) {
         startsAt: new Date(`${startsAt}T00:00:00`).toISOString(),
         endsAt: promoType === 'period' ? new Date(`${endsAt}T23:59:59`).toISOString() : null,
         untilStock: promoType === 'until_stock',
-      });
+        });
+      } catch (e) {
+        unstable_rethrow(e);
+        setError('Não foi possível criar a promoção. Verifique a conexão e tente de novo.');
+        return;
+      }
       if (result?.error) { setError(result.error); return; }
       navigate('/promotions');
     });
@@ -87,7 +95,7 @@ function PromotionCreateForm({ categories }) {
                 {[
                   { k: 'product', t: 'Um produto', d: 'Aplica ao SKU exato escolhido.' },
                   { k: 'category', t: 'Uma categoria inteira', d: 'Todos os produtos da categoria.' },
-                  { k: 'store', t: 'Toda a loja', d: 'Aplica ao carrinho todo — configuração fina chega numa próxima etapa.' },
+                  { k: 'store', t: 'Toda a loja', d: 'Mesmo preço promocional para todo produto com preço de tabela acima dele.' },
                 ].map(o => (
                   <button key={o.k} onClick={() => setScope(o.k)} style={{
                     display: 'flex', gap: 11, alignItems: 'flex-start', textAlign: 'left',
@@ -207,6 +215,7 @@ function PromotionCreateForm({ categories }) {
 function PromotionView({ promotion }) {
   const navigate = useNavigate();
   const [pending, startTransition] = React.useTransition();
+  const [error, setError] = React.useState('');
 
   if (!promotion) {
     return (
@@ -223,8 +232,15 @@ function PromotionView({ promotion }) {
   const original = promotion.product?.sale_price ?? null;
   const off = original ? ((original - promotion.promo_price) / original) * 100 : null;
   const toggle = () => startTransition(async () => {
-    await setPromotionActiveAction({ id: promotion.id, active: !promotion.active });
-    navigate('/promotions');
+    setError('');
+    try {
+      const result = await setPromotionActiveAction({ id: promotion.id, active: !promotion.active });
+      if (result?.error) { setError(result.error); return; }
+      navigate('/promotions');
+    } catch (e) {
+      unstable_rethrow(e);
+      setError('Não foi possível salvar. Verifique a conexão e tente de novo.');
+    }
   });
 
   return (
@@ -255,6 +271,9 @@ function PromotionView({ promotion }) {
               <div className="card" style={{ padding: 16 }}>
                 <SummaryRow label="Desconto" value={`${off.toFixed(1)}%`} strong />
               </div>
+            )}
+            {error && (
+              <div role="alert" style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>
             )}
             <button onClick={toggle} disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%' }}>
               {pending ? 'Salvando…' : promotion.active ? 'Encerrar promoção agora' : 'Reativar promoção'}

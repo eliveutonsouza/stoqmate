@@ -198,7 +198,7 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <ProductThumb category={p.category} brand={p.brand} attrs={p.attrs} size={28} />
                               <div>
-                                <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/products/detail?id=${p.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</a>
+                                <a href={`/products/detail?id=${p.id}`} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(`/products/detail?id=${p.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</a>
                                 <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{p.brand}{!p.active && ' · inativo'}</div>
                               </div>
                             </div>

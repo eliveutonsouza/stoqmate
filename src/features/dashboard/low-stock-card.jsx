@@ -44,7 +44,7 @@ export function LowStockCard({ navigate, items, count }) {
           {count > items.length && (
             <div style={{ padding: '10px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>+{count - items.length} outros itens em alerta</span>
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/products'); }} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Ver lista completa →</a>
+              <a href="/products" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/products'); }} style={{ color: 'var(--accent-text)', fontWeight: 500 }}>Ver lista completa →</a>
             </div>
           )}
         </>

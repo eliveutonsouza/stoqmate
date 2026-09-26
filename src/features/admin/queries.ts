@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { must } from "@/lib/supabase/must";
+import { PLANS as PLAN_ASSUMPTIONS } from "@/lib/plans";
 import { type RawSearchParams, PAGE_SIZE, containsPattern, pageParam, pageRange, param } from "@/lib/list-params";
 
 // cache() dedupe a checagem is_platform_staff quando uma página admin chama
@@ -390,8 +391,10 @@ export async function loadPlatformSettings() {
       connected: Boolean(process.env.ANTHROPIC_API_KEY), ref: process.env.ANTHROPIC_API_KEY ? "chave configurada" : "—",
     },
     {
-      name: "Supabase Auth", desc: "Emails transacionais (convite, confirmação, senha)",
-      connected: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY), ref: "SMTP do projeto",
+      // O SMTP é configurado no painel do Supabase, fora do alcance do app —
+      // não há como checar daqui. Não afirmar "Conectado" sem ter checado.
+      name: "Supabase Auth", desc: "Emails transacionais (convite, confirmação, senha). SMTP configurado no painel do Supabase; o padrão do Supabase tem limite baixo de envios por hora.",
+      connected: false, unverified: true, ref: "não verificado daqui",
     },
   ];
 
@@ -412,6 +415,29 @@ export async function loadPlans() {
   const admin = createServiceRoleClient();
   const data = must(await admin.from("plans").select("*").order("monthly_price"), "admin/queries.loadPlans.data");
   return data ?? [];
+}
+
+/**
+ * Planos ativos e pagos do banco (preço e cota reais) com as premissas de custo
+ * do modelo (suporte, mensagens) do tier de mesmo id em lib/plans. Plano sem
+ * premissa própria herda as do Controle e vem marcado com `assumed`.
+ */
+export async function loadEconomicsPlans() {
+  const rows = await loadPlans();
+  const fallback = PLAN_ASSUMPTIONS.find((p) => p.id === "controle") ?? PLAN_ASSUMPTIONS[0];
+  return rows
+    .filter((p) => p.active && Number(p.monthly_price) > 0)
+    .map((p) => {
+      const own = PLAN_ASSUMPTIONS.find((a) => a.id === p.id);
+      return {
+        ...(own ?? fallback),
+        id: p.id,
+        name: p.name,
+        monthly: Number(p.monthly_price),
+        credits: Number(p.credits),
+        assumed: !own,
+      };
+    });
 }
 
 export async function loadPlan(id: string) {

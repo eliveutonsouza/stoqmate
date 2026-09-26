@@ -31,9 +31,11 @@ export function Roles() {
           <span style={{ color: 'var(--fg-muted)', flexShrink: 0 }}><I.Shield size={15} /></span>
           <span style={{ color: 'var(--fg-muted)', flex: 1, lineHeight: 1.5 }}>
             Esta tabela é o contrato do sistema: uma rota nova nasce negada até receber uma área.
-            No plano Rede o lojista cria perfis próprios, sempre a partir de uma cópia destes.
+            Por enquanto valem estes perfis fixos; perfis personalizados ainda não estão disponíveis.
           </span>
-          <button className="btn btn-outline btn-sm" disabled style={{ opacity: 0.55, cursor: 'not-allowed' }}>Criar perfil</button>
+          <button className="btn btn-outline btn-sm" disabled title="Em breve" style={{ opacity: 0.55, cursor: 'not-allowed' }}>
+            Criar perfil <span className="badge" style={{ marginLeft: 4 }}>Em breve</span>
+          </button>
         </div>
 
         <div className="card" style={{ overflowX: 'auto', overflowY: 'hidden' }}>

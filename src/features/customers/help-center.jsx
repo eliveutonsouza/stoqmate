@@ -87,11 +87,18 @@ export function HelpCenter() {
             {TOPICS.map(t => {
               const Ico = I[t.i] || I.Box;
               return (
-                <div key={t.t} className="card" style={{ padding: 16 }}>
+                <a
+                  key={t.t}
+                  href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Dúvida: ${t.t}`)}`}
+                  title={`Enviar dúvida sobre "${t.t}" ao suporte`}
+                  className="card"
+                  style={{ padding: 16, display: 'block', color: 'inherit', textDecoration: 'none' }}
+                >
                   <span style={{ color: 'var(--fg-muted)', display: 'flex' }}><Ico size={17} /></span>
                   <div style={{ fontSize: 13, fontWeight: 600, marginTop: 11, letterSpacing: '-0.01em' }}>{t.t}</div>
                   <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4, lineHeight: 1.5 }}>{t.d}</div>
-                </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--accent-text)', marginTop: 8 }}>Perguntar ao suporte →</div>
+                </a>
               );
             })}
           </div>

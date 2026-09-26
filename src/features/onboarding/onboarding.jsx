@@ -105,7 +105,7 @@ export function Onboarding() {
 
         <div style={{ flex: 1 }}></div>
         <div style={{ fontSize: 11, color: 'var(--fg-soft)', lineHeight: 1.55 }}>
-          Precisa de ajuda? Fale com o time no chat ou em <span style={{ color: 'var(--fg-muted)' }}>suporte@stoqmate.com.br</span>.
+          Precisa de ajuda? Escreva para <a href="mailto:suporte@stoqmate.com.br" style={{ color: 'var(--fg-muted)' }}>suporte@stoqmate.com.br</a>.
         </div>
       </aside>
 

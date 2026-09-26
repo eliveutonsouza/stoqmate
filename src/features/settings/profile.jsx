@@ -10,6 +10,7 @@ import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { I } from '@/components/icons';
 import { signOutAction } from '@/features/auth/actions';
+import { useShell } from '@/components/layout/shell-context';
 import {
   updateProfileAction, uploadAvatarAction, changePasswordAction,
   enrollMfaAction, verifyMfaAction, unenrollMfaAction,
@@ -21,6 +22,7 @@ function initialsOf(name) {
 
 export function Profile({ profile }) {
   const navigate = useNavigate();
+  const shellSignOut = useShell()?.actions?.signOut;
   const [fullName, setFullName] = React.useState(profile?.fullName ?? '');
   const [phone, setPhone] = React.useState(profile?.phone ?? '');
   const [avatarUrl, setAvatarUrl] = React.useState(profile?.avatarUrl ?? null);
@@ -197,7 +199,7 @@ export function Profile({ profile }) {
             <div style={{ fontSize: 13, fontWeight: 500 }}>Sair da conta</div>
             <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>Encerra esta sessão neste dispositivo.</div>
           </div>
-          <button onClick={() => signOutAction()} className="btn btn-outline btn-sm"><I.Logout size={12} /> Sair</button>
+          <button onClick={() => (shellSignOut ?? signOutAction)()} className="btn btn-outline btn-sm"><I.Logout size={12} /> Sair</button>
         </div>
       </SettingsLayout>
     </StoreShell>

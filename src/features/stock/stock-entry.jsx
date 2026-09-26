@@ -111,7 +111,9 @@ export function StockEntry({ stores, suppliers, locations }) {
         <div style={{ fontSize: 12, color: 'var(--fg-muted)', flex: 1 }}>
           Recebeu vários SKUs na mesma nota? Leia o XML da NF-e e lance tudo de uma vez.
         </div>
-        <button disabled title="Em breve" className="btn btn-outline btn-sm" style={{ opacity: 0.55, cursor: 'not-allowed' }}>Importar XML da NF-e</button>
+        <button disabled title="Em breve" className="btn btn-outline btn-sm" style={{ opacity: 0.55, cursor: 'not-allowed' }}>
+          Importar XML da NF-e <span className="badge" style={{ marginLeft: 4 }}>Em breve</span>
+        </button>
       </div>
     </MovementPage>
   );

@@ -138,7 +138,7 @@ export const AREAS = [
 // nesse sentido (qualquer perfil a alcança) mas exige usuário logado, e o
 // `src/proxy.ts` trata essa exceção explicitamente.
 export const OPEN_ROUTES = [
-  '/', '/pricing', '/signup', '/login', '/forgot-password', '/reset-password', '/invite',
+  '/', '/pricing', '/terms', '/privacy', '/signup', '/login', '/forgot-password', '/reset-password', '/invite',
   '/checkout', '/onboarding', '/trial-ended', '/verify-email', '/complete-signup',
   '/404-demo', '/error', '/offline', '/session-expired', '/access-denied',
 ];

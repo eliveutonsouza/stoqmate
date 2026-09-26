@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { unstable_rethrow, useRouter } from 'next/navigation';
 import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
@@ -9,7 +9,7 @@ import { I } from '@/components/icons';
 import { Page } from '@/components/ui/page-container';
 import { NOTIF_TONE } from '@/features/network-admin/notif-tone';
 import { FormCard } from '@/components/ui/form-card';
-import { markNotificationsReadAction, saveNotificationPreferencesAction } from '@/features/network-admin/notifications-actions';
+import { markNotificationsReadAction } from '@/features/network-admin/notifications-actions';
 
 const KIND = {
   out_of_stock: { tone: 'danger', icon: 'Alert' },
@@ -30,9 +30,8 @@ export function Notifications({ notifications, preferences }) {
   const navigate = useNavigate();
   const router = useRouter();
   const [filter, setFilter] = React.useState('all');
-  const [prefs, setPrefs] = React.useState(preferences);
   const [pending, startTransition] = React.useTransition();
-  const [saved, setSaved] = React.useState(false);
+  const [error, setError] = React.useState('');
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
   const rows = filter === 'unread' ? notifications.filter((n) => !n.read_at)
@@ -40,23 +39,24 @@ export function Notifications({ notifications, preferences }) {
     : filter === 'warning' ? notifications.filter((n) => n.kind === 'low_stock')
     : notifications;
 
-  const markAllRead = () => startTransition(async () => {
-    await markNotificationsReadAction();
-    router.refresh();
+  const markRead = (ids) => startTransition(async () => {
+    setError('');
+    try {
+      const result = await markNotificationsReadAction(ids);
+      if (result?.error) { setError(result.error); return; }
+      router.refresh();
+    } catch (e) {
+      unstable_rethrow(e);
+      setError('Não foi possível marcar como lida. Verifique a conexão e tente de novo.');
+    }
   });
 
+  const markAllRead = () => markRead();
+
   const open = (n) => {
-    if (!n.read_at) startTransition(async () => { await markNotificationsReadAction([n.id]); router.refresh(); });
+    if (!n.read_at) markRead([n.id]);
     if (n.target_type === 'product') navigate(`/products/detail?id=${n.target_id}`);
     if (n.target_type === 'user') navigate('/settings/users');
-  };
-
-  const savePrefs = () => {
-    setSaved(false);
-    startTransition(async () => {
-      await saveNotificationPreferencesAction(prefs.map((p) => ({ key: p.key, email: p.email })));
-      setSaved(true);
-    });
   };
 
   return (
@@ -75,6 +75,9 @@ export function Notifications({ notifications, preferences }) {
         onTab={setFilter}
       />
       <Page width={900}>
+        {error && (
+          <div role="alert" style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 12.5 }}>{error}</div>
+        )}
         <div className="card" style={{ overflow: 'hidden' }}>
           {rows.length === 0 ? (
             <div style={{ padding: '32px 18px', textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>Nenhuma notificação aqui.</div>
@@ -111,16 +114,15 @@ export function Notifications({ notifications, preferences }) {
           })}
         </div>
 
-        <FormCard title="Preferências de notificação" desc="Você recebe no painel sempre; escolha o que também vai por email." cols={1}
-          footer={<button onClick={savePrefs} disabled={pending} className="btn btn-primary">{pending ? 'Salvando…' : saved ? 'Salvo ✓' : 'Salvar preferências'}</button>}>
-          {prefs.map((r, i, arr) => (
+        <FormCard title="Preferências de notificação" desc="Todo aviso aparece aqui no painel. O envio por email ainda não está disponível." cols={1}>
+          {preferences.map((r, i, arr) => (
             <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500 }}>{r.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{r.desc}</div>
               </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--fg-muted)' }}>
-                <input type="checkbox" checked={r.email} onChange={(e) => setPrefs((p) => p.map((x) => (x.key === r.key ? { ...x, email: e.target.checked } : x)))} /> por email
+              <label title="Em breve" style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--fg-faint)', cursor: 'not-allowed' }}>
+                <input type="checkbox" checked={false} readOnly disabled /> por email <span className="badge">Em breve</span>
               </label>
             </div>
           ))}

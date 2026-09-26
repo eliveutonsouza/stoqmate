@@ -53,7 +53,7 @@ export function VerifyEmail({ email = '' }) {
         </button>
       </div>
       <div style={{ marginTop: 18, fontSize: 12.5, color: 'var(--fg-muted)' }}>
-        Email errado? <a href="#" onClick={(e) => { e.preventDefault(); navigate('/signup'); }}>Cadastrar de novo</a>.
+        Email errado? <a href="/signup" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/signup'); }}>Cadastrar de novo</a>.
       </div>
     </AuthShell>
   );

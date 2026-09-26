@@ -133,7 +133,7 @@ export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems
                 {overview.low_stock_count > lowStockItems.length && (
                   <div style={{ padding: '10px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>+{overview.low_stock_count - lowStockItems.length} outros itens</span>
-                    <a href="#" onClick={(e) => { e.preventDefault(); navigate('/products'); }} style={{ fontSize: 11, color: 'var(--accent-text)', fontWeight: 500 }}>Ver no catálogo →</a>
+                    <a href="/products" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/products'); }} style={{ fontSize: 11, color: 'var(--accent-text)', fontWeight: 500 }}>Ver no catálogo →</a>
                   </div>
                 )}
               </>

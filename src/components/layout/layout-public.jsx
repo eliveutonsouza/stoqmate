@@ -9,6 +9,7 @@ const NAV = [{ l: 'Produto', r: '/' }, { l: 'Planos', r: '/pricing' }];
 const FOOTER = [
   { h: 'Produto', l: [{ t: 'Visão geral', r: '/' }, { t: 'Planos', r: '/pricing' }] },
   { h: 'Conta', l: [{ t: 'Criar conta', r: '/signup' }, { t: 'Entrar', r: '/login' }, { t: 'Esqueci a senha', r: '/forgot-password' }] },
+  { h: 'Legal', l: [{ t: 'Termos de uso', r: '/terms' }, { t: 'Privacidade', r: '/privacy' }] },
 ];
 
 export function LayoutPublic({ children, navigate, route }) {

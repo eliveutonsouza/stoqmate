@@ -114,7 +114,7 @@ export function Customers({ filters, pageSize, rows, total, stats }) {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <StoreAvatar name={c.name} />
-                        <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/customers/detail?id=${c.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</a>
+                        <a href={`/customers/detail?id=${c.id}`} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(`/customers/detail?id=${c.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</a>
                       </div>
                     </td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{c.doc || '—'}</td>

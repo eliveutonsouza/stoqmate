@@ -156,7 +156,7 @@ export function Suppliers({ filters, pageSize, rows, total, catalogTotal, catego
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <StoreAvatar name={s.name} />
-                          <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/suppliers/detail?id=${s.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{s.name}</a>
+                          <a href={`/suppliers/detail?id=${s.id}`} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(`/suppliers/detail?id=${s.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{s.name}</a>
                           {!s.active && <span className="badge">Inativo</span>}
                         </div>
                       </td>

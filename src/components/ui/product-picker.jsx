@@ -20,6 +20,7 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
   const [results, setResults] = React.useState([]);
   const [open, setOpen] = React.useState(false);
   const [searchedQuery, setSearchedQuery] = React.useState('');
+  const [searchError, setSearchError] = React.useState(false);
   const [menuRect, setMenuRect] = React.useState(null);
   const wrapperRef = React.useRef(null);
   const loading = query.trim().length >= 2 && searchedQuery !== query;
@@ -31,9 +32,10 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
     const handle = setTimeout(async () => {
       const supabase = createClient();
       const term = query.trim().replace(/[%_]/g, '');
-      const { data } = await supabase.rpc('fn_search_products', { p_term: term, p_limit: 8 });
+      const { data, error } = await supabase.rpc('fn_search_products', { p_term: term, p_limit: 8 });
       if (!cancelled) {
-        setResults(data ?? []);
+        setSearchError(Boolean(error));
+        setResults(error ? [] : data ?? []);
         setSearchedQuery(query);
       }
     }, 250);
@@ -110,6 +112,8 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
         }}>
           {loading ? (
             <div style={{ padding: '12px 14px', fontSize: 12.5, color: 'var(--fg-muted)' }}>Buscando…</div>
+          ) : searchError ? (
+            <div role="alert" style={{ padding: '12px 14px', fontSize: 12.5, color: 'var(--danger)' }}>Não foi possível buscar agora. Tente de novo.</div>
           ) : results.length === 0 ? (
             <div style={{ padding: '12px 14px', fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhum produto encontrado.</div>
           ) : (

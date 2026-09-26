@@ -89,7 +89,9 @@ export function INSTALLED_BASE_MIX() {
   return 11 * INFRA_WEIGHTS.balcao + 55 * INFRA_WEIGHTS.controle + 34 * INFRA_WEIGHTS.rede;
 }
 export const INFRA_PER_WEIGHT = INFRA_TOTAL_BRL / INFRA_WEIGHT_UNITS;
-export const infraFor = (plan) => INFRA_PER_WEIGHT * INFRA_WEIGHTS[plan.id];
+// Plano fora da tabela de pesos (criado no console) pesa como o Controle.
+export const infraWeight = (plan) => INFRA_WEIGHTS[plan.id] ?? INFRA_WEIGHTS.controle;
+export const infraFor = (plan) => INFRA_PER_WEIGHT * infraWeight(plan);
 
 // Custos variáveis por loja que escalam com o uso, não com a infra.
 export const VARIABLE = {

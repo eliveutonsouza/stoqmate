@@ -35,7 +35,7 @@ export function OnboardingComplete({ navigate, data }) {
             Próximos passos sugeridos
           </div>
           {[
-            ['Importar seu catálogo', 'Mapeamento assistido de XLSX e CSV'],
+            ['Importar seu catálogo', 'Mapeamento assistido de planilha CSV'],
             ['Adicionar suas outras unidades', 'Estoque isolado por loja, visão consolidada da rede'],
             ['Convidar a equipe do balcão', 'Vendedores registram venda sem ver relatórios'],
           ].map(([t, d], i) => (

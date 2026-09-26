@@ -86,9 +86,11 @@ export function AdminSettings({ settings, aiMonth, integrations }) {
                 <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{it.desc}</div>
               </div>
               <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg-soft)' }}>{it.ref}</span>
-              {it.connected
-                ? <span className="badge badge-success"><span className="badge-dot"></span> Conectado</span>
-                : <span className="badge">Não configurado</span>}
+              {it.unverified
+                ? <span className="badge badge-warning">Verificar no Supabase</span>
+                : it.connected
+                  ? <span className="badge badge-success"><span className="badge-dot"></span> Chave configurada</span>
+                  : <span className="badge">Não configurado</span>}
             </div>
           ))}
         </FormCard>
@@ -96,18 +98,22 @@ export function AdminSettings({ settings, aiMonth, integrations }) {
         <FormCard title="Branding da plataforma" desc="Em breve — ainda sem efeito no produto." cols={2}>
           <Field label="Nome do produto" span={1}><TextInput {...SOON} defaultValue="Stoqmate" /></Field>
           <Field label="Domínio principal" span={1}><TextInput {...SOON} mono defaultValue="stoqmate.com.br" /></Field>
-          <Field label="Email remetente" span={1}><TextInput {...SOON} type="email" defaultValue="nao-responda@stoqmate.com.br" /></Field>
+          <Field label="Email remetente" span={1} hint="Nenhum email transacional próprio é enviado hoje."><TextInput {...SOON} type="email" placeholder="Não configurado" /></Field>
           <Field label="Logo da plataforma" span={1}>
             <button {...SOON} className="btn btn-outline btn-sm" style={{ height: 36 }}>Substituir logo</button>
           </Field>
         </FormCard>
 
-        <FormCard title="Políticas globais" desc="Em breve — ainda sem efeito no produto." cols={2}>
-          <Field label="Retenção após cancelamento" span={1}><TextInput {...SOON} mono defaultValue="90" suffix="dias" /></Field>
-          <Field label="Tamanho máximo de foto" span={1}><TextInput {...SOON} mono defaultValue="5" suffix="MB" /></Field>
-          <Field label="Tolerância de inadimplência" span={1}><TextInput {...SOON} mono defaultValue="7" suffix="dias" /></Field>
-          <Field label="Rate limit da API" span={1}><TextInput {...SOON} mono defaultValue="600" suffix="req/min" /></Field>
-          <Field label="Sessão administrativa" span={1}><TextInput {...SOON} mono defaultValue="30" suffix="min" /></Field>
+        <FormCard title="Limites de upload" desc="Valores fixos no código hoje — ainda não editáveis por aqui." cols={2}>
+          <Field label="Foto de produto" span={1}><TextInput disabled mono value="4" suffix="MB" /></Field>
+          <Field label="Logo e avatar" span={1}><TextInput disabled mono value="2" suffix="MB" /></Field>
+        </FormCard>
+
+        <FormCard title="Políticas globais" desc="Em breve — ainda sem efeito no produto. Nenhuma destas políticas é aplicada hoje." cols={2}>
+          <Field label="Retenção após cancelamento" span={1}><TextInput {...SOON} mono placeholder="Não definido" suffix="dias" /></Field>
+          <Field label="Tolerância de inadimplência" span={1}><TextInput {...SOON} mono placeholder="Não definido" suffix="dias" /></Field>
+          <Field label="Rate limit da API" span={1}><TextInput {...SOON} mono placeholder="Não definido" suffix="req/min" /></Field>
+          <Field label="Sessão administrativa" span={1}><TextInput {...SOON} mono placeholder="Não definido" suffix="min" /></Field>
         </FormCard>
       </Page>
     </AdminShell>

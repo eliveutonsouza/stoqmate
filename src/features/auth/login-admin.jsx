@@ -32,7 +32,7 @@ export function LoginAdmin() {
       <p style={{ margin: '8px 0 28px', fontSize: 14, color: 'var(--fg-muted)' }}>
         Restrito à equipe Stoqmate. Toda sessão é auditada.
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Field label="Email corporativo">
           <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ height: 36 }} />
         </Field>
@@ -47,13 +47,13 @@ export function LoginAdmin() {
             {error}
           </div>
         )}
-        <button onClick={submit} disabled={pending} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', marginTop: 4, opacity: pending ? 0.7 : 1 }}>
+        <button type="submit" disabled={pending} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', marginTop: 4, opacity: pending ? 0.7 : 1 }}>
           {pending ? 'Verificando…' : 'Entrar no console'}
         </button>
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login'); }} style={{ fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 8 }}>
+        <a href="/login" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/login'); }} style={{ fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 8 }}>
           ← Voltar ao login de loja
         </a>
-      </div>
+      </form>
     </AuthShell>
   );
 }

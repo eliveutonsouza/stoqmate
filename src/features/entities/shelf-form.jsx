@@ -45,7 +45,7 @@ export function ShelfForm({ mode = 'new', categories = [], stores = [], location
         <PageHeader title="Editar local de estoque" />
         <Page width={720}>
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
-            Local não encontrado. <a href="#" onClick={(e) => { e.preventDefault(); navigate('/shelves'); }} style={{ color: 'var(--accent-text)' }}>Voltar aos locais</a>
+            Local não encontrado. <a href="/shelves" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/shelves'); }} style={{ color: 'var(--accent-text)' }}>Voltar aos locais</a>
           </div>
         </Page>
       </StoreShell>

@@ -54,7 +54,7 @@ export function ResetPassword() {
           <p style={{ margin: '8px 0 28px', fontSize: 14, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
             Escolha uma nova senha pra sua conta.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={(e) => { e.preventDefault(); if (valid && !pending) submit(); }} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Field label="Nova senha" required>
               <TextInput type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="••••••••" style={{ height: 36 }} />
             </Field>
@@ -78,14 +78,14 @@ export function ResetPassword() {
               </div>
             )}
 
-            <button onClick={submit} className="btn btn-primary btn-lg" disabled={!valid || pending}
+            <button type="submit" className="btn btn-primary btn-lg" disabled={!valid || pending}
               style={{ width: '100%', justifyContent: 'center', marginTop: 4, opacity: valid && !pending ? 1 : 0.45, cursor: valid && !pending ? 'pointer' : 'not-allowed' }}>
               {pending ? 'Salvando…' : 'Redefinir senha'}
             </button>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login'); }} style={{ fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 4 }}>
+            <a href="/login" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/login'); }} style={{ fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 4 }}>
               ← Voltar ao login
             </a>
-          </div>
+          </form>
         </>
       )}
     </AuthShell>

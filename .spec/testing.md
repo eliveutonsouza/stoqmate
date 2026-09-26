@@ -22,7 +22,7 @@ mockado. Arquivo de teste fica colocado ao lado do fonte
 - `e2e/all-routes-smoke.spec.ts` — deriva a lista de rotas andando por
   `src/app` em busca de `page.tsx` (nunca hardcoded — um script assim já
   apodreceu uma vez durante a restruturação anterior) e confere HTTP 200 +
-  zero `console.error` em cada uma das 111 rotas.
+  zero `console.error` em cada uma das 113 rotas.
 - 7 specs de jornada: `landing-to-pricing`, `signup`, `login`,
   `dashboard-nav`, `product-catalog`, `pos-sale`, `settings-page`.
 - `hero-film.spec.ts` — cobertura específica do filme do hero

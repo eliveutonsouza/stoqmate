@@ -84,7 +84,7 @@ export function AdminStoreForm({ mode = 'new', plans, detail }) {
 
             <FormCard title="Identificação" cols={2}>
               <Field label="Nome da rede" required span={2}>
-                <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Bonsucesso Varejo" />
+                <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Rede Centro" />
               </Field>
               <Field label="Razão social" span={2}>
                 <TextInput value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder="Razão social completa" />

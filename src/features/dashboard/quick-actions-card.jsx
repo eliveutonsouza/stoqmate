@@ -19,7 +19,7 @@ export function QuickActionsCard({ navigate }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
         {actions.map((a, i) => (
-          <a key={i} href="#" onClick={(e) => { e.preventDefault(); navigate(a.r); }} style={{
+          <a key={i} href={a.r} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(a.r); }} style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '9px 10px', border: '1px solid var(--line)',
             borderRadius: 6, background: 'var(--bg-elev)',

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import { unstable_rethrow } from 'next/navigation';
 import { useNavigate } from '@/hooks/use-navigate';
 import { StoreShell } from '@/components/ui/store-shell';
 import { PageHeader } from '@/components/layout/page-header';
@@ -33,18 +34,27 @@ export function BulkPricing({ suppliers, categories, brands }) {
   const [products, setProducts] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [loadError, setLoadError] = React.useState('');
   const [result, setResult] = React.useState(null);
   const [pending, startTransition] = React.useTransition();
 
   const scopeOptions = scope === 'supplier' ? suppliers : scope === 'category' ? categories : brands.map((b) => ({ id: b, name: b }));
 
-  const selectScope = (k) => { setScope(k); setScopeValue(''); setProducts([]); setResult(null); };
+  const selectScope = (k) => { setScope(k); setScopeValue(''); setProducts([]); setResult(null); setLoadError(''); };
   const selectScopeValue = (v) => {
     setScopeValue(v);
     setResult(null);
     if (!v) { setProducts([]); return; }
     setLoading(true);
-    previewPricingAction(scope, v).then((rows) => { setProducts(rows); setLoading(false); });
+    setLoadError('');
+    previewPricingAction(scope, v)
+      .then((rows) => { setProducts(rows); })
+      .catch((e) => {
+        setProducts([]);
+        try { unstable_rethrow(e); } catch { return; } // redirect do Next: o router já navega
+        setLoadError('Não foi possível carregar os produtos deste escopo. Escolha de novo para tentar outra vez.');
+      })
+      .finally(() => setLoading(false));
   };
 
   const rows = products.map((p) => {
@@ -67,11 +77,22 @@ export function BulkPricing({ suppliers, categories, brands }) {
   const apply = () => {
     setError('');
     startTransition(async () => {
-      const res = await bulkPriceUpdateAction({ scope, scopeValue, mode, pct, rounding });
+      let res;
+      try {
+        res = await bulkPriceUpdateAction({ scope, scopeValue, mode, pct, rounding });
+      } catch (e) {
+        unstable_rethrow(e);
+        setError('Não foi possível aplicar o reajuste. Verifique a conexão e tente de novo.');
+        return;
+      }
       if (res?.error) { setError(res.error); return; }
       setResult(res);
-      const fresh = await previewPricingAction(scope, scopeValue);
-      setProducts(fresh);
+      try {
+        setProducts(await previewPricingAction(scope, scopeValue));
+      } catch (e) {
+        unstable_rethrow(e);
+        setError('Reajuste aplicado, mas não foi possível recarregar a lista. Atualize a página.');
+      }
     });
   };
 
@@ -161,6 +182,8 @@ export function BulkPricing({ suppliers, categories, brands }) {
                 <EmptyState icon={<I.Tag size={18} />} title="Selecione um fornecedor, categoria ou marca" desc="A simulação aparece assim que você escolher o escopo." />
               ) : loading ? (
                 <div style={{ padding: 24, textAlign: 'center', color: 'var(--fg-muted)', fontSize: 12.5 }}>Carregando…</div>
+              ) : loadError ? (
+                <div role="alert" style={{ margin: 16, padding: '10px 13px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5 }}>{loadError}</div>
               ) : rows.length === 0 ? (
                 <EmptyState icon={<I.Box size={18} />} title="Nenhum produto neste escopo" desc="Escolha outro fornecedor, categoria ou marca." />
               ) : (

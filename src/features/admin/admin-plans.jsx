@@ -36,7 +36,7 @@ export function AdminPlans({ plans }) {
               <tbody>
                 {plans.map((p) => (
                   <tr key={p.id} style={{ opacity: p.active ? 1 : 0.55 }}>
-                    <td><div style={{ display: 'flex', alignItems: 'center', gap: 9 }}><PlanBadge plan={p.name} /><a href="#" onClick={(e) => { e.preventDefault(); navigate(`/admin/plans/edit?id=${p.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</a>{p.popular && <span className="badge badge-accent">Mais escolhido</span>}</div></td>
+                    <td><div style={{ display: 'flex', alignItems: 'center', gap: 9 }}><PlanBadge plan={p.name} /><a href={`/admin/plans/edit?id=${p.id}`} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(`/admin/plans/edit?id=${p.id}`); }} style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</a>{p.popular && <span className="badge badge-accent">Mais escolhido</span>}</div></td>
                     <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{brl(p.monthly_price)}</td>
                     <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{p.yearly_price ? brl(p.yearly_price) : '—'}</td>
                     <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{p.credits ? p.credits.toLocaleString('pt-BR') : '—'}</td>

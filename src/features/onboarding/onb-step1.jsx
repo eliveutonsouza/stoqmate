@@ -9,7 +9,7 @@ export function OnbStep1({ data, set }) {
     <>
       <OnbTitle title="Como sua loja se chama?" desc="Esse nome aparece no painel, nos relatórios e no endereço da sua loja no sistema." />
       <Field label="Nome da loja ou rede" required hint="Mínimo 3 caracteres. Você adiciona as outras unidades depois.">
-        <TextInput value={data.name} onChange={(e) => set('name', e.target.value)} placeholder="Bonsucesso Varejo" style={{ height: 40, fontSize: 15 }} />
+        <TextInput value={data.name} onChange={(e) => set('name', e.target.value)} placeholder="Ex.: Loja Centro" style={{ height: 40, fontSize: 15 }} />
       </Field>
       <div style={{
         marginTop: 18, padding: '12px 14px',

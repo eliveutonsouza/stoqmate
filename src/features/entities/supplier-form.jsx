@@ -56,7 +56,7 @@ export function SupplierForm({ mode = 'new', categories = [], supplier = null })
         <PageHeader title="Editar fornecedor" />
         <Page width={880}>
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
-            Fornecedor não encontrado. <a href="#" onClick={(e) => { e.preventDefault(); navigate('/suppliers'); }} style={{ color: 'var(--accent-text)' }}>Voltar aos fornecedores</a>
+            Fornecedor não encontrado. <a href="/suppliers" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/suppliers'); }} style={{ color: 'var(--accent-text)' }}>Voltar aos fornecedores</a>
           </div>
         </Page>
       </StoreShell>
