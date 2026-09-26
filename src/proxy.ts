@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { OPEN_ROUTES } from "@/lib/permissions";
 import { gateStoreRoute, type SessionAccess } from "@/lib/access-gate";
+import { supabaseEnv } from "@/lib/supabase/env";
 
 // Rotas públicas são exatamente OPEN_ROUTES do RBAC (marketing + auth +
 // system) — mesma fonte que o cliente já usa em can()/areaFor(), não uma
@@ -28,10 +29,11 @@ export async function proxy(request: NextRequest) {
   }
 
   let response = NextResponse.next({ request });
+  const { url, anonKey } = supabaseEnv();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {
