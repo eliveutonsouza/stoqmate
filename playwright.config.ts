@@ -19,14 +19,14 @@ export default defineConfig({
       // precisa existir antes) — não herdam o storageState dele.
       name: "guest",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: [/signup\.spec\.ts/, /login\.spec\.ts/],
+      testMatch: [/signup\.spec\.ts/, /login\.spec\.ts/, /admin-login\.spec\.ts/],
       dependencies: ["setup"],
     },
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"], storageState: "e2e/.auth/tenant.json" },
       dependencies: ["setup"],
-      testIgnore: [/signup\.spec\.ts/, /login\.spec\.ts/, /auth\.setup\.ts/, /mobile-nav\.spec\.ts/],
+      testIgnore: [/signup\.spec\.ts/, /login\.spec\.ts/, /admin-login\.spec\.ts/, /auth\.setup\.ts/, /mobile-nav\.spec\.ts/],
     },
     {
       // Responsividade: todas as rotas em celular e tablet, sem estouro de

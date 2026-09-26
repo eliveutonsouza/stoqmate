@@ -176,34 +176,36 @@ export async function signInAdminAction(input: { email: string; password: string
     return { error: signInErrorMessage(signInError) };
   }
 
+  // Falhas abaixo encerram só ESTA sessão (scope local). O padrão (global)
+  // deixava quem sabe apenas a senha derrubar o staff em todos os aparelhos.
   let isStaff: boolean;
   try {
     isStaff = await hasStaffRow(supabase);
   } catch (err) {
     console.error("[auth] signInAdmin staff", err);
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { error: GENERIC_ERROR };
   }
   if (!isStaff) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { error: "Esta conta não tem acesso ao console da plataforma." };
   }
 
   const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
   if (factorsError) {
     console.error("[auth] signInAdmin listFactors", factorsError.message);
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { error: "Não foi possível validar o 2FA agora. Tente de novo." };
   }
   const totp = factorsData?.totp?.[0];
   if (!totp) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { error: "Nenhum fator de autenticação (2FA) cadastrado nesta conta." };
   }
 
   const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: totp.id });
   if (challengeError) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { error: "Não foi possível validar o 2FA agora. Tente de novo." };
   }
 
@@ -214,7 +216,7 @@ export async function signInAdminAction(input: { email: string; password: string
   });
   if (verifyError) {
     // Sem signOut a sessão ficava viva em aal1 (só senha) depois do 2FA errado.
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { error: "Código 2FA inválido." };
   }
 

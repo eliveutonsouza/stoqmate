@@ -222,11 +222,11 @@ export function Categories({ initialCategories }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {attrRows.map((row, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                <TextInput placeholder="Nome (ex.: Cor)" value={row.label}
+                <TextInput id={null} aria-label={`Nome do atributo ${i + 1}`} placeholder="Nome (ex.: Cor)" value={row.label}
                   onChange={(e) => setAttrRows((rows) => rows.map((r, j) => (j === i ? { ...r, label: e.target.value } : r)))} />
-                <SelectInput value={row.type} options={[{ value: 'spec', label: 'Especificação' }, { value: 'color', label: 'Cor' }, { value: 'size', label: 'Tamanho' }]}
+                <SelectInput id={null} value={row.type} options={[{ value: 'spec', label: 'Especificação' }, { value: 'color', label: 'Cor' }, { value: 'size', label: 'Tamanho' }]}
                   onChange={(v) => setAttrRows((rows) => rows.map((r, j) => (j === i ? { ...r, type: v } : r)))} />
-                <TextInput placeholder="Valores, separados por vírgula" value={row.values}
+                <TextInput id={null} aria-label={`Valores do atributo ${i + 1}`} placeholder="Valores, separados por vírgula" value={row.values}
                   onChange={(e) => setAttrRows((rows) => rows.map((r, j) => (j === i ? { ...r, values: e.target.value } : r)))} />
               </div>
             ))}

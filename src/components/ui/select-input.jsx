@@ -1,11 +1,13 @@
 "use client";
 
 import { I } from '@/components/icons';
+import { useFieldId } from '@/components/ui/field';
 
-export function SelectInput({ options, value, onChange, placeholder }) {
+export function SelectInput({ options, value, onChange, placeholder, id }) {
+  const selectId = useFieldId(id);
   return (
     <div style={{ position: 'relative' }}>
-      <select className="input" value={value} onChange={(e) => onChange && onChange(e.target.value)} style={{ appearance: 'none', paddingRight: 28, cursor: 'pointer' }}>
+      <select className="input" id={selectId} value={value} onChange={(e) => onChange && onChange(e.target.value)} style={{ appearance: 'none', paddingRight: 28, cursor: 'pointer' }}>
         {placeholder && <option value="">{placeholder}</option>}
         {options.map(o => {
           const v = typeof o === 'object' ? o.value : o;
