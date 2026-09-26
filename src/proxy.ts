@@ -75,8 +75,11 @@ export async function proxy(request: NextRequest) {
   };
 
   if (!user) {
-    const loginPath = pathname.startsWith(ADMIN_PREFIX) ? "/login/admin" : "/login";
-    return redirectTo(loginPath);
+    // Deep link: quem abre /products/detail?id=… deslogado volta pra lá
+    // depois de entrar (login lê ?next=; admin sempre cai no console).
+    if (pathname.startsWith(ADMIN_PREFIX)) return redirectTo("/login/admin");
+    const next = pathname + request.nextUrl.search;
+    return redirectTo(next === "/dashboard" ? "/login" : `/login?next=${encodeURIComponent(next)}`);
   }
 
   if (pathname.startsWith(ADMIN_PREFIX)) {

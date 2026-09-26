@@ -94,7 +94,7 @@ export function Pricing({ plans, trialDays, creditPacks }) {
                   <I.Sparkle size={13} /> {p.credits.toLocaleString('pt-BR')} créditos de IA/mês
                 </div>
 
-                <button onClick={() => navigate('/signup')}
+                <button onClick={() => navigate(`/signup?plan=${p.id}`)}
                   className={p.popular ? 'btn btn-primary btn-lg' : 'btn btn-outline btn-lg'}
                   style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
                   Começar com {p.name}

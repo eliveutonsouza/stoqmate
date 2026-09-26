@@ -128,9 +128,18 @@ export async function completeGoogleSignupAction(input: {
   redirect("/onboarding");
 }
 
-export async function signInAction(input: { email: string; password: string }) {
+// Destino pós-login vindo da URL: só caminho interno (evita open redirect).
+function safeNext(next: unknown) {
+  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/dashboard";
+  return next.slice(0, 500);
+}
+
+export async function signInAction(input: { email: string; password: string; next?: string }) {
+  if (!isEmail(input.email) || typeof input.password !== "string" || !input.password) {
+    return { error: "Informe email e senha." };
+  }
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword(input);
+  const { data, error } = await supabase.auth.signInWithPassword({ email: input.email.trim(), password: input.password });
   if (error?.code === "email_not_confirmed") redirect(verifyEmailPath(input.email));
   if (error) {
     logAuthFailure("signIn", error);
@@ -141,7 +150,7 @@ export async function signInAction(input: { email: string; password: string }) {
   // e o cadastro pendente não fecha no callback — fecha aqui no 1º login.
   let destination: string;
   try {
-    destination = await postLoginDestination(supabase, data.user);
+    destination = await postLoginDestination(supabase, data.user, safeNext(input.next));
   } catch (err) {
     console.error("[auth] signIn destino", err);
     return { error: GENERIC_ERROR };

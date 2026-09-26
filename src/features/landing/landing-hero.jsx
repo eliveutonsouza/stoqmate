@@ -46,7 +46,7 @@ export function LandingHero({ navigate, trialDays }) {
             <button onClick={() => navigate('/signup')} className="btn btn-primary btn-lg">
               Testar {trialDays} dias grátis <I.ArrowRight size={14} />
             </button>
-            <button onClick={() => navigate('/dashboard')} className="btn btn-outline btn-lg">
+            <button onClick={() => document.getElementById('recursos')?.scrollIntoView({ behavior: 'smooth' })} className="btn btn-outline btn-lg">
               Ver o sistema funcionando
             </button>
           </div>

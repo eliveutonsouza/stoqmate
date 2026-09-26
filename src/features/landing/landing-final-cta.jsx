@@ -33,12 +33,12 @@ export function LandingFinalCTA({ navigate, trialDays }) {
           }}>
             Criar minha conta <I.ArrowRight size={15} />
           </button>
-          <button onClick={() => navigate('/dashboard')} style={{
+          <button onClick={() => navigate('/login')} style={{
             background: 'transparent', color: 'var(--bg)', border: '1px solid rgba(255,255,255,0.3)',
             borderRadius: 8, padding: '13px 26px', fontSize: 14, fontWeight: 500, cursor: 'pointer',
             whiteSpace: 'nowrap', fontFamily: 'inherit',
           }}>
-            Explorar sem cadastro
+            Já tenho conta
           </button>
         </div>
       </div>

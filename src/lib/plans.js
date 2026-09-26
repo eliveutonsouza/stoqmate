@@ -214,7 +214,6 @@ export const ANNUAL = {
   freeMonths: 2,
   perks: [
     ['Dois meses grátis', 'Paga 10, usa 12. É o desconto embutido no preço anual.'],
-    ['Créditos de IA acumulam', 'O que sobra em um mês passa para o próximo dentro do ciclo — no mensal a cota zera.'],
     ['Preço travado por 12 meses', 'Nenhum reajuste durante a vigência, mesmo se a tabela subir.'],
     ['Migração e treinamento inclusos', 'Importação do catálogo e uma sessão com a equipe, sem custo.'],
     ['Boleto liberado', 'Pagamento por boleto ou PIX, além do cartão.'],

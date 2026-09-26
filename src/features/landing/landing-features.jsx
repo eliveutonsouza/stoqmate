@@ -65,7 +65,7 @@ const POS_SHOWCASE = {
 
 export function LandingFeatures({ navigate }) {
   return (
-    <section style={{ ...SECTION, paddingBottom: 72 }}>
+    <section id="recursos" style={{ ...SECTION, paddingBottom: 72, scrollMarginTop: 72 }}>
       <Eyebrow>Como funciona na prática</Eyebrow>
       <H2>Telas de verdade. Estas são as que você vai usar amanhã.</H2>
 

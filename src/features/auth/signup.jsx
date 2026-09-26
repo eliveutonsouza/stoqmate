@@ -14,7 +14,17 @@ import { signUpAction } from '@/features/auth/actions';
 export function Signup({ plans, trialDays, trialEndsOn }) {
   const navigate = useNavigate();
   const activePlans = plans.filter((p) => p.active);
-  const [plan, setPlan] = React.useState(() => (activePlans.find((p) => p.popular) ?? activePlans[0])?.id);
+  // ?plan= vem do "Começar com {plano}" da landing/planos. Lido da URL no
+  // cliente (a página é estática); no servidor não há plano da URL.
+  const urlPlan = React.useSyncExternalStore(
+    () => () => {},
+    () => new URLSearchParams(window.location.search).get('plan'),
+    () => null,
+  );
+  const [picked, setPlan] = React.useState(null);
+  const plan = picked
+    ?? (activePlans.some((p) => p.id === urlPlan) ? urlPlan : null)
+    ?? (activePlans.find((p) => p.popular) ?? activePlans[0])?.id;
   const chosen = activePlans.find(p => p.id === plan) || activePlans[0];
   const firstCharge = new Date(trialEndsOn).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' });
   const [form, setForm] = React.useState({ fullName: '', phone: '', email: '', password: '', storeName: '', cnpj: '' });

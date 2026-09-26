@@ -18,8 +18,10 @@ export function Login() {
 
   const submit = () => {
     setError('');
+    if (!email.trim() || !password) { setError('Informe email e senha.'); return; }
+    const next = new URLSearchParams(window.location.search).get('next') ?? undefined;
     startTransition(async () => {
-      const result = await signInAction({ email, password });
+      const result = await signInAction({ email, password, next });
       if (result?.error) setError(result.error);
     });
   };
@@ -46,14 +48,11 @@ export function Login() {
         <Field label="Senha">
           <TextInput type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} style={{ height: 36 }} />
         </Field>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--fg-muted)' }}>
-            <input type="checkbox" defaultChecked /> Manter conectado
-          </label>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <a href="/forgot-password" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/forgot-password'); }} style={{ fontSize: 12, color: 'var(--accent-text)', fontWeight: 500 }}>Esqueci a senha</a>
         </div>
         {error && (
-          <div style={{ padding: '10px 13px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5, color: 'var(--fg)' }}>
+          <div role="alert" style={{ padding: '10px 13px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5, color: 'var(--fg)' }}>
             {error}
           </div>
         )}

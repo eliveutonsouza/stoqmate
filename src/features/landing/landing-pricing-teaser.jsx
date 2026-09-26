@@ -103,7 +103,7 @@ export function LandingPricingTeaser({ navigate, plans }) {
                 ))}
               </ul>
 
-              <button onClick={() => navigate(annual ? '/checkout' : '/pricing')}
+              <button onClick={() => navigate(`/signup?plan=${p.id}`)}
                 className={p.popular ? 'btn btn-primary' : 'btn btn-outline'}
                 style={{ width: '100%', justifyContent: 'center' }}>
                 Começar com {p.name}

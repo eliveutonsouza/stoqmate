@@ -13,11 +13,14 @@ export function ForgotPassword() {
   const navigate = useNavigate();
   const [sent, setSent] = React.useState(false);
   const [email, setEmail] = React.useState('');
+  const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
   const submit = () => {
+    setError('');
     startTransition(async () => {
-      await forgotPasswordAction({ email });
+      const result = await forgotPasswordAction({ email }).catch(() => ({ error: 'Não foi possível enviar agora. Tente de novo em instantes.' }));
+      if (result?.error) { setError(result.error); setSent(false); return; }
       setSent(true);
     });
   };
@@ -34,6 +37,9 @@ export function ForgotPassword() {
             <Field label="Email">
               <TextInput type="email" placeholder="voce@sualoja.com.br" value={email} onChange={(e) => setEmail(e.target.value)} style={{ height: 36 }} />
             </Field>
+            {error && (
+              <div role="alert" style={{ padding: '10px 13px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12.5, color: 'var(--fg)' }}>{error}</div>
+            )}
             <button type="submit" disabled={pending} className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>
               {pending ? 'Enviando…' : 'Enviar link de redefinição'}
             </button>
