@@ -25,6 +25,17 @@ const TEMPLATES = [
 ];
 
 function LabelContent({ p, fields, template }) {
+  // "Só código de barras" é só o código: sem EAN cadastrado, codifica o SKU
+  // (Code 128), que a busca do caixa também encontra.
+  if (template === 'barcode') {
+    const code = p.barcode || p.sku;
+    return (
+      <div style={{ margin: 'auto', textAlign: 'center' }}>
+        <LabelBarcode value={code} height={34} />
+        <div style={{ fontSize: 6.5, fontFamily: 'monospace', letterSpacing: '0.08em', marginTop: 1 }}>{code}</div>
+      </div>
+    );
+  }
   return (
     <>
       {fields.name && <div style={{ fontSize: 10, fontWeight: 600, lineHeight: 1.2 }}>{p.name}</div>}
@@ -36,7 +47,7 @@ function LabelContent({ p, fields, template }) {
       )}
       {fields.barcode && p.barcode && (
         <div style={{ marginTop: 2 }}>
-          <LabelBarcode value={p.barcode} height={template === 'barcode' ? 34 : 16} />
+          <LabelBarcode value={p.barcode} height={16} />
           <div style={{ fontSize: 6.5, fontFamily: 'monospace', letterSpacing: '0.08em', marginTop: 1 }}>{p.barcode}</div>
         </div>
       )}
@@ -52,6 +63,7 @@ export function Labels({ initialProducts }) {
   const [queue, setQueue] = React.useState(() => (initialProducts ?? []).map((product) => ({ product, copies: 1 })));
 
   const tpl = TEMPLATES.find(t => t.k === template);
+  const onlyCode = template === 'barcode';
   const totalLabels = queue.reduce((s, q) => s + q.copies, 0);
 
   const addProduct = (p) => setQueue((q) => {
@@ -113,11 +125,14 @@ export function Labels({ initialProducts }) {
                   ['name', 'Nome do produto'], ['sku', 'SKU'], ['barcode', 'Código de barras'],
                   ['price', 'Preço de venda'], ['variant', 'Atributos da variação'],
                 ].map(([k, l]) => (
-                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={fields[k]} onChange={() => toggle(k)} /> {l}
+                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, cursor: onlyCode ? 'default' : 'pointer', opacity: onlyCode ? 0.5 : 1 }}>
+                    <input type="checkbox" checked={onlyCode ? k === 'barcode' : fields[k]} disabled={onlyCode} onChange={() => toggle(k)} /> {l}
                   </label>
                 ))}
               </div>
+              {onlyCode && (
+                <div style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>Este modelo imprime só o código de barras — o SKU, quando o produto não tem código cadastrado.</div>
+              )}
             </FormCard>
 
             <div className="card" style={{ overflow: 'hidden' }}>
@@ -164,7 +179,7 @@ export function Labels({ initialProducts }) {
                 width: tpl.wmm * 3, height: tpl.hmm * 3, margin: '0 auto',
                 border: '1px solid var(--line-strong)', borderRadius: 4,
                 background: '#fff', color: '#16140F',
-                padding: 10, display: 'flex', flexDirection: 'column', gap: 4,
+                padding: 10, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden',
               }}>
                 <LabelContent p={queue[0]?.product ?? { name: 'Nome do produto', sku: 'SKU-EXEMPLO', sale_price: 0, attrs: {}, barcode: '000' }} fields={fields} template={template} />
               </div>
@@ -190,7 +205,7 @@ export function Labels({ initialProducts }) {
                 width: `${tpl.wmm}mm`, height: `${tpl.hmm}mm`,
                 border: '1px solid #ccc', padding: '2mm',
                 display: 'flex', flexDirection: 'column', gap: '1mm',
-                color: '#000', breakInside: 'avoid',
+                color: '#000', breakInside: 'avoid', overflow: 'hidden',
               }}>
                 <LabelContent p={p} fields={fields} template={template} />
               </div>

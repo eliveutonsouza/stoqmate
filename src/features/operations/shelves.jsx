@@ -27,7 +27,8 @@ export function Shelves({ initialLocations, products, stores }) {
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState(locations[0]?.id ?? null);
-  const selected = locations.find((l) => l.id === selectedId) ?? null;
+  // Sem seleção válida (lista vazia no carregamento, local excluído), mostra o primeiro.
+  const selected = locations.find((l) => l.id === selectedId) ?? locations[0] ?? null;
   const locProducts = selected ? products.filter((p) => p.default_location_id === selected.id) : [];
 
   const [code, setCode] = React.useState('');
@@ -56,7 +57,9 @@ export function Shelves({ initialLocations, products, stores }) {
         sub={`${locations.length} posiç${locations.length === 1 ? 'ão' : 'ões'} cadastrada${locations.length === 1 ? '' : 's'}`}
         actions={(
           <>
-            <button onClick={() => navigate('/labels')} className="btn btn-outline btn-sm"><I.QR size={13} /> Imprimir etiquetas</button>
+            {locProducts.length > 0 && (
+              <button onClick={() => navigate(`/labels?products=${locProducts.slice(0, 50).map((p) => p.id).join(',')}`)} className="btn btn-outline btn-sm"><I.QR size={13} /> Etiquetas deste local</button>
+            )}
             <button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Novo local</button>
           </>
         )}
@@ -121,7 +124,10 @@ export function Shelves({ initialLocations, products, stores }) {
                     <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Produtos em {selected.code}</h3>
                     <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>{selected.description ?? '—'}</p>
                   </div>
-                  <button onClick={() => navigate('/products/new')} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto aqui</button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => navigate(`/shelves/edit?id=${selected.id}`)} className="btn btn-outline btn-sm"><I.Settings size={12} /> Editar local</button>
+                    <button onClick={() => navigate(`/products/new?location=${selected.id}`)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto aqui</button>
+                  </div>
                 </div>
                 {locProducts.length > 0 ? (
                   <div className="table-scroll"><table className="table">
@@ -144,7 +150,7 @@ export function Shelves({ initialLocations, products, stores }) {
                     icon={<I.Grid size={18} />}
                     title="Nenhum produto neste local ainda"
                     desc={`${selected.code} está cadastrado mas sem itens alocados como local padrão.`}
-                    action={<button onClick={() => navigate('/products/new')} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto</button>}
+                    action={<button onClick={() => navigate(`/products/new?location=${selected.id}`)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto</button>}
                   />
                 )}
               </div>

@@ -71,7 +71,7 @@ export function MobileCapture({ categories }) {
             <PhoneFrame>
               <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0B0A08', paddingTop: 'var(--phone-top, 54px)', paddingBottom: 26, boxSizing: 'border-box', color: '#fff' }}>
                 <div style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button onClick={() => navigate('/products')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', padding: 0 }}><I.ChevronLeft size={20} /></button>
+                  <button type="button" aria-label="Voltar ao catálogo" onClick={() => navigate('/products')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', padding: 0 }}><I.ChevronLeft size={20} /></button>
                   <span style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Novo produto</span>
                   {done.length > 0 && <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)' }}>{done.length} cadastrados</span>}
                 </div>

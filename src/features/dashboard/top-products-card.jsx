@@ -34,7 +34,7 @@ export function TopProductsCard({ navigate, topProducts }) {
                 <td style={{ color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{i + 1}</td>
                 <td>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{p.brand} · {p.sku}</div>
+                  <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{p.brand ? `${p.brand} · ` : ''}{p.sku}</div>
                 </td>
                 <td>
                   <span style={{ fontSize: 11, color: 'var(--fg-muted)', padding: '2px 7px', background: 'var(--bg-sunken)', border: '1px solid var(--line-soft)', borderRadius: 4 }}>

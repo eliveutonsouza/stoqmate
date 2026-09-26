@@ -16,7 +16,7 @@ import { transferDispatchAction } from '@/features/stock/actions';
 
 const REASONS = ['Reposição por ruptura no destino', 'Balanceamento de estoque', 'Remanejamento sazonal', 'Devolução ao centro de distribuição', 'Pedido de cliente em outra loja'];
 
-export function StockTransfer({ stores, initialProduct }) {
+export function StockTransfer({ stores, initialProduct, pendingCount = 0 }) {
   const navigate = useNavigate();
   const [product, setProduct] = React.useState(initialProduct ?? null);
   const defaultStoreId = useDefaultStoreId(stores);
@@ -84,6 +84,15 @@ export function StockTransfer({ stores, initialProduct }) {
         </div>
       )}
     >
+      {pendingCount > 0 && (
+        <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, background: 'var(--warning-soft)' }}>
+          <I.Swap size={14} />
+          <span style={{ flex: 1, fontSize: 12.5 }}>
+            {pendingCount === 1 ? '1 transferência aguarda' : `${pendingCount} transferências aguardam`} conferência no destino.
+          </span>
+          <button type="button" onClick={() => navigate('/stock/transfer/receive')} className="btn btn-outline btn-sm">Receber transferência</button>
+        </div>
+      )}
       <FormCard title="Produto" cols={1}>
         <ProductPicker product={product} storeId={originId} onSelect={setProduct} onClear={() => setProduct(null)} />
       </FormCard>

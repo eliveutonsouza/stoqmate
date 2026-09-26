@@ -30,7 +30,7 @@ export function ProductDetail({ detail }) {
     <StoreShell route="/products/detail" breadcrumb={['Catálogo', p.sku]} navigate={navigate}>
       <PageHeader
         title={p.name}
-        sub={`${p.brand} · ${variantLabel(p.attrs)} · SKU ${p.sku}`}
+        sub={[p.brand, variantLabel(p.attrs), `SKU ${p.sku}`].filter(Boolean).join(' · ')}
         actions={(
           <>
             <button onClick={() => navigate(`/stock/entry?product=${p.id}`)} className="btn btn-outline btn-sm"><I.Plus size={13} /> Entrada</button>

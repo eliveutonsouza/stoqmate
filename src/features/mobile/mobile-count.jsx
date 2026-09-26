@@ -25,9 +25,13 @@ export function MobileCount({ stores, locations }) {
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
+  const systemQty = (r) => (r.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
+  const restart = () => { setRows([]); setActive(null); setCount(0); setError(''); setStep('scan'); };
+
   const bump = (d) => setCount((c) => Math.max(0, c + d));
   const commit = () => {
-    setRows((r) => [{ ...active, real: count }, ...r]);
+    // Bipar de novo o mesmo produto substitui a contagem anterior.
+    setRows((r) => [{ ...active, real: count }, ...r.filter((x) => x.id !== active.id)]);
     setActive(null);
     setCount(0);
     setStep('scan');
@@ -43,7 +47,7 @@ export function MobileCount({ stores, locations }) {
         reason: 'Contagem via mobile', justification: 'Contagem cega registrada pelo app mobile de conferência.',
       });
       if (result?.error) { setError(result.error); return; }
-      navigate('/stock/count');
+      setStep('done');
     });
   };
 
@@ -143,6 +147,29 @@ export function MobileCount({ stores, locations }) {
                     {pending ? 'Enviando…' : 'Fechar contagem'}
                   </button>
                   <button onClick={() => setStep('scan')} style={{ height: 46, borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#F6F3EC', fontSize: 14, fontFamily: 'inherit' }}>Continuar contando</button>
+                </div>
+              )}
+              {step === 'done' && (
+                <div style={{ padding: 'var(--phone-pad, 64px 18px 48px)', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box', color: '#F6F3EC' }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Contagem fechada</div>
+                  <div style={{ fontSize: 11.5, color: 'rgba(246,243,236,0.6)', marginBottom: 12 }}>Cada divergência foi lançada no histórico como contagem.</div>
+                  <div className="no-bars" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {rows.map((r) => {
+                      const diff = r.real - systemQty(r);
+                      return (
+                        <div key={r.id} style={{ padding: '10px 11px', borderRadius: 10, background: 'rgba(255,255,255,0.05)' }}>
+                          <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                          <div style={{ display: 'flex', gap: 10, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'rgba(246,243,236,0.7)', marginTop: 3 }}>
+                            <span>sistema {systemQty(r)}</span>
+                            <span>contado {r.real}</span>
+                            <span style={{ marginLeft: 'auto', color: diff === 0 ? '#4ADE80' : '#FF8A8A' }}>{diff === 0 ? 'OK' : diff > 0 ? `+${diff}` : diff}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button onClick={() => navigate('/stock/history?kind=count')} style={{ height: 52, borderRadius: 12, border: 'none', background: '#C43F14', color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', marginTop: 14, marginBottom: 8 }}>Ver no histórico</button>
+                  <button onClick={restart} style={{ height: 46, borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#F6F3EC', fontSize: 14, fontFamily: 'inherit' }}>Nova contagem</button>
                 </div>
               )}
             </PhoneFrame>

@@ -151,14 +151,14 @@ export function PurchaseOrderNew({ stores, storeId, suppliers, supplierId, sugge
             <button onClick={submit} className="btn btn-primary btn-lg"
               disabled={!canSubmit || pending}
               style={{ justifyContent: 'center', width: '100%', opacity: canSubmit && !pending ? 1 : 0.45 }}>
-              {pending ? 'Enviando…' : subtotal >= minOrder ? 'Enviar pedido' : 'Abaixo do pedido mínimo'}
+              {pending ? 'Registrando…' : subtotal >= minOrder ? 'Registrar pedido' : 'Abaixo do pedido mínimo'}
             </button>
             <button onClick={() => navigate('/purchase-orders')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Cancelar</button>
 
             <div style={{ padding: '11px 13px', background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 8, display: 'flex', gap: 10 }}>
               <span style={{ color: 'var(--fg-muted)', flexShrink: 0, marginTop: 1 }}><I.Truck size={14} /></span>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
-                Ao enviar, o pedido fica em aberto. Quando a mercadoria chegar, receba o pedido na lista de compras
+                O pedido fica registrado em aberto — mande ao fornecedor pelo canal de sempre (o sistema não envia). Quando a mercadoria chegar, receba o pedido na lista de compras
                 para lançar a entrada de estoque.
               </div>
             </div>

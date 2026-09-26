@@ -48,7 +48,7 @@ export function MovementDetail({ movement: m }) {
               <button onClick={() => navigate(`/receipt?id=${m.reference_id}`)} className="btn btn-outline btn-sm"><I.Download size={13} /> Ver recibo</button>
             )}
             {m.kind === 'sale' && (
-              <button onClick={() => navigate('/stock/return')} className="btn btn-outline btn-sm">Registrar devolução</button>
+              <button onClick={() => navigate(`/stock/return?product=${m.product?.id ?? ''}&store=${m.store?.id ?? ''}&qty=${Math.abs(m.qty)}`)} className="btn btn-outline btn-sm">Registrar devolução</button>
             )}
           </>
         )}
@@ -131,8 +131,8 @@ export function MovementDetail({ movement: m }) {
               <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
                 <SummaryRow label="Saldo atual" value={`${m.currentQty} un`} strong />
               </div>
-              <button onClick={() => navigate('/stock/history')} className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 12 }}>
-                Ver histórico completo
+              <button onClick={() => navigate(m.product?.sku ? `/stock/history?q=${encodeURIComponent(m.product.sku)}` : '/stock/history')} className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 12 }}>
+                Ver histórico do produto
               </button>
             </div>
           </div>

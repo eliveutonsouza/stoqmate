@@ -128,8 +128,8 @@ export function Receipt({ sale }) {
                 <button onClick={() => navigate('/pos')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
                   <I.Plus size={12} /> Iniciar próximo atendimento
                 </button>
-                <button onClick={() => navigate('/stock/history')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
-                  <I.Activity size={12} /> Ver a movimentação no histórico
+                <button onClick={() => navigate('/stock/history?kind=sale')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
+                  <I.Activity size={12} /> Ver as vendas no histórico
                 </button>
                 <button onClick={() => navigate('/cash')} className="btn btn-outline btn-sm" style={{ justifyContent: 'flex-start', width: '100%' }}>
                   <I.Credit size={12} /> Conferir caixa do turno

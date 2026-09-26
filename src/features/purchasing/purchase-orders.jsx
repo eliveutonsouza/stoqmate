@@ -39,6 +39,11 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
     return acc;
   }, {});
   const supplierIds = [...new Set(selectedRows.filter((r) => r.supplier_id).map((r) => r.supplier_id))];
+  // Um pedido por fornecedor: o botão abre o do primeiro, já com os itens e
+  // quantidades selecionados dele.
+  const firstSupplierRows = selectedRows.filter((r) => r.supplier_id === supplierIds[0]);
+  const newOrderHref = `/purchase-orders/new?store=${storeId}${supplierIds[0] ? `&supplier=${supplierIds[0]}&prefill=${firstSupplierRows.map((r) => `${r.product_id}:${Math.max(1, r.suggest_qty)}`).join(',')}` : ''}`;
+  const withoutSupplier = selectedRows.filter((r) => !r.supplier_id).length;
 
   const openReceive = (order) => {
     setReceiveOrder(order);
@@ -70,7 +75,7 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
               <SelectInput value={storeId} onChange={(v) => navigate(`/purchase-orders?store=${v}`)} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
             )}
             <button
-              onClick={() => navigate(`/purchase-orders/new?store=${storeId}${supplierIds[0] ? `&supplier=${supplierIds[0]}` : ''}`)}
+              onClick={() => navigate(newOrderHref)}
               disabled={supplierIds.length === 0}
               className="btn btn-primary btn-sm" style={{ opacity: supplierIds.length ? 1 : 0.45 }}
             >
@@ -187,10 +192,15 @@ export function PurchaseOrders({ stores, storeId, suggestions, openOrders }) {
           {rows.length > 0 && (
             <div style={{ padding: '10px 18px', background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 11, color: 'var(--fg-muted)', flex: 1 }}>
-                Os selecionados geram <strong>{supplierIds.length} {supplierIds.length === 1 ? 'pedido' : 'pedidos'}</strong>, um por fornecedor.
+                {supplierIds.length === 0
+                  ? (withoutSupplier > 0 ? 'Itens sem fornecedor não geram pedido — defina o fornecedor no cadastro do produto.' : 'Selecione itens para gerar o pedido.')
+                  : supplierIds.length === 1
+                    ? <>Os selecionados geram <strong>1 pedido</strong> para {firstSupplierRows[0]?.supplier_name}.</>
+                    : <>A seleção tem <strong>{supplierIds.length} fornecedores</strong> — um pedido por vez, começando por {firstSupplierRows[0]?.supplier_name}.</>}
+                {supplierIds.length > 0 && withoutSupplier > 0 && ` ${withoutSupplier} ${withoutSupplier === 1 ? 'item sem fornecedor fica' : 'itens sem fornecedor ficam'} de fora.`}
               </span>
               <button
-                onClick={() => navigate(`/purchase-orders/new?store=${storeId}${supplierIds[0] ? `&supplier=${supplierIds[0]}` : ''}`)}
+                onClick={() => navigate(newOrderHref)}
                 disabled={supplierIds.length === 0}
                 className="btn btn-primary btn-sm" style={{ opacity: supplierIds.length ? 1 : 0.45 }}
               >Gerar pedido</button>

@@ -37,7 +37,7 @@ export function LowStockCard({ navigate, items, count }) {
                   <div style={{ fontSize: 12, fontWeight: 500 }} className="truncate">{p.name}</div>
                   <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{p.sku}</div>
                 </div>
-                <button onClick={() => navigate('/stock/entry')} className="btn btn-outline btn-sm">Repor</button>
+                <button onClick={() => navigate(`/stock/entry?product=${p.id}`)} className="btn btn-outline btn-sm">Repor</button>
               </div>
             ))}
           </div>

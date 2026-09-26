@@ -60,7 +60,7 @@ export async function loadStockHubData() {
   const [overviewRes, categoriesRes, balanceRowsRes, movementRowsRes, lowStockItems] = await Promise.all([
     supabase.rpc('fn_stock_overview'),
     supabase.from('categories').select('id, name, icon, color, unit_plural'),
-    supabase.from('stock_balances').select('qty, product:products(category_id)'),
+    supabase.from('stock_balances').select('qty, product:products(id, category_id)'),
     supabase.from('stock_movements').select('kind').gte('created_at', since.toISOString()),
     loadLowStockItems(5),
   ]);
@@ -69,17 +69,18 @@ export async function loadStockHubData() {
   const balanceRows = must(balanceRowsRes, "stock.loadStockHubData.balanceRows");
   const movementRows = must(movementRowsRes, "stock.loadStockHubData.movementRows");
 
-  const byCategory = new Map<string, { skuCount: number; qty: number }>();
+  // SKU com saldo conta uma vez por categoria, não uma vez por loja.
+  const byCategory = new Map<string, { skus: Set<string>; qty: number }>();
   for (const row of balanceRows ?? []) {
-    const categoryId = (row.product as unknown as { category_id: string } | null)?.category_id;
-    if (!categoryId) continue;
-    const entry = byCategory.get(categoryId) ?? { skuCount: 0, qty: 0 };
-    if (row.qty > 0) entry.skuCount += 1;
+    const product = row.product as unknown as { id: string; category_id: string } | null;
+    if (!product?.category_id) continue;
+    const entry = byCategory.get(product.category_id) ?? { skus: new Set<string>(), qty: 0 };
+    if (row.qty > 0) entry.skus.add(product.id);
     entry.qty += row.qty;
-    byCategory.set(categoryId, entry);
+    byCategory.set(product.category_id, entry);
   }
   const categoryBalances = (categories ?? [])
-    .map((c) => ({ ...c, ...(byCategory.get(c.id) ?? { skuCount: 0, qty: 0 }) }))
+    .map((c) => { const e = byCategory.get(c.id); return { ...c, skuCount: e?.skus.size ?? 0, qty: e?.qty ?? 0 }; })
     .filter((c) => c.qty > 0)
     .sort((a, b) => b.qty - a.qty);
 

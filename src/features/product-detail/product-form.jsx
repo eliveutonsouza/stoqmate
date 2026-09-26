@@ -20,7 +20,7 @@ import { createProductAction, updateProductAction, uploadProductPhotoAction } fr
 const slug = (s, n) => (s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]/g, '').substring(0, n);
 const money = (n) => String(n ?? 0).replace('.', ',');
 
-export function ProductForm({ categories, suppliers, locations, product }) {
+export function ProductForm({ categories, suppliers, locations, product, initialLocationId = '' }) {
   const navigate = useNavigate();
   const editing = !!product;
 
@@ -37,7 +37,7 @@ export function ProductForm({ categories, suppliers, locations, product }) {
     purchase: money(product.cost_price), sale: money(product.sale_price), min: String(product.min_stock ?? 0),
     supplierId: product.supplier?.id || '', locationId: product.default_location?.id || '',
     barcode: product.barcode || '', notes: product.notes || '',
-  } : { brand: '', name: '', purchase: '', sale: '', min: '0', supplierId: '', locationId: '', barcode: '', notes: '' }));
+  } : { brand: '', name: '', purchase: '', sale: '', min: '0', supplierId: '', locationId: initialLocationId ?? '', barcode: '', notes: '' }));
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
   const [attrs, setAttrs] = React.useState(() => (product ? { [product.category.id]: product.attrs || {} } : {}));

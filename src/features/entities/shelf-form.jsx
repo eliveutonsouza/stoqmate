@@ -38,6 +38,8 @@ export function ShelfForm({ mode = 'new', categories = [], stores = [], location
   });
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
+  // Exclusão em dois cliques: o primeiro só arma a confirmação.
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   if (editing && !location) {
     return (
@@ -66,6 +68,7 @@ export function ShelfForm({ mode = 'new', categories = [], stores = [], location
   };
 
   const remove = () => {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
     setError('');
     startTransition(async () => {
       const result = await deleteLocationAction(location.id);
@@ -118,8 +121,11 @@ export function ShelfForm({ mode = 'new', categories = [], stores = [], location
               </div>
             </div>
             <button onClick={remove} disabled={productCount > 0 || pending} className="btn btn-outline btn-sm" style={{ opacity: productCount > 0 ? 0.5 : 1, cursor: productCount > 0 ? 'not-allowed' : 'pointer' }}>
-              Excluir local
+              {confirmDelete ? (pending ? 'Excluindo…' : `Confirmar exclusão de ${location.code}`) : 'Excluir local'}
             </button>
+            {confirmDelete && !pending && (
+              <button type="button" onClick={() => setConfirmDelete(false)} className="btn btn-ghost btn-sm">Manter</button>
+            )}
           </div>
         )}
 

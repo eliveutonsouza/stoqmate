@@ -38,8 +38,8 @@ export function GlobalSearch() {
     return () => { cancelled = true; clearTimeout(handle); };
   }, [term]);
 
-  const ask = () => {
-    const question = q;
+  const ask = (preset) => {
+    const question = typeof preset === 'string' ? preset : q;
     setAsked(question);
     ai.run(async () => {
       const { spec, rows, metric, metricKind } = unwrap(await askInventoryAction(question));
@@ -90,18 +90,18 @@ export function GlobalSearch() {
             <I.Search size={16} />
           </span>
           <input className="input" value={q} onChange={(e) => setQ(e.target.value)} autoFocus
-            onKeyDown={(e) => { if (e.key === 'Enter') ask(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && q.trim().length >= 2 && ai.state !== 'running') ask(); }}
             placeholder="Buscar ou perguntar: quais fones estão abaixo do mínimo?"
             style={{ paddingLeft: 40, paddingRight: 128, height: 44, fontSize: 15 }} />
           <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={ask} disabled={ai.state === 'running' || q.trim().length < 2} className="btn btn-primary btn-sm" style={{ opacity: ai.state === 'running' ? 0.6 : 1 }}>
+            <button onClick={() => ask()} disabled={ai.state === 'running' || q.trim().length < 2} className="btn btn-primary btn-sm" style={{ opacity: ai.state === 'running' ? 0.6 : 1 }}>
               <I.Sparkle size={12} /> {ai.state === 'running' ? 'Pensando…' : 'Perguntar'}
             </button>
           </span>
         </div>
-        {q.trim().length >= 2 && (
+        {q.trim().length >= 2 && !(asked === q && totalResults === 0) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{searching ? 'Buscando…' : `${totalResults} resultados para "${q}"`}</span>
+            <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{searching ? 'Buscando…' : `${totalResults} ${totalResults === 1 ? "resultado" : "resultados"} para "${q}"`}</span>
             {!searching && results?.error && <span role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{results.error}</span>}
             <div style={{ flex: 1 }}></div>
             <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>Busca em toda a rede</span>
@@ -111,7 +111,7 @@ export function GlobalSearch() {
 
       <Page gap={16}>
         {ai.state === 'running' && <AIThinking label={`Respondendo "${asked}"`} detail="Consultando catálogo, saldos e receita por categoria da rede." />}
-        {ai.state === 'error' && <AIError message={ai.error} onRetry={ask} />}
+        {ai.state === 'error' && <AIError message={ai.error} onRetry={() => ask(asked)} />}
         {ai.state === 'done' && ai.data && (
           <div className="card table-scroll" style={{ borderColor: 'var(--accent)' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', background: 'var(--accent-soft)' }}>
@@ -154,7 +154,7 @@ export function GlobalSearch() {
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500, color: r.stock < r.minStock ? 'var(--danger)' : 'var(--fg)' }}>{r.stock}</td>
                       <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{brl(r.sale)}</td>
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{r.loc}</td>
-                      <td><button onClick={() => navigate('/products')} className="btn btn-ghost btn-sm">Abrir</button></td>
+                      <td><button onClick={() => navigate(`/products/detail?id=${r.id}`)} className="btn btn-ghost btn-sm">Abrir</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -176,7 +176,7 @@ export function GlobalSearch() {
           </div>
         )}
 
-        {q.trim().length >= 2 && !searching && groups.length === 0 && (
+        {q.trim().length >= 2 && !searching && groups.length === 0 && asked !== q && (
           <EmptyState icon={<I.Search size={18} />} title="Nenhum resultado" desc={`Nada encontrado para "${q}" em produtos, movimentações, fornecedores, promoções ou locais.`} />
         )}
 
@@ -217,7 +217,7 @@ export function GlobalSearch() {
             Tente perguntar: {['quais produtos estão abaixo do mínimo?', 'qual categoria vende mais?', 'onde está meu dinheiro parado?'].map((ex, i) => (
               <React.Fragment key={ex}>
                 {i > 0 && ' · '}
-                <button onClick={() => { setQ(ex); }} style={{
+                <button onClick={() => { setQ(ex); ask(ex); }} style={{
                   background: 'none', border: 'none', padding: 0, font: 'inherit',
                   color: 'var(--accent-text)', fontWeight: 500, cursor: 'pointer',
                 }}>&ldquo;{ex}&rdquo;</button>

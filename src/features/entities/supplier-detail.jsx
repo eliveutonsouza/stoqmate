@@ -37,7 +37,7 @@ export function SupplierDetail({ supplier: s }) {
         actions={(
           <>
             <button onClick={() => navigate(`/suppliers/edit?id=${s.id}`)} className="btn btn-outline btn-sm">Editar</button>
-            <button onClick={() => navigate('/stock/entry')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova entrada</button>
+            <button onClick={() => navigate(`/stock/entry?supplier=${s.id}`)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova entrada</button>
           </>
         )}
       />

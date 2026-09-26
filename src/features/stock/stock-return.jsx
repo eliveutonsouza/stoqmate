@@ -17,12 +17,12 @@ import { stockReturnAction } from '@/features/stock/actions';
 
 const REASONS = ['Desistência do cliente', 'Defeito de fabricação', 'Variação incorreta', 'Produto errado entregue', 'Arrependimento (7 dias)'];
 
-export function StockReturn({ stores }) {
+export function StockReturn({ stores, initialProduct, initialStoreId, initialQty }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
-  const [storeId, setStoreId] = React.useState(defaultStoreId);
-  const [product, setProduct] = React.useState(null);
-  const [qty, setQty] = React.useState(1);
+  const [storeId, setStoreId] = React.useState(initialStoreId ?? defaultStoreId);
+  const [product, setProduct] = React.useState(initialProduct ?? null);
+  const [qty, setQty] = React.useState(initialQty ?? 1);
   const [reason, setReason] = React.useState(REASONS[0]);
   const [restock, setRestock] = React.useState(true);
   const [notes, setNotes] = React.useState('');

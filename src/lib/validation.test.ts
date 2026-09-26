@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { allUuids, isEmail, isOwnStorageUrl, isUuid, passwordError, textError } from "./validation";
+import { allUuids, isCnpj, isEmail, isOwnStorageUrl, isUuid, passwordError, textError } from "./validation";
 
 describe("validation", () => {
   afterEach(() => vi.unstubAllEnvs());
@@ -32,5 +32,16 @@ describe("validation", () => {
     expect(isOwnStorageUrl("https://evil.com/storage/v1/object/public/branding/x.png", "branding")).toBe(false);
     expect(isOwnStorageUrl("https://abc.supabase.co/storage/v1/object/public/avatars/x.png", "branding")).toBe(false);
     expect(isOwnStorageUrl("https://abc.supabase.co/storage/v1/object/public/branding/../x", "branding")).toBe(false);
+  });
+});
+
+describe("isCnpj", () => {
+  it("valida dígitos verificadores, com ou sem máscara", () => {
+    expect(isCnpj("11.222.333/0001-81")).toBe(true);
+    expect(isCnpj("11222333000181")).toBe(true);
+    expect(isCnpj("11.222.333/0001-82")).toBe(false);
+    expect(isCnpj("123")).toBe(false);
+    expect(isCnpj("00.000.000/0000-00")).toBe(false);
+    expect(isCnpj(null)).toBe(false);
   });
 });

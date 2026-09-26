@@ -72,7 +72,7 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
       }}>
         <ProductThumb category={category} brand={product.brand} attrs={product.attrs} size={34} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>{product.brand} · {product.name}</div>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>{product.brand ? `${product.brand} · ` : ''}{product.name}</div>
           <div style={{ fontSize: 11, color: 'var(--fg-muted)', display: 'flex', gap: 8, marginTop: 1 }}>
             <span className="mono">{product.sku}</span>
             <span>·</span>
@@ -128,7 +128,7 @@ export function ProductPicker({ product, onSelect, onClear, storeId }) {
               >
                 <ProductThumb category={p.category} brand={p.brand} attrs={p.attrs} size={26} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 500 }}>{p.brand} · {p.name}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 500 }}>{p.brand ? `${p.brand} · ` : ''}{p.name}</div>
                   <div style={{ fontSize: 10.5, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{p.sku}</div>
                 </div>
               </button>

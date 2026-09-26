@@ -15,14 +15,14 @@ import { I } from '@/components/icons';
 import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { stockEntryAction } from '@/features/stock/actions';
 
-export function StockEntry({ stores, suppliers, locations, initialProduct }) {
+export function StockEntry({ stores, suppliers, locations, initialProduct, initialSupplierId = '' }) {
   const navigate = useNavigate();
   const [product, setProduct] = React.useState(initialProduct ?? null);
   const defaultStoreId = useDefaultStoreId(stores);
   const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [qty, setQty] = React.useState(1);
   const [unit, setUnit] = React.useState(0);
-  const [supplierId, setSupplierId] = React.useState('');
+  const [supplierId, setSupplierId] = React.useState(initialSupplierId);
   const [locationId, setLocationId] = React.useState('');
   const [invoice, setInvoice] = React.useState('');
   const [notes, setNotes] = React.useState('');

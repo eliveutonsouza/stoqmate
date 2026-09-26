@@ -131,7 +131,7 @@ async function askInventoryActionImpl(question: string) {
     const supplier = p.supplier as unknown as { name: string } | null;
     const loc = p.default_location as unknown as { code: string } | null;
     return {
-      sku: p.sku, name: `${p.brand} ${p.name}`, variant: Object.values(p.attrs || {}).join(" / "),
+      id: p.id, sku: p.sku, name: `${p.brand} ${p.name}`, variant: Object.values(p.attrs || {}).join(" / "),
       stock, minStock: p.min_stock, sale, cost,
       margin: sale > 0 ? ((sale - cost) / sale) * 100 : 0,
       category: category?.name ?? "", brand: p.brand, loc: loc?.code ?? "", supplier: supplier?.name ?? "",

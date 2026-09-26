@@ -7,6 +7,24 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export const isEmail = (v: unknown): v is string => typeof v === "string" && v.length <= 254 && EMAIL_RE.test(v.trim());
 export const isUuid = (v: unknown): v is string => typeof v === "string" && UUID_RE.test(v);
+// CNPJ com dígitos verificadores (aceita com ou sem máscara).
+export function isCnpj(v: unknown): v is string {
+  if (typeof v !== "string") return false;
+  const d = v.replace(/\D/g, "");
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
+  const digit = (len: number) => {
+    const weights = len === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const sum = weights.reduce((s, w, i) => s + w * Number(d[i]), 0);
+    const r = sum % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  return digit(12) === Number(d[12]) && digit(13) === Number(d[13]);
+}
+
+// 11222333000181 → 11.222.333/0001-81 (assume CNPJ já validado).
+export const formatCnpj = (v: string) =>
+  v.replace(/\D/g, "").replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+
 export const allUuids = (v: unknown): v is string[] => Array.isArray(v) && v.every(isUuid);
 
 // Campo de texto obrigatório com tamanho mínimo/máximo (após trim).

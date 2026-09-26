@@ -244,7 +244,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <ProductThumb category={l.category} brand={l.brand} attrs={l.attrs} size={28} />
                               <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 500 }}>{l.brand} · {l.name}</div>
+                                <div style={{ fontSize: 13, fontWeight: 500 }}>{l.brand ? `${l.brand} · ` : ''}{l.name}</div>
                                 <div style={{ fontSize: 10, color: short ? 'var(--danger)' : 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
                                   {short ? `só ${stock} em estoque` : `${l.sku} · ${stock} disp.`}
                                 </div>

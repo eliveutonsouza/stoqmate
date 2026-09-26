@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { userMessage } from "@/lib/errors";
-import { allUuids, isUuid, textError } from "@/lib/validation";
+import { allUuids, formatCnpj, isCnpj, isEmail, isUuid, textError } from "@/lib/validation";
 
 export async function createSupplierAction(input: {
   name: string;
@@ -23,13 +23,15 @@ export async function createSupplierAction(input: {
   if (!allUuids(input.categoryIds)) return { error: "Categoria inválida." };
   const nameError = textError(input.name, "o nome do fornecedor", 2, 120);
   if (nameError) return { error: nameError };
+  if (input.cnpj?.trim() && !isCnpj(input.cnpj)) return { error: "CNPJ inválido — confira os 14 dígitos." };
+  if (input.email?.trim() && !isEmail(input.email)) return { error: "Email de pedidos inválido." };
   const supabase = await createClient();
 
   // Fornecedor + categorias numa transação (fn_create_supplier).
   const { data: supplierId, error } = await supabase.rpc("fn_create_supplier", {
     p_supplier: {
       name: input.name.trim(),
-      cnpj: input.cnpj,
+      cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : "",
       phone: input.phone,
       whatsapp: input.whatsapp ?? "",
       order_email: input.email,
@@ -91,13 +93,17 @@ export async function updateSupplierAction(input: {
   notes: string;
 }) {
   if (!isUuid(input.id) || !allUuids(input.categoryIds)) return { error: "Categoria inválida." };
+  const updateNameError = textError(input.name, "o nome do fornecedor", 2, 120);
+  if (updateNameError) return { error: updateNameError };
+  if (input.cnpj?.trim() && !isCnpj(input.cnpj)) return { error: "CNPJ inválido — confira os 14 dígitos." };
+  if (input.email?.trim() && !isEmail(input.email)) return { error: "Email de pedidos inválido." };
   const supabase = await createClient();
 
   const { error } = await supabase
     .from("suppliers")
     .update({
       name: input.name,
-      cnpj: input.cnpj || null,
+      cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : null,
       phone: input.phone || null,
       whatsapp: input.whatsapp || null,
       order_email: input.email || null,

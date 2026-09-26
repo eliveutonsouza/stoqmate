@@ -66,7 +66,7 @@ export function AIAnomalies({ stockouts, deadStock }) {
                     <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{s.sku}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => navigate('/stock/entry')} className="btn btn-primary btn-sm">Repor agora</button>
+                    <button onClick={() => navigate(`/stock/entry?product=${s.productId}`)} className="btn btn-primary btn-sm">Repor agora</button>
                     <button onClick={() => ignore(`stockout-${s.productId}`)} className="btn btn-ghost btn-sm">Ignorar</button>
                   </div>
                 </div>

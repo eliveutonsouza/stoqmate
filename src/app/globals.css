@@ -1,1 +1,4 @@
 @import "tailwindcss";
+
+/* A busca da toolbar tem o próprio botão de limpar — some com o nativo. */
+.toolbar-search input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }

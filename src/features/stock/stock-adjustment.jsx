@@ -28,7 +28,12 @@ export function StockAdjustment({ stores }) {
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
-  const system = (product?.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
+  const balanceOf = (p, store) => (p?.stock_balances || []).find((b) => b.store_id === store)?.qty ?? 0;
+  const system = balanceOf(product, storeId);
+  // A contagem parte do saldo do sistema: sem isso a tela abria mostrando
+  // "falta" de todo o estoque antes de qualquer contagem.
+  const pickProduct = (p) => { setProduct(p); setReal(balanceOf(p, storeId)); };
+  const pickStore = (store) => { setStoreId(store); setReal(balanceOf(product, store)); };
   const diff = real - system;
   const lossValue = Math.abs(diff) * (product?.cost_price ?? 0);
   const canSave = product && storeId && diff !== 0 && justification.trim().length >= 20;
@@ -83,12 +88,12 @@ export function StockAdjustment({ stores }) {
       )}
     >
       <FormCard title="Produto conferido" cols={1}>
-        <ProductPicker product={product} storeId={storeId} onSelect={setProduct} onClear={() => setProduct(null)} />
+        <ProductPicker product={product} storeId={storeId} onSelect={pickProduct} onClear={() => { setProduct(null); setReal(0); }} />
       </FormCard>
 
       <FormCard title="Contagem" cols={3}>
         <Field label="Unidade" span={1}>
-          <SelectInput value={storeId} onChange={setStoreId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
+          <SelectInput value={storeId} onChange={pickStore} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
         </Field>
         <Field label="Saldo no sistema" span={1} hint="Calculado pelo histórico.">
           <TextInput mono value={system} readOnly style={{ background: 'var(--bg-sunken)' }} />
