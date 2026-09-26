@@ -16,9 +16,9 @@ import { transferDispatchAction } from '@/features/stock/actions';
 
 const REASONS = ['Reposição por ruptura no destino', 'Balanceamento de estoque', 'Remanejamento sazonal', 'Devolução ao centro de distribuição', 'Pedido de cliente em outra loja'];
 
-export function StockTransfer({ stores }) {
+export function StockTransfer({ stores, initialProduct }) {
   const navigate = useNavigate();
-  const [product, setProduct] = React.useState(null);
+  const [product, setProduct] = React.useState(initialProduct ?? null);
   const defaultStoreId = useDefaultStoreId(stores);
   const [originId, setOriginId] = React.useState(defaultStoreId);
   const [destId, setDestId] = React.useState(stores[1]?.id ?? '');

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
+import { isUuid } from "@/lib/validation";
 import { loadStores } from "@/features/stock/queries";
 
 // Dados das telas de movimentação (antes consultados dentro do page.tsx,
@@ -63,4 +64,16 @@ export async function loadTransferToReceive(id?: string) {
   ]);
   must(pendingRes, "stock.receive.pending");
   return { transfer: must(transferRes, "stock.receive.transfer") ?? null, pendingCount: pendingRes.count ?? 0 };
+}
+
+// Produto pré-selecionado quando a tela vem do detalhe do produto
+// (?product=<id>). Mesmo formato do ProductPicker (fn_search_products:
+// saldos por loja, preço efetivo, custo só pra quem vê).
+export async function loadMovementProduct(productId?: string) {
+  if (!isUuid(productId)) return null;
+  const supabase = await createClient();
+  const base = must(await supabase.from("products").select("id, sku").eq("id", productId).maybeSingle(), "stock.movementProduct.base");
+  if (!base) return null;
+  const rows = must(await supabase.rpc("fn_search_products", { p_term: base.sku, p_limit: 20 }), "stock.movementProduct.search") ?? [];
+  return rows.find((r) => r.id === base.id) ?? null;
 }

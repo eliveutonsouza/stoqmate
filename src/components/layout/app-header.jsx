@@ -49,7 +49,7 @@ export function AppHeader({ breadcrumb, actions, navigate, contextSwitch, onMenu
       )}
       {actions}
       {notifications && <button onClick={() => navigate('/notifications')} className="btn btn-ghost btn-icon btn-sm" title="Notificações"
-        aria-label={unread > 0 ? `Notificações (${unread} não lidas)` : 'Notificações'} style={{ position: 'relative' }}>
+        aria-label={unread > 0 ? `Notificações (${unread} ${unread === 1 ? "não lida" : "não lidas"})` : 'Notificações'} style={{ position: 'relative' }}>
         <I.Bell size={14} />
         {unread > 0 && <span style={{ position: 'absolute', top: 5, right: 5, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }}></span>}
       </button>}

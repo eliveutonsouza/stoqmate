@@ -60,7 +60,6 @@ export async function loadDashboardData() {
   const storeBalances = (stores ?? []).map((s) => ({ ...s, ...(balanceByStore.get(s.id) ?? { skuCount: 0, qty: 0 }) }));
 
   return {
-    storeName: stores?.[0]?.name ?? "Rede",
     storeCount: stores?.length ?? 0,
     date: now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }),
     metrics: {

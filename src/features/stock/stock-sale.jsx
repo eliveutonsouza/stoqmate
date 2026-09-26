@@ -97,7 +97,7 @@ function CustomerField({ customer, onChange }) {
   );
 }
 
-export function StockSale({ stores, cashSessionByStore }) {
+export function StockSale({ stores, cashSessionByStore, initialProduct }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
   const isManager = MANAGER_ROLES.includes(useShell()?.user?.roleId);
@@ -108,7 +108,9 @@ export function StockSale({ stores, cashSessionByStore }) {
   const [approvalError, setApprovalError] = React.useState('');
   const [approving, setApproving] = React.useState(false);
   const [storeId, setStoreId] = React.useState(defaultStoreId);
-  const [cart, setCart] = React.useState([]);
+  const [cart, setCart] = React.useState(() => (initialProduct
+    ? [{ ...initialProduct, price: Number(initialProduct.effective_price ?? initialProduct.sale_price), qty: 1, off: 0 }]
+    : []));
   const [orderOff, setOrderOff] = React.useState({ mode: 'pct', value: 0 });
   const [discountOpen, setDiscountOpen] = React.useState(false);
   const [payment, setPayment] = React.useState('credito');

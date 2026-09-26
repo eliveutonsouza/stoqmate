@@ -15,9 +15,9 @@ import { I } from '@/components/icons';
 import { useDefaultStoreId } from '@/components/layout/shell-context';
 import { stockEntryAction } from '@/features/stock/actions';
 
-export function StockEntry({ stores, suppliers, locations }) {
+export function StockEntry({ stores, suppliers, locations, initialProduct }) {
   const navigate = useNavigate();
-  const [product, setProduct] = React.useState(null);
+  const [product, setProduct] = React.useState(initialProduct ?? null);
   const defaultStoreId = useDefaultStoreId(stores);
   const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [qty, setQty] = React.useState(1);

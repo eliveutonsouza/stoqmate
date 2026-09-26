@@ -1,15 +1,36 @@
 "use client";
 
+import * as React from 'react';
 import { I } from '@/components/icons';
 
+const SHORTCUTS = {
+  V: '/stock/sale', E: '/stock/entry', T: '/stock/transfer',
+  N: '/products/new', A: '/stock/adjustment', P: '/promotions/new',
+};
+
 export function QuickActionsCard({ navigate }) {
+  // Atalhos que o card anuncia: tecla solta (sem Ctrl/⌘/Alt) fora de campo
+  // de texto leva à ação.
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      const route = SHORTCUTS[e.key.toUpperCase()];
+      if (!route) return;
+      e.preventDefault();
+      navigate(route);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
+
   const actions = [
     { icon: <I.Plus size={14} />, label: 'Nova venda', sub: 'Saída · balcão', kbd: 'V', r: '/stock/sale' },
     { icon: <I.Box size={14} />, label: 'Entrada de estoque', sub: 'Compra de fornecedor', kbd: 'E', r: '/stock/entry' },
     { icon: <I.Swap size={14} />, label: 'Transferir entre lojas', sub: 'Saída + entrada na rede', kbd: 'T', r: '/stock/transfer' },
     { icon: <I.Layers size={14} />, label: 'Cadastrar produto', sub: 'SKU por atributos', kbd: 'N', r: '/products/new' },
     { icon: <I.Activity size={14} />, label: 'Ajuste de inventário', sub: 'Conferência física', kbd: 'A', r: '/stock/adjustment' },
-    { icon: <I.Tag size={14} />, label: 'Nova promoção', sub: 'Por período ou estoque', kbd: 'P', r: '/promotions' },
+    { icon: <I.Tag size={14} />, label: 'Nova promoção', sub: 'Por período ou estoque', kbd: 'P', r: '/promotions/new' },
   ];
   return (
     <div className="card" style={{ padding: 'var(--density-card-pad)' }}>

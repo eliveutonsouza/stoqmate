@@ -18,7 +18,7 @@ import { RecentMovementsCard } from '@/features/dashboard/recent-movements-card'
 const pct = (n) => (n === null || n === undefined ? null : `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`);
 
 export function DashboardStore({
-  storeName, storeCount, date, metrics, salesSeries, byCategory, topProducts,
+  storeCount, date, metrics, salesSeries, byCategory, topProducts,
   lowStockCount, lowStockItems, storeBalances, movements,
 }) {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ export function DashboardStore({
 
   return (
     <StoreShell
-      route="/dashboard" breadcrumb={[storeName, 'Dashboard']} navigate={navigate}
+      route="/dashboard" breadcrumb={['Dashboard']} navigate={navigate}
       headerActions={(
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--fg-muted)' }}>
           <span className="pulse"></span>

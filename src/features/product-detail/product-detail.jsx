@@ -33,9 +33,9 @@ export function ProductDetail({ detail }) {
         sub={`${p.brand} · ${variantLabel(p.attrs)} · SKU ${p.sku}`}
         actions={(
           <>
-            <button onClick={() => navigate('/stock/entry')} className="btn btn-outline btn-sm"><I.Plus size={13} /> Entrada</button>
+            <button onClick={() => navigate(`/stock/entry?product=${p.id}`)} className="btn btn-outline btn-sm"><I.Plus size={13} /> Entrada</button>
             <button onClick={() => navigate(`/products/edit?id=${p.id}`)} className="btn btn-outline btn-sm">Editar</button>
-            <button onClick={() => navigate('/stock/sale')} className="btn btn-primary btn-sm">Vender</button>
+            <button onClick={() => navigate(`/stock/sale?product=${p.id}`)} className="btn btn-primary btn-sm">Vender</button>
           </>
         )}
       />
@@ -133,7 +133,7 @@ export function ProductDetail({ detail }) {
                     <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Saldo deste SKU na rede</h3>
                     <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>{networkTotal} unidades em {stockByStore.length} {stockByStore.length === 1 ? 'local' : 'locais'}.</p>
                   </div>
-                  <button onClick={() => navigate('/stock/transfer')} className="btn btn-outline btn-sm"><I.Swap size={12} /> Transferir</button>
+                  <button onClick={() => navigate(`/stock/transfer?product=${p.id}`)} className="btn btn-outline btn-sm"><I.Swap size={12} /> Transferir</button>
                 </div>
                 {stockByStore.length === 0 ? (
                   <div style={{ fontSize: 12.5, color: 'var(--fg-muted)' }}>Sem saldo registrado em nenhuma unidade.</div>
@@ -160,7 +160,7 @@ export function ProductDetail({ detail }) {
             <div className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)' }}>
                 <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Movimentações deste SKU</h3>
-                <button onClick={() => navigate('/stock/history')} className="btn btn-ghost btn-sm">Histórico completo <I.ChevronRight size={12} /></button>
+                <button onClick={() => navigate(`/stock/history?q=${encodeURIComponent(p.sku)}`)} className="btn btn-ghost btn-sm">Histórico completo <I.ChevronRight size={12} /></button>
               </div>
               {movements.length === 0 ? (
                 <div style={{ padding: '18px', fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhuma movimentação registrada para este SKU ainda.</div>

@@ -20,10 +20,10 @@ export const ACCESS_LABEL = { none: 'Sem acesso', view: 'Só consulta', edit: 'P
 // Os quatro perfis de fábrica do lojista. No plano Rede ele cria perfis
 // próprios, mas sempre como cópia editada de um destes.
 export const ROLES = [
-  { id: 'vendedor', name: 'Vendedor', desc: 'Opera o balcão. Vê o que precisa para vender e nada sobre o dinheiro da empresa.', users: 2 },
-  { id: 'estoquista', name: 'Gestor de Estoque', desc: 'Compra, recebe, confere e ajusta. Não mexe em assinatura nem em usuários.', users: 1 },
-  { id: 'financeiro', name: 'Gestor Financeiro', desc: 'Vê custo, margem e lucratividade. Cuida da assinatura e do fiscal. Não altera estoque.', users: 1 },
-  { id: 'proprietario', name: 'Proprietário', desc: 'Tudo, em todas as unidades da rede. É quem concede acesso aos outros.', users: 1 },
+  { id: 'vendedor', name: 'Vendedor', desc: 'Opera o balcão. Vê o que precisa para vender e nada sobre o dinheiro da empresa.' },
+  { id: 'estoquista', name: 'Gestor de Estoque', desc: 'Compra, recebe, confere e ajusta. Não mexe em assinatura nem em usuários.' },
+  { id: 'financeiro', name: 'Gestor Financeiro', desc: 'Vê custo, margem e lucratividade. Cuida da assinatura e do fiscal. Não altera estoque.' },
+  { id: 'proprietario', name: 'Proprietário', desc: 'Tudo, em todas as unidades da rede. É quem concede acesso aos outros.' },
 ];
 
 // O console da plataforma não é do lojista — é da equipe Stoqmate. Fica fora

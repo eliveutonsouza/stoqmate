@@ -42,7 +42,7 @@ export async function loadPurchaseOrder(orderId: string) {
 export async function loadPurchaseOrderNew(params: { store?: string; supplier?: string; prefill?: string }) {
   const supabase = await createClient();
   const stores = await loadStores();
-  const storeId = stores.some((s) => s.id === params.store) ? params.store! : stores[0]?.id ?? "";
+  const storeId = (await resolveStoreId(stores, params.store)) ?? "";
   const [suggestions, suppliersRes] = await Promise.all([
     storeId ? loadReplenishmentSuggestions(storeId) : Promise.resolve([]),
     supabase.from("suppliers").select("id, name, lead_time_days, min_order_value").eq("active", true).order("name"),

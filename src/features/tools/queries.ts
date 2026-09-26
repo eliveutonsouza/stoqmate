@@ -17,3 +17,12 @@ export async function loadAuditLog() {
 
   return (entries ?? []).map((e) => ({ ...e, who: nameById[e.created_by ?? ""] || "Usuário" }));
 }
+
+// Quantos usuários ativos a rede tem em cada perfil (tela de perfis).
+export async function loadRoleCounts() {
+  const supabase = await createClient();
+  const rows = must(await supabase.from("store_users").select("role").eq("status", "active"), "tools/queries.loadRoleCounts") ?? [];
+  const counts: Record<string, number> = {};
+  for (const r of rows) counts[r.role] = (counts[r.role] ?? 0) + 1;
+  return counts;
+}

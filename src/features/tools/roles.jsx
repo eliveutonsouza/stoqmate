@@ -15,7 +15,7 @@ const DOT = {
   full: ['Total', 'var(--success)', 'var(--success-soft)'],
 };
 
-export function Roles() {
+export function Roles({ counts = {} }) {
   const navigate = useNavigate();
   const [level, setLevel] = React.useState('view');
 
@@ -54,7 +54,7 @@ export function Roles() {
                   <th key={r.id} style={{ textAlign: 'center' }}>
                     <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{r.name}</div>
                     <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
-                      {r.users} usuário{r.users > 1 ? 's' : ''}
+                      {counts[r.id] ?? 0} usuário{(counts[r.id] ?? 0) === 1 ? '' : 's'}
                     </div>
                   </th>
                 ))}
