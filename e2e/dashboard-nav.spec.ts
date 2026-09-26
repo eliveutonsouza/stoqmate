@@ -4,7 +4,8 @@ test("dashboard carrega e navega pelo sidebar", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByText("Visão geral")).toBeVisible();
 
-  await page.getByRole("link", { name: /^Catálogo/ }).click();
+  // Grupo da sidebar é um botão que expande; os itens dentro são links.
+  await page.getByRole("button", { name: /^Catálogo/ }).click();
   await page.getByRole("link", { name: "Todos os produtos" }).click();
   await expect(page).toHaveURL("/products");
 

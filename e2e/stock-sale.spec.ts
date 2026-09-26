@@ -8,8 +8,9 @@ test("venda: cliente pesquisável, sem trava de aprovação para o gestor", asyn
   await expect(page.getByPlaceholder(/Consumidor final/)).toBeEnabled();
   await expect(page.getByText("Cadastro de clientes chega na próxima etapa")).toHaveCount(0);
 
-  await page.getByPlaceholder("Buscar por SKU, código de barras, marca ou nome…").fill("Carregador");
-  const result = page.getByRole("button", { name: /Carregador GaN 65W/ });
+  // ELE-FONE-PRT é o item do tenant de teste com saldo.
+  await page.getByPlaceholder("Buscar por SKU, código de barras, marca ou nome…").fill("ELE-FONE-PRT");
+  const result = page.getByRole("button", { name: /ELE-FONE-PRT/ });
   await result.waitFor({ state: "visible" });
   await result.dispatchEvent("mousedown");
   await expect(page.getByText("Carrinho vazio")).toHaveCount(0);

@@ -10,6 +10,9 @@ import { brl } from '@/lib/format';
 import { confirmSaleAction } from '@/features/pos/actions';
 
 const DISCOUNT_STEPS = [0, 5, 10, 15, 20];
+
+// Preço efetivo (promoção ativa) — o mesmo que fn_confirm_sale cobra.
+const priceOf = (p) => Number(p.effective_price ?? p.sale_price);
 const PAYMENTS = [
   { label: 'Cartão', value: 'credito' },
   { label: 'PIX', value: 'pix' },
@@ -43,7 +46,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
   });
   const bump = (i, d) => setCart((c) => c.map((l, j) => (j === i ? { ...l, qty: Math.max(0, l.qty + d) } : l)).filter((l) => l.qty > 0));
 
-  const gross = cart.reduce((s, l) => s + l.qty * l.product.sale_price, 0);
+  const gross = cart.reduce((s, l) => s + l.qty * priceOf(l.product), 0);
   const discountAmount = gross * (discountPct / 100);
   const net = gross - discountAmount;
   const units = cart.reduce((s, l) => s + l.qty, 0);
@@ -63,7 +66,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
         installments: 1,
         cashSessionId: payment === 'dinheiro' ? cashSessionId : null,
         notes: '',
-        items: cart.map((l) => ({ productId: l.product.id, qty: l.qty, unitPrice: l.product.sale_price, discountPct: 0 })),
+        items: cart.map((l) => ({ productId: l.product.id, qty: l.qty, unitPrice: priceOf(l.product), discountPct: 0 })),
         orderDiscountAmount: discountAmount,
       });
       if (result?.error) { setError(result.error); return; }
@@ -150,7 +153,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                         <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 3 }}>{variantLabel(p.attrs || {})}</div>
                         <div style={{ flex: 1 }}></div>
                         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 8 }}>
-                          <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-mono)', letterSpacing: '-0.015em', color: 'var(--fg)' }}>{brl(p.sale_price)}</span>
+                          <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-mono)', letterSpacing: '-0.015em', color: 'var(--fg)' }}>{brl(priceOf(p))}</span>
                           <span style={{ fontSize: 10.5, color: stockFor(p) < 25 ? 'var(--warning)' : 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{stockFor(p)} un</span>
                         </div>
                       </button>
@@ -190,7 +193,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12.5, fontWeight: 500 }} className="truncate">{l.product.name}</div>
                         <div style={{ fontSize: 11, color: short ? 'var(--danger)' : 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
-                          {short ? `só ${stockFor(l.product)} em estoque` : brl(l.product.sale_price)}
+                          {short ? `só ${stockFor(l.product)} em estoque` : brl(priceOf(l.product))}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -198,7 +201,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                         <span style={{ width: 32, textAlign: 'center', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{l.qty}</span>
                         <button onClick={() => bump(i, 1)} className="btn btn-outline" style={{ width: 34, height: 34, padding: 0, justifyContent: 'center', fontSize: 16 }}>+</button>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', minWidth: 74, textAlign: 'right' }}>{brl(l.qty * l.product.sale_price)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', minWidth: 74, textAlign: 'right' }}>{brl(l.qty * priceOf(l.product))}</span>
                     </div>
                   );
                 })}

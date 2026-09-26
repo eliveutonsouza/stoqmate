@@ -6,10 +6,14 @@ test("signup finaliza e cai no onboarding", async ({ page }) => {
 
   await page.goto("/signup");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.getByPlaceholder("Mariana Souza").fill("Signup E2E");
+  await page.getByPlaceholder("Seu nome completo").fill("Signup E2E");
   await page.getByPlaceholder("voce@sualoja.com.br").fill(email);
   await page.getByPlaceholder("••••••••").fill("SignupPass123");
-  await page.getByPlaceholder("Bonsucesso Varejo").fill(`Loja E2E ${Date.now()}`);
+  await page.getByPlaceholder("Ex.: Loja Centro").fill(`Loja E2E ${Date.now()}`);
+  // Aceite é obrigatório e começa desmarcado (LGPD).
+  await page.getByRole("button", { name: /criar loja e configurar/i }).click();
+  await expect(page.getByText("Aceite os termos de uso pra continuar.")).toBeVisible();
+  await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: /criar loja e configurar/i }).click();
   await expect(page).toHaveURL("/onboarding");
 

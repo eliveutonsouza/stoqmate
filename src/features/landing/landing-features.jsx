@@ -8,6 +8,11 @@ import { ShowcaseFrame } from '@/components/ui/showcase-frame';
 import { NetworkDashboard } from '@/features/analysis/network-dashboard';
 import { TabletPOS } from '@/features/pos/tablet-pos';
 import { ReportABC } from '@/features/analysis/report-abc';
+import { resolveReportRange, todayInSaoPaulo } from '@/lib/report-range';
+
+// Vitrine da curva ABC: o relatório real exige filtros (período + loja)
+// desde que o cabeçalho passou a ler a URL — sem isso a landing quebrava.
+const ABC_SHOWCASE_FILTERS = { range: resolveReportRange({ period: '30d' }, todayInSaoPaulo()), storeId: null };
 
 // Vitrine da landing — não é dado de tenant nenhum, só um exemplo ilustrativo
 // pro print da curva ABC (mesma forma que a tela real recebe via props).
@@ -113,7 +118,7 @@ export function LandingFeatures({ navigate }) {
           cta={{ l: 'Ver a curva ABC', r: '/reports/abc' }}
         >
           <ShowcaseFrame order={3} url="stoqmate.com.br/reports/abc" width={1380} height={900} scale={0.44}>
-            <ReportABC navigate={() => {}} rows={ABC_SHOWCASE_ROWS} periodDays={30} />
+            <ReportABC rows={ABC_SHOWCASE_ROWS} periodDays={30} filters={ABC_SHOWCASE_FILTERS} stores={[]} />
           </ShowcaseFrame>
         </FeatureRow>
       </div>

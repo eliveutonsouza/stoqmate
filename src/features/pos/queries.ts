@@ -89,10 +89,22 @@ export async function loadPosData() {
   const openSessions = must(openSessionsRes, "pos/queries.loadPosData.openSessions");
   const profile = must(profileRes, "pos/queries.loadPosData.profile");
 
+  // Preço que o banco vai cobrar (promoção ativa), não só o de tabela.
+  const ids = (products ?? []).map((p) => p.id);
+  const prices = ids.length
+    ? must(await supabase.rpc("fn_effective_prices", { p_product_ids: ids }), "pos/queries.loadPosData.effectivePrices")
+    : [];
+  const priceById = new Map(((prices ?? []) as { product_id: string; price: number; promotion_name: string | null }[])
+    .map((r) => [r.product_id, r]));
+
   return {
     stores: stores ?? [],
     categories: categories ?? [],
-    products: products ?? [],
+    products: (products ?? []).map((p) => ({
+      ...p,
+      effective_price: Number(priceById.get(p.id)?.price ?? p.sale_price),
+      promotion_name: priceById.get(p.id)?.promotion_name ?? null,
+    })),
     cashSessionByStore: Object.fromEntries((openSessions ?? []).map((s) => [s.store_id, s.id])),
     operatorName: profile?.full_name || user?.email || "Operador",
   };

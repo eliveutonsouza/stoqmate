@@ -38,7 +38,8 @@ test("termos e privacidade abrem sem login e estão linkados no cadastro", async
   await expect(page.getByRole("heading", { name: "Política de privacidade" })).toBeVisible();
 
   await page.goto("/signup");
-  await expect(page.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/terms");
-  await expect(page.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/privacy");
+  const form = page.locator("form");
+  await expect(form.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/terms");
+  await expect(form.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/privacy");
   await expect(page.getByRole("checkbox")).not.toBeChecked();
 });
