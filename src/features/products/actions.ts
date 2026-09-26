@@ -135,7 +135,7 @@ export async function updateProductAction(input: {
   if (before && previousSalePrice !== null && previousSalePrice !== input.salePrice) {
     const { error: auditError } = await supabase.rpc("fn_write_audit", {
       p_kind: "price",
-      p_message: `Alterou preço de venda de ${before.name} de R$ ${previousSalePrice.toFixed(2)} para R$ ${input.salePrice.toFixed(2)}`,
+      p_message: `Alterou preço de venda de ${before.name} de R$ ${previousSalePrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} para R$ ${input.salePrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       p_target_type: "product",
       p_target_id: input.id,
     });

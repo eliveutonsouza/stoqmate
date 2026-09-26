@@ -93,6 +93,7 @@ export async function createCheckoutSessionAction(input: { planId: string; cycle
     const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
+      locale: "pt-BR",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/settings/subscription?checkout=success`,
       cancel_url: `${origin}/settings/subscription?checkout=cancelled`,
@@ -124,6 +125,7 @@ export async function createPackCheckoutSessionAction(packId: string) {
     const session = await getStripe().checkout.sessions.create({
       mode: "payment",
       customer: customerId,
+      locale: "pt-BR",
       line_items: [{ price: pack.stripe_price_id, quantity: 1 }],
       success_url: `${origin}/settings/credits?checkout=success`,
       cancel_url: `${origin}/settings/credits?checkout=cancelled`,
@@ -166,6 +168,7 @@ async function portalUrl(customer: string, flow?: PortalFlow) {
   const returnUrl = `${origin}/settings/subscription`;
   const session = await getStripe().billingPortal.sessions.create({
     customer,
+    locale: "pt-BR",
     return_url: returnUrl,
     ...(flow ? { flow_data: { ...flow, after_completion: { type: "redirect", redirect: { return_url: returnUrl } } } } : {}),
   });
@@ -277,6 +280,7 @@ export async function createPortalSessionAction() {
     const origin = await siteOrigin();
     const session = await getStripe().billingPortal.sessions.create({
       customer: billing.stripe_customer_id,
+      locale: "pt-BR",
       return_url: `${origin}/settings/subscription`,
     });
     return { url: session.url };

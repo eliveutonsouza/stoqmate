@@ -6,7 +6,7 @@ import { authEmailOrigin } from "@/lib/site-origin";
 import { hasStaffRow, postLoginDestination, saveSignupPhone, slugify } from "@/features/auth/pending-signup";
 import { isInvalidCredentials, signInErrorMessage } from "@/lib/auth-errors";
 import { GENERIC_ERROR, userMessage } from "@/lib/errors";
-import { isEmail, passwordError, textError } from "@/lib/validation";
+import { formatCnpj, isCnpj, isEmail, passwordError, textError } from "@/lib/validation";
 
 // Falha que não é credencial errada é incidente (chave inválida, rede) — vai
 // pro log da Vercel em vez de sumir atrás de "senha incorreta".
@@ -34,6 +34,7 @@ export async function signUpAction(input: {
     ?? (isEmail(input.email) ? null : "Informe um email válido.")
     ?? passwordError(input.password)
     ?? textError(input.storeName, "o nome da loja", 2, 80)
+    ?? (input.cnpj?.trim() && !isCnpj(input.cnpj) ? "CNPJ inválido — confira os 14 dígitos." : null)
     ?? (typeof input.planId === "string" && input.planId ? null : "Escolha um plano.");
   if (invalid) return { error: invalid };
   const email = input.email.trim();
@@ -49,7 +50,7 @@ export async function signUpAction(input: {
       emailRedirectTo: `${origin}/auth/callback?next=/onboarding`,
       data: {
         full_name: input.fullName.trim(), phone: phone || null, store_name: input.storeName.trim(),
-        cnpj: input.cnpj || null, plan_id: input.planId, terms_accepted_at: new Date().toISOString(),
+        cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : null, plan_id: input.planId, terms_accepted_at: new Date().toISOString(),
       },
     },
   });
@@ -73,7 +74,7 @@ export async function signUpAction(input: {
     p_full_name: input.fullName.trim(),
     p_store_name: input.storeName.trim(),
     p_subdomain: slugify(input.storeName),
-    p_cnpj: input.cnpj || null,
+    p_cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : null,
     p_plan_id: input.planId,
   });
   if (rpcError) {
@@ -106,6 +107,7 @@ export async function completeGoogleSignupAction(input: {
   cnpj: string;
   planId: string;
 }) {
+  if (input.cnpj?.trim() && !isCnpj(input.cnpj)) return { error: "CNPJ inválido — confira os 14 dígitos." };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre de novo." };
@@ -117,7 +119,7 @@ export async function completeGoogleSignupAction(input: {
     p_full_name: fullName,
     p_store_name: input.storeName,
     p_subdomain: slugify(input.storeName),
-    p_cnpj: input.cnpj || null,
+    p_cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : null,
     p_plan_id: input.planId,
   });
   if (error) {

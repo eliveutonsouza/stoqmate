@@ -45,6 +45,7 @@ export async function loadProfile() {
 export async function loadTeam() {
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
+  const { data: { user } } = await supabase.auth.getUser();
 
   const [membersRes, invitesRes, tenantRes] = await Promise.all([
     supabase.rpc("fn_team_members"),
@@ -67,6 +68,7 @@ export async function loadTeam() {
     planName: plan?.name ?? "—",
     seatLimit,
     seatsUsed: (members?.length ?? 0) + (invites?.length ?? 0),
+    currentUserId: user?.id ?? null,
   };
 }
 
@@ -76,7 +78,7 @@ export async function loadSettingsHub() {
   const supabase = await createClient();
   const [tenantRes, storesRes, usersRes, catsRes, attrsRes] = await Promise.all([
     supabase.from("tenants").select("plan:plans(name, monthly_price, limits)").single(),
-    supabase.from("stores").select("id", { count: "exact", head: true }),
+    supabase.from("stores").select("id", { count: "exact", head: true }).eq("type", "loja"),
     supabase.from("store_users").select("user_id", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("categories").select("id", { count: "exact", head: true }),
     supabase.from("category_attributes").select("id", { count: "exact", head: true }),

@@ -110,6 +110,14 @@ export function Profile({ profile }) {
     });
   };
 
+  const cancelMfaEnroll = () => {
+    const factorId = mfaEnrollment?.factorId;
+    setMfaEnrollment(null);
+    setMfaCode('');
+    setMfaError('');
+    if (factorId) startMfaTransition(async () => { await unenrollMfaAction(factorId); });
+  };
+
   const disableMfa = () => {
     setMfaError('');
     startMfaTransition(async () => {
@@ -186,7 +194,13 @@ export function Profile({ profile }) {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <TextInput mono value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="000000" style={{ width: 120 }} />
                     <button onClick={confirmMfa} disabled={mfaPending || mfaCode.length < 6} className="btn btn-primary btn-sm">Confirmar</button>
+                    <button type="button" onClick={cancelMfaEnroll} disabled={mfaPending} className="btn btn-ghost btn-sm">Cancelar</button>
                   </div>
+                  {mfaEnrollment.secret && (
+                    <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 8 }}>
+                      Sem câmera? Digite esta chave no app: <code style={{ fontFamily: 'var(--font-mono)', userSelect: 'all' }}>{mfaEnrollment.secret}</code>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

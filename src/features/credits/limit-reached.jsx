@@ -5,9 +5,9 @@ import { StoreShell } from '@/components/ui/store-shell';
 import { Page } from '@/components/ui/page-container';
 
 const LABELS = {
-  skus: { noun: 'SKUs', one: 'SKU', manage: 'Revisar catálogo', route: '/products', freeHint: 'Desativar produtos que você não vende mais libera espaço na hora.' },
-  users: { noun: 'usuários', one: 'usuário', manage: 'Gerenciar usuários', route: '/settings/users', freeHint: 'Remover um usuário inativo ou cancelar um convite pendente libera um assento.' },
-  stores: { noun: 'lojas', one: 'loja', manage: 'Ver unidades', route: '/settings/units', freeHint: 'Centros de distribuição e estoques externos não contam nesse limite — só lojas.' },
+  skus: { noun: 'SKUs', one: 'SKU', unlimited: 'ilimitados', manage: 'Revisar catálogo', route: '/products', freeHint: 'Desativar produtos que você não vende mais libera espaço na hora.' },
+  users: { noun: 'usuários', one: 'usuário', unlimited: 'ilimitados', manage: 'Gerenciar usuários', route: '/settings/users', freeHint: 'Remover um usuário inativo ou cancelar um convite pendente libera um assento.' },
+  stores: { noun: 'lojas', one: 'loja', unlimited: 'ilimitadas', manage: 'Ver unidades', route: '/settings/units', freeHint: 'Centros de distribuição e estoques externos não contam nesse limite — só lojas.' },
 };
 
 export function LimitReached({ kind, planName, limits, usage, upgrade }) {
@@ -32,7 +32,7 @@ export function LimitReached({ kind, planName, limits, usage, upgrade }) {
           <p style={{ margin: '10px 0 18px', fontSize: 13.5, color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 540 }}>
             {limit != null ? `O ${planName} cobre até ${limit} ${limit === 1 ? l.one : l.noun}.` : ''}{' '}
             {next
-              ? `O plano ${next.name} ${next.limit == null ? `tem ${l.noun} ilimitados` : `vai até ${next.limit} ${l.noun}`}.`
+              ? `O plano ${next.name} ${next.limit == null ? `tem ${l.noun} ${l.unlimited}` : `vai até ${next.limit} ${l.noun}`}.`
               : 'Fale com o suporte para um plano sob medida.'}{' '}
             {l.freeHint}
           </p>

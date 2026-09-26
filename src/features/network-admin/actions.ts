@@ -5,11 +5,15 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
 import { userMessage } from "@/lib/errors";
+import { formatCnpj, isCnpj, textError } from "@/lib/validation";
 
 export async function createStoreAction(input: { name: string; type: string; city: string; cnpj: string }) {
+  const nameError = textError(input.name, "o nome da unidade", 2, 80);
+  if (nameError) return { error: nameError };
+  if (input.cnpj?.trim() && !isCnpj(input.cnpj)) return { error: "CNPJ inválido — confira os 14 dígitos." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_create_store", {
-    p_name: input.name, p_type: input.type, p_city: input.city, p_cnpj: input.cnpj,
+    p_name: input.name.trim(), p_type: input.type, p_city: input.city, p_cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : "",
   });
   if (error) {
     const limit = limitKindFromError(error.message);

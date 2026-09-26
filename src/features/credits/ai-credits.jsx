@@ -60,7 +60,7 @@ export function AICredits({ quota, packs }) {
             <div>
               <div style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>Disponível neste ciclo</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginTop: 4 }}>
-                <span style={{ fontSize: 30, fontWeight: 600, fontFamily: 'var(--font-mono)', letterSpacing: '-0.035em' }}>{left}</span>
+                <span style={{ fontSize: 30, fontWeight: 600, fontFamily: 'var(--font-mono)', letterSpacing: '-0.035em' }}>{left.toLocaleString('pt-BR')}</span>
                 <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>de {(planCredits + extraBalance).toLocaleString('pt-BR')} créditos</span>
               </div>
             </div>
@@ -68,7 +68,7 @@ export function AICredits({ quota, packs }) {
           <CreditMeter used={planUsed} total={planCredits || 1} height={10} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
             {[
-              ['Cota do plano', `${planUsed} / ${planCredits}`, `zera em ${fmtDate(renewsAt)}`],
+              ['Cota do plano', `${planUsed.toLocaleString("pt-BR")} / ${planCredits.toLocaleString("pt-BR")}`, `zera em ${fmtDate(renewsAt)}`],
               ['Pacote adicional', `${extraBalance} disponíveis`, 'não expira'],
             ].map(([l, v, s]) => (
               <div key={l}>
@@ -93,7 +93,7 @@ export function AICredits({ quota, packs }) {
                 <div key={x.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 0', borderBottom: i < byFeature.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
                   <div style={{ width: 210, flexShrink: 0 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 500 }}>{x.label}</div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 1 }}>{x.runs} usos × {x.credits} {x.credits === 1 ? 'crédito' : 'créditos'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 1 }}>{x.runs} {x.runs === 1 ? 'uso' : 'usos'} × {x.credits} {x.credits === 1 ? 'crédito' : 'créditos'}</div>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}><CreditMeter used={x.used} total={maxSpent} height={6} /></div>
                   <div style={{ width: 62, textAlign: 'right', fontSize: 12.5, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{x.used}</div>
@@ -122,7 +122,7 @@ export function AICredits({ quota, packs }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fg)' }}>{p.credits.toLocaleString('pt-BR')} créditos</div>
                 <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2 }}>
-                  ≈ {Math.floor(p.credits / 5)} notas fiscais ou {p.credits} perguntas em linguagem natural
+                  ≈ {Math.floor(p.credits / 5).toLocaleString('pt-BR')} notas fiscais ou {p.credits.toLocaleString('pt-BR')} perguntas em linguagem natural
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>

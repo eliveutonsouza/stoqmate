@@ -6,7 +6,7 @@ import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
 import { userMessage } from "@/lib/errors";
-import { isOwnStorageUrl, textError } from "@/lib/validation";
+import { formatCnpj, isCnpj, isOwnStorageUrl, textError } from "@/lib/validation";
 import type { Database } from "@/lib/supabase/database.types";
 
 type StoreRole = Database["public"]["Enums"]["store_role"];
@@ -75,8 +75,11 @@ export async function updateFiscalModeAction(mode: string) {
 }
 
 export async function updateCompanyDataAction(input: { name: string; cnpj: string }) {
+  const nameError = textError(input.name, "o nome da loja", 2, 120);
+  if (nameError) return { error: nameError };
+  if (input.cnpj?.trim() && !isCnpj(input.cnpj)) return { error: "CNPJ inválido — confira os 14 dígitos." };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("fn_update_company_data", { p_name: input.name, p_cnpj: input.cnpj });
+  const { error } = await supabase.rpc("fn_update_company_data", { p_name: input.name.trim(), p_cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : "" });
   if (error) {
     if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para mudar os dados da empresa." };
     return { error: userMessage(error, "settings/actions") };
@@ -163,6 +166,12 @@ export async function changePasswordAction(input: { currentPassword: string; new
 
 export async function enrollMfaAction() {
   const supabase = await createClient();
+  // Cadastro abandonado (QR aberto e nunca confirmado) deixa um fator
+  // "unverified" que bloqueia o próximo enroll — limpa antes.
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  for (const f of factors?.all ?? []) {
+    if (f.factor_type === "totp" && f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+  }
   const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
   if (error) return { error: userMessage(error, "settings/actions") };
   return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };

@@ -48,15 +48,16 @@ function lastSeen(iso) {
  *   seatsUsed?: number,
  * }} props
  */
-export function SettingsUsers({ members = [], invites = [], planName = '—', seatLimit = 0, seatsUsed = 0 }) {
+export function SettingsUsers({ members = [], invites = [], planName = '—', seatLimit = 0, seatsUsed = 0, currentUserId = null }) {
   const navigate = useNavigate();
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const [form, setForm] = React.useState({ fullName: '', email: '', role: 'vendedor' });
   const [error, setError] = React.useState('');
   const [inviteLink, setInviteLink] = React.useState('');
+  const [copied, setCopied] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
 
-  const closeInvite = () => { setInviteOpen(false); setError(''); setInviteLink(''); setForm({ fullName: '', email: '', role: 'vendedor' }); };
+  const closeInvite = () => { setInviteOpen(false); setError(''); setInviteLink(''); setCopied(false); setForm({ fullName: '', email: '', role: 'vendedor' }); };
 
   const submitInvite = () => {
     setError('');
@@ -132,7 +133,10 @@ export function SettingsUsers({ members = [], invites = [], planName = '—', se
                   <td><span className="badge badge-success"><span className="badge-dot"></span> Ativo</span></td>
                   <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{lastSeen(u.last_sign_in_at)}</td>
                   <td>
-                    <button onClick={() => run(() => removeTeamMemberAction(u.user_id))} disabled={pending} className="btn btn-ghost btn-sm">Remover</button>
+                    {/* Ninguém se remove (o banco recusa); mostrar o botão só gerava erro. */}
+                    {u.user_id === currentUserId
+                      ? <span style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>Você</span>
+                      : <button onClick={() => run(() => removeTeamMemberAction(u.user_id))} disabled={pending} className="btn btn-ghost btn-sm">Remover</button>}
                   </td>
                 </tr>
               ))}
@@ -185,7 +189,13 @@ export function SettingsUsers({ members = [], invites = [], planName = '—', se
             <div style={{ fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
               Convite criado. <strong style={{ color: 'var(--fg)' }}>O envio automático por email ainda não está ativo</strong> — copie o link abaixo e mande para a pessoa.
             </div>
-            <TextInput readOnly value={inviteLink} onFocus={(e) => e.target.select()} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1 }}><TextInput readOnly value={inviteLink} onFocus={(e) => e.target.select()} /></div>
+              <button type="button" className="btn btn-outline btn-sm"
+                onClick={() => navigator.clipboard?.writeText(inviteLink).then(() => setCopied(true), () => setCopied(false))}>
+                {copied ? 'Copiado' : 'Copiar link'}
+              </button>
+            </div>
           </div>
         ) : (
           <>

@@ -14,6 +14,12 @@ const KIND = {
   settings: ['Configuração', 'var(--fg-muted)', 'var(--bg-sunken)'],
   promo: ['Promoção', 'var(--accent-text)', 'var(--accent-soft)'],
   supplier: ['Fornecedor', 'var(--info)', 'var(--info-soft)'],
+  price_bulk: ['Preço', 'var(--warning)', 'var(--warning-soft)'],
+  'team.invite': ['Equipe', 'var(--fg-muted)', 'var(--bg-sunken)'],
+  'team.cancel_invite': ['Equipe', 'var(--fg-muted)', 'var(--bg-sunken)'],
+  'team.role_change': ['Equipe', 'var(--fg-muted)', 'var(--bg-sunken)'],
+  'team.remove': ['Equipe', 'var(--fg-muted)', 'var(--bg-sunken)'],
+  'store.create': ['Unidade', 'var(--info)', 'var(--info-soft)'],
 };
 
 export function AuditLog({ entries }) {

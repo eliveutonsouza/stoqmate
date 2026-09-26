@@ -20,10 +20,10 @@ export function SettingsHub({ hub }) {
           <HubCard icon={<I.Sparkle size={15} />} accent title="Branding" onClick={() => navigate('/settings/branding')}
             desc="Logo e cor principal da rede. Os tons secundários para tema claro e escuro são gerados automaticamente." />
           <HubCard icon={<I.Store size={15} />} accent title="Dados da empresa" onClick={() => navigate('/settings/store-data')}
-            desc="Razão social, CNPJ, endereço e preferências de operação usadas nos relatórios e notas." />
+            desc="Nome da rede e CNPJ da conta." />
           <HubCard icon={<I.Swap size={15} />} accent title="Unidades da rede" onClick={() => navigate('/settings/units')}
             desc="Lojas e centros de distribuição. Cada unidade tem saldo isolado e locais de estoque próprios."
-            meta={[['Unidades', String(hub.stores)], ['Limite', limitLabel(hub.storeLimit)]]} />
+            meta={[['Lojas', String(hub.stores)], ['Limite de lojas', limitLabel(hub.storeLimit)]]} />
           <HubCard icon={<I.Users size={15} />} accent title="Usuários e perfis" onClick={() => navigate('/settings/users')}
             desc="Equipe da rede e o que cada perfil pode ver e fazer, de vendedor a proprietário."
             meta={[['Usuários', String(hub.users)], ['Limite', limitLabel(hub.userLimit)]]} />

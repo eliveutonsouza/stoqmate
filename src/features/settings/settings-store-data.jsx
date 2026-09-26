@@ -48,7 +48,7 @@ export function SettingsStoreData({ company }) {
     <StoreShell route="/settings/store-data" breadcrumb={['Configurações', 'Dados da loja']} navigate={navigate}>
       <PageHeader title="Configurações" sub="Identidade visual, dados da empresa, equipe e assinatura." />
       <SettingsLayout route="/settings/store-data" navigate={navigate}>
-        <FormCard title="Dados cadastrais" desc="Aparecem no cabeçalho dos relatórios e nas notas de compra." cols={2}
+        <FormCard title="Dados cadastrais" desc="O nome identifica a rede no painel; o CNPJ fica no cadastro da conta (suporte e cobrança)." cols={2}
           footer={<button onClick={save} disabled={pending} className="btn btn-primary">{pending ? 'Salvando…' : 'Salvar alterações'}</button>}>
           <Field label="Nome da loja" required span={2}><TextInput value={name} onChange={(e) => setName(e.target.value)} /></Field>
           <Field label="CNPJ" span={1}><TextInput mono value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0001-00" /></Field>
@@ -74,8 +74,8 @@ export function SettingsStoreData({ company }) {
 
       <Modal open={deleteOpen} onClose={() => { setDeleteOpen(false); setConfirmName(''); setDeleteError(''); }} title={`Excluir ${company.name}?`} desc="Cancela a assinatura e agenda a remoção dos dados. Irreversível." width={460}
         footer={<>
-          <button onClick={() => setDeleteOpen(false)} className="btn btn-ghost">Cancelar</button>
-          <button onClick={confirmDelete} disabled={deletePending} className="btn btn-danger">{deletePending ? 'Excluindo…' : 'Excluir permanentemente'}</button>
+          <button onClick={() => { setDeleteOpen(false); setConfirmName(''); setDeleteError(''); }} className="btn btn-ghost">Cancelar</button>
+          <button onClick={confirmDelete} disabled={deletePending || confirmName.trim() !== company.name.trim()} className="btn btn-danger">{deletePending ? 'Excluindo…' : 'Excluir permanentemente'}</button>
         </>}>
         <div style={{ padding: '12px 14px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 8, display: 'flex', gap: 11 }}>
           <span style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }}><I.Alert size={15} /></span>
