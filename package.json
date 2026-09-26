@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

@@ -49,10 +49,12 @@ async function planIdForPrice(priceId: string | undefined): Promise<string | nul
 // Stripe status -> tenants.status (enum trial|active|past_due|canceled).
 // Estados intermediários do Stripe sem equivalente direto (incomplete,
 // incomplete_expired, unpaid) não mexem no status do tenant — mapear pra
-// um dos 4 seria inventar um significado que o Stripe não deu.
+// um dos 4 seria inventar um significado que o Stripe não deu. "paused"
+// (trial terminou sem cartão) vira past_due: a assinatura existe mas não
+// está sendo paga, mesmo tratamento de acesso.
 function tenantStatusFor(stripeStatus: Stripe.Subscription.Status): string | null {
   const map: Partial<Record<Stripe.Subscription.Status, string>> = {
-    trialing: "trial", active: "active", past_due: "past_due", canceled: "canceled",
+    trialing: "trial", active: "active", past_due: "past_due", canceled: "canceled", paused: "past_due",
   };
   return map[stripeStatus] ?? null;
 }
@@ -136,6 +138,19 @@ Deno.serve(async (req) => {
     return new Response("invalid signature", { status: 400 });
   }
 
+  // Idempotência: o Stripe reentrega eventos (timeout, retry manual). O
+  // primeiro insert do event.id "reserva" o evento; reentrega bate na PK e
+  // responde 200 sem reprocessar. Se o processamento falhar, a reserva é
+  // desfeita pra reentrega seguinte tentar de novo.
+  const claim = await supabase.from("stripe_events").insert({ id: event.id, type: event.type });
+  if (claim.error) {
+    if (claim.error.code === "23505") {
+      return new Response(JSON.stringify({ received: true, duplicate: true }), { headers: { "Content-Type": "application/json" } });
+    }
+    console.error("stripe_events claim failed", claim.error);
+    return new Response("handler error", { status: 500 });
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -150,6 +165,13 @@ Deno.serve(async (req) => {
       }
       case "checkout.session.async_payment_succeeded": {
         await creditPackIfPaid(event.data.object as Stripe.Checkout.Session);
+        break;
+      }
+      case "checkout.session.async_payment_failed": {
+        // Boleto/PIX não pago: nada foi creditado (creditPackIfPaid exige
+        // "paid"), só registra pra suporte conseguir explicar ao cliente.
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.warn("async payment failed", { session: session.id, tenant: session.metadata?.tenant_id, pack: session.metadata?.pack_id });
         break;
       }
       case "customer.subscription.updated":
@@ -191,7 +213,9 @@ Deno.serve(async (req) => {
         break;
     }
   } catch (err) {
-    console.error("webhook handler error", err);
+    console.error("webhook handler error", { event: event.id, type: event.type }, err);
+    const release = await supabase.from("stripe_events").delete().eq("id", event.id);
+    if (release.error) console.error("stripe_events release failed", event.id, release.error);
     return new Response("handler error", { status: 500 });
   }
 
