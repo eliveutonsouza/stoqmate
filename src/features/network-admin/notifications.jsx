@@ -114,18 +114,21 @@ export function Notifications({ notifications, preferences }) {
           })}
         </div>
 
-        <FormCard title="Preferências de notificação" desc="Todo aviso aparece aqui no painel. O envio por email ainda não está disponível." cols={1}>
+        <FormCard title="Avisos por email" desc="Todo aviso aparece aqui no painel. Os que tiverem email ligado também vão para os proprietários da rede." cols={1}>
           {preferences.map((r, i, arr) => (
-            <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+            <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--line-soft)' : 'none', opacity: r.ready ? 1 : 0.6 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500 }}>{r.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{r.desc}</div>
               </div>
-              <label title="Em breve" style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--fg-faint)', cursor: 'not-allowed' }}>
-                <input type="checkbox" checked={false} readOnly disabled /> por email <span className="badge">Em breve</span>
-              </label>
+              {r.ready
+                ? <span className={r.email ? 'badge badge-accent' : 'badge'}>{r.email ? 'Email ligado' : 'Só no painel'}</span>
+                : <span className="badge">Em breve</span>}
             </div>
           ))}
+          <div style={{ paddingTop: 10 }}>
+            <a href="/settings/notifications" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/settings/notifications'); }} className="btn btn-outline btn-sm">Configurar avisos por email</a>
+          </div>
         </FormCard>
       </Page>
     </StoreShell>

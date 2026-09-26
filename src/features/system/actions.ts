@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
 
 export async function requestAccessAction(route: string) {
   const supabase = await createClient();
@@ -10,6 +11,7 @@ export async function requestAccessAction(route: string) {
     if (error.message.includes("not authorized")) return { error: "Entre na sua conta da loja para pedir acesso." };
     return { error: "Não foi possível enviar o pedido agora. Tente de novo em instantes." };
   }
+  scheduleNotificationEmails();
   revalidatePath("/notifications");
   return { ok: true };
 }

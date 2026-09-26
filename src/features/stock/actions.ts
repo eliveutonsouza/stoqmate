@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
+import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -38,6 +39,7 @@ export async function stockEntryAction(input: {
     p_unit_cost: input.unitCost, p_notes: input.notes || null,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   if (input.locationId) {
     const { error: locError } = await supabase.from("products").update({ default_location_id: input.locationId }).eq("id", input.productId);
     if (locError) return { id: data as string, warning: "Entrada gravada, mas o local padrão do produto não foi atualizado." };
@@ -56,6 +58,7 @@ export async function stockAdjustmentAction(input: {
     p_reason: input.reason, p_justification: input.justification,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -73,6 +76,7 @@ export async function transferDispatchAction(input: {
     p_reason: input.reason, p_carrier: input.carrier || null, p_notes: input.notes || null,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -92,6 +96,7 @@ export async function transferReceiveAction(input: {
     p_discrepancy_detail: input.discrepancyDetail || null,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/stock/transfer");
   revalidatePath("/products");
@@ -109,6 +114,7 @@ export async function stockExchangeAction(input: {
     p_reason: input.reason, p_notes: input.notes || null,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -123,6 +129,7 @@ export async function stockReturnAction(input: {
     p_reason: input.reason, p_restock: input.restock, p_notes: input.notes || null,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };
@@ -140,6 +147,7 @@ export async function stockCountSubmitAction(input: {
     p_reason: input.reason || null, p_justification: input.justification || null,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { id: data as string };

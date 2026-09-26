@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { isEmail, isUuid } from "@/lib/validation";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
+import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -53,6 +54,7 @@ export async function confirmSaleAction(input: {
     p_discount_approval_id: input.discountApprovalId ?? null,
   });
   if (error) return { error: friendlyError(error) };
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
   revalidatePath("/cash");
