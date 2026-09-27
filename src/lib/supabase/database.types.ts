@@ -2406,33 +2406,18 @@ export type Database = {
         Args: { p_items: Json | null; p_notes: string | null; p_store_id: string | null }
         Returns: number
       }
-      fn_confirm_sale:
-        | {
-            Args: {
-              p_cash_session_id: string | null
-              p_customer_id: string | null
-              p_discount_approval_id?: string | null
-              p_installments: number | null
-              p_items: Json | null
-              p_notes: string | null
-              p_order_discount_amount?: number | null
-              p_payment_method: string | null
-              p_store_id: string | null
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_customer_id: string | null
-              p_discount_approval_id?: string | null
-              p_items: Json | null
-              p_notes: string | null
-              p_order_discount_amount?: number | null
-              p_payments: Json | null
-              p_store_id: string | null
-            }
-            Returns: string
-          }
+      fn_confirm_sale: {
+        Args: {
+          p_customer_id: string | null
+          p_discount_approval_id?: string | null
+          p_items: Json | null
+          p_notes: string | null
+          p_order_discount_amount?: number | null
+          p_payments: Json | null
+          p_store_id: string | null
+        }
+        Returns: string
+      }
       fn_create_category: {
         Args: { p_attributes: Json | null; p_category: Json | null }
         Returns: string
