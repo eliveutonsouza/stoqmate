@@ -140,7 +140,7 @@ export const AREAS = [
 export const OPEN_ROUTES = [
   '/', '/pricing', '/terms', '/privacy', '/signup', '/login', '/forgot-password', '/reset-password', '/invite',
   '/checkout', '/onboarding', '/trial-ended', '/verify-email', '/complete-signup',
-  '/404-demo', '/error', '/offline', '/session-expired', '/access-denied',
+  '/error', '/offline', '/session-expired', '/access-denied',
 ];
 
 export const ROUTE_AREA = (() => {

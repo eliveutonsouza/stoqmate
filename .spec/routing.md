@@ -74,9 +74,9 @@ tem tenant é redirecionado pra `/dashboard` pelo próprio `page.tsx`.
 
 ## `(system)` — estados de erro/preview
 
-`/404-demo` (demo do design — o 404 real é `src/app/not-found.tsx`, Next
-reserva o path literal `/404` pra própria máquina de erro), `/error`,
-`/offline`, `/session-expired`, `/access-denied`
+`/error`, `/offline`, `/session-expired`, `/access-denied`. O 404 é
+`src/app/not-found.tsx` (o Next reserva o path literal `/404`); a antiga
+vitrine `/404-demo` saiu na auditoria de 2026-09-27, com autorização.
 
 ## Route Handlers técnicos (não contam nas 113 rotas — não são `page.tsx`)
 
