@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
 import { I } from '@/components/icons';
-import { useDefaultStoreId } from '@/components/layout/shell-context';
+import { useDefaultStoreId, useShell } from '@/components/layout/shell-context';
+import { SALE_METHODS } from '@/lib/payment-methods';
 import { ProductThumb } from '@/components/ui/product-thumb';
 import { variantLabel } from '@/lib/attr-colors';
 import { brl } from '@/lib/format';
@@ -13,15 +14,14 @@ const DISCOUNT_STEPS = [0, 5, 10, 15, 20];
 
 // Preço efetivo (promoção ativa) — o mesmo que fn_confirm_sale cobra.
 const priceOf = (p) => Number(p.effective_price ?? p.sale_price);
-const PAYMENTS = [
-  { label: 'Cartão', value: 'credito' },
-  { label: 'PIX', value: 'pix' },
-  { label: 'Dinheiro', value: 'dinheiro' },
-];
+// Tablet é o atendimento rápido: uma forma por venda e sem cliente
+// identificado (crédito da loja e divisão ficam na venda do desktop).
+const PAYMENTS = SALE_METHODS.filter((m) => !m.needsCustomer);
 
 export function TabletPOS({ stores, categories, products, cashSessionByStore, operatorName }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
+  const cashControl = useShell()?.tenant?.cash_control !== false;
   const [storeId, setStoreId] = React.useState(defaultStoreId);
   const [cat, setCat] = React.useState('all');
   const [query, setQuery] = React.useState('');
@@ -52,7 +52,8 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
   const units = cart.reduce((s, l) => s + l.qty, 0);
   const overstock = cart.filter((l) => l.qty > stockFor(l.product));
   const cashSessionId = cashSessionByStore[storeId] ?? null;
-  const needsCashSession = payment === 'dinheiro' && !cashSessionId;
+  const needsCashSession = cashControl && payment === 'dinheiro' && !cashSessionId;
+  const total = Math.round(net * 100) / 100;
   const canConfirm = cart.length > 0 && overstock.length === 0 && !needsCashSession;
 
   const confirm = () => {
@@ -62,9 +63,7 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
       const result = await confirmSaleAction({
         storeId,
         customerId: null,
-        paymentMethod: payment,
-        installments: 1,
-        cashSessionId: payment === 'dinheiro' ? cashSessionId : null,
+        payments: total > 0 ? [{ method: payment, amount: total, installments: 1 }] : [],
         notes: '',
         items: cart.map((l) => ({ productId: l.product.id, qty: l.qty, unitPrice: priceOf(l.product), discountPct: 0 })),
         orderDiscountAmount: discountAmount,
@@ -217,18 +216,19 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                 <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 8 }}>Pagamento</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 10 }}>
                   {PAYMENTS.map((m) => (
-                    <button key={m.value} onClick={() => setPayment(m.value)} style={{
+                    <button key={m.id} onClick={() => setPayment(m.id)} style={{
                       height: 44, fontSize: 12.5, fontWeight: 500,
-                      border: '1px solid ' + (payment === m.value ? 'var(--accent)' : 'var(--line)'),
-                      background: payment === m.value ? 'var(--accent-soft)' : 'var(--bg)',
-                      color: payment === m.value ? 'var(--accent-text)' : 'var(--fg)',
+                      border: '1px solid ' + (payment === m.id ? 'var(--accent)' : 'var(--line)'),
+                      background: payment === m.id ? 'var(--accent-soft)' : 'var(--bg)',
+                      color: payment === m.id ? 'var(--accent-text)' : 'var(--fg)',
                       borderRadius: 8,
-                    }}>{m.label}</button>
+                    }}>{m.short}</button>
                   ))}
                 </div>
                 {needsCashSession && (
                   <div style={{ fontSize: 11.5, color: 'var(--danger)', marginBottom: 4 }}>Abra o caixa antes de vender em dinheiro.</div>
                 )}
+                <div style={{ fontSize: 10.5, color: 'var(--fg-muted)' }}>Registra como o cliente pagou — o dinheiro passa pela maquininha ou PIX da loja.</div>
               </div>
 
               <div style={{ padding: 14, borderTop: '1px solid var(--line)', background: 'var(--bg-sunken)' }}>

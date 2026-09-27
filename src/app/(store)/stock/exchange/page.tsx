@@ -1,7 +1,8 @@
 import { StockExchange } from '@/features/stock/stock-exchange';
-import { loadStores } from '@/features/stock/queries';
+import { loadStockSaleScreen } from '@/features/stock/screen-queries';
 
 export default async function Page() {
-  const stores = await loadStores();
-  return <StockExchange stores={stores} />;
+  // Caixas abertos: diferença paga ou devolvida em dinheiro passa pelo caixa.
+  const { stores, cashSessionByStore } = await loadStockSaleScreen();
+  return <StockExchange stores={stores} cashSessionByStore={cashSessionByStore} />;
 }

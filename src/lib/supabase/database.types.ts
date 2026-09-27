@@ -910,11 +910,98 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          cash_session_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          direction: string
+          document_id: string
+          document_type: string
+          external_ref: string | null
+          id: string
+          installments: number
+          method: Database["public"]["Enums"]["payment_method"]
+          provider: string | null
+          status: string
+          store_id: string
+          tenant_id: string
+        }
+        Insert: {
+          amount: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          direction: string
+          document_id: string
+          document_type: string
+          external_ref?: string | null
+          id?: string
+          installments?: number
+          method: Database["public"]["Enums"]["payment_method"]
+          provider?: string | null
+          status?: string
+          store_id: string
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          cash_session_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          direction?: string
+          document_id?: string
+          document_type?: string
+          external_ref?: string | null
+          id?: string
+          installments?: number
+          method?: Database["public"]["Enums"]["payment_method"]
+          provider?: string | null
+          status?: string
+          store_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_cash_session_id_fkey"
+            columns: ["cash_session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           active: boolean
           created_at: string
           credits: number
+          features: Json
           id: string
           limits: Json
           monthly_price: number
@@ -931,6 +1018,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           credits?: number
+          features?: Json
           id: string
           limits?: Json
           monthly_price: number
@@ -947,6 +1035,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           credits?: number
+          features?: Json
           id?: string
           limits?: Json
           monthly_price?: number
@@ -1993,6 +2082,7 @@ export type Database = {
           ai_credit_renews_at: string
           brand_color: string | null
           canceled_at: string | null
+          cash_control: boolean
           city: string | null
           cnpj: string | null
           created_at: string
@@ -2014,6 +2104,7 @@ export type Database = {
           ai_credit_renews_at?: string
           brand_color?: string | null
           canceled_at?: string | null
+          cash_control?: boolean
           city?: string | null
           cnpj?: string | null
           created_at?: string
@@ -2035,6 +2126,7 @@ export type Database = {
           ai_credit_renews_at?: string
           brand_color?: string | null
           canceled_at?: string | null
+          cash_control?: boolean
           city?: string | null
           cnpj?: string | null
           created_at?: string
@@ -2314,20 +2406,33 @@ export type Database = {
         Args: { p_items: Json | null; p_notes: string | null; p_store_id: string | null }
         Returns: number
       }
-      fn_confirm_sale: {
-        Args: {
-          p_cash_session_id: string | null
-          p_customer_id: string | null
-          p_discount_approval_id?: string | null
-          p_installments: number | null
-          p_items: Json | null
-          p_notes: string | null
-          p_order_discount_amount?: number | null
-          p_payment_method: string | null
-          p_store_id: string | null
-        }
-        Returns: string
-      }
+      fn_confirm_sale:
+        | {
+            Args: {
+              p_cash_session_id: string | null
+              p_customer_id: string | null
+              p_discount_approval_id?: string | null
+              p_installments: number | null
+              p_items: Json | null
+              p_notes: string | null
+              p_order_discount_amount?: number | null
+              p_payment_method: string | null
+              p_store_id: string | null
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_customer_id: string | null
+              p_discount_approval_id?: string | null
+              p_items: Json | null
+              p_notes: string | null
+              p_order_discount_amount?: number | null
+              p_payments: Json | null
+              p_store_id: string | null
+            }
+            Returns: string
+          }
       fn_create_category: {
         Args: { p_attributes: Json | null; p_category: Json | null }
         Returns: string
@@ -2357,6 +2462,15 @@ export type Database = {
       }
       fn_customer_credit_adjust: {
         Args: { p_customer_id: string | null; p_delta: number | null; p_reason: string | null }
+        Returns: number
+      }
+      fn_customer_credit_apply: {
+        Args: {
+          p_customer_id: string | null
+          p_delta: number | null
+          p_reason: string | null
+          p_tenant_id: string | null
+        }
         Returns: number
       }
       fn_customers_list: {
@@ -2576,6 +2690,20 @@ export type Database = {
         Args: { p_error: string | null; p_id: string | null }
         Returns: undefined
       }
+      fn_register_payments: {
+        Args: {
+          p_customer_id: string | null
+          p_direction: string | null
+          p_document_id: string | null
+          p_document_type: string | null
+          p_expected: number | null
+          p_note: string | null
+          p_payments: Json | null
+          p_store_id: string | null
+          p_tenant_id: string | null
+        }
+        Returns: string
+      }
       fn_replenishment_suggestions: {
         Args: { p_store_id: string | null }
         Returns: {
@@ -2629,6 +2757,7 @@ export type Database = {
           trial_ends_at: string
         }[]
       }
+      fn_set_cash_control: { Args: { p_enabled: boolean | null }; Returns: undefined }
       fn_set_location_categories: {
         Args: { p_category_ids: string[] | null; p_location_id: string | null }
         Returns: undefined
@@ -2675,8 +2804,10 @@ export type Database = {
       }
       fn_stock_exchange: {
         Args: {
+          p_customer_id?: string | null
           p_delivered_product_id: string | null
           p_notes?: string | null
+          p_payments?: Json | null
           p_qty: number | null
           p_reason: string | null
           p_returned_product_id: string | null
@@ -2701,7 +2832,9 @@ export type Database = {
       fn_stock_overview: { Args: never; Returns: Json }
       fn_stock_return: {
         Args: {
+          p_customer_id?: string | null
           p_notes?: string | null
+          p_payments?: Json | null
           p_product_id: string | null
           p_qty: number | null
           p_reason: string | null
@@ -2772,6 +2905,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_tenant_has_feature: { Args: { p_key: string | null }; Returns: boolean }
       fn_transfer_dispatch: {
         Args: {
           p_carrier?: string | null
@@ -2834,7 +2968,7 @@ export type Database = {
       is_platform_staff: { Args: never; Returns: boolean }
     }
     Enums: {
-      cash_movement_kind: "open" | "supply" | "withdraw" | "sale"
+      cash_movement_kind: "open" | "supply" | "withdraw" | "sale" | "refund"
       cash_session_status: "open" | "closed"
       category_attribute_type: "color" | "size" | "spec"
       membership_status: "active" | "invited"
@@ -2853,6 +2987,8 @@ export type Database = {
         | "credito"
         | "crediario"
         | "dividido"
+        | "credito_loja"
+        | "outro"
       platform_role: "super_admin" | "suporte" | "engenharia" | "comercial"
       promotion_scope: "product" | "category" | "store"
       purchase_order_status: "sent" | "received"
@@ -2997,7 +3133,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      cash_movement_kind: ["open", "supply", "withdraw", "sale"],
+      cash_movement_kind: ["open", "supply", "withdraw", "sale", "refund"],
       cash_session_status: ["open", "closed"],
       category_attribute_type: ["color", "size", "spec"],
       membership_status: ["active", "invited"],
@@ -3017,6 +3153,8 @@ export const Constants = {
         "credito",
         "crediario",
         "dividido",
+        "credito_loja",
+        "outro",
       ],
       platform_role: ["super_admin", "suporte", "engenharia", "comercial"],
       promotion_scope: ["product", "category", "store"],

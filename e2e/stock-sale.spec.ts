@@ -22,3 +22,25 @@ test("venda: cliente pesquisável, sem trava de aprovação para o gestor", asyn
   await expect(page.getByRole("button", { name: /Confirmar venda/ })).toBeVisible();
   await expect(page.getByText("Margem do atendimento")).toBeVisible();
 });
+
+// Formas de pagamento: "Dividir" distribui o total; o botão só libera quando
+// a soma fecha (sem confirmar — não grava venda).
+test("venda: divide o pagamento e trava enquanto a soma não fecha", async ({ page }) => {
+  await page.goto("/stock/sale");
+  await page.getByPlaceholder("Buscar por SKU, código de barras, marca ou nome…").fill("ELE-FONE-PRT");
+  const result = page.getByRole("button", { name: /ELE-FONE-PRT/ });
+  await result.waitFor({ state: "visible" });
+  await result.dispatchEvent("mousedown");
+
+  await page.getByRole("button", { name: "PIX" }).click();
+  await page.getByRole("button", { name: /Dividir em outra forma/ }).click();
+  await expect(page.getByText("Valor distribuído.")).toBeVisible();
+
+  await page.getByLabel("Valor 1").fill("10");
+  await expect(page.getByText(/Falta distribuir/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ajuste o pagamento" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "Remover forma 2" }).click();
+  await expect(page.getByRole("button", { name: /Confirmar venda/ })).toBeEnabled();
+  await expect(page.getByText(/o dinheiro passa pela/)).toBeVisible();
+});

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
 import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
+import { paymentFriendlyError, sanitizePayments, type PaymentInput } from "@/lib/payment-errors";
+import { isUuid } from "@/lib/validation";
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -27,7 +29,7 @@ function friendlyError(error: DbErrorLike) {
   if (message.includes("justificativa precisa ter pelo menos 20 caracteres quando há divergência")) {
     return "Há divergência — a justificativa precisa ter pelo menos 20 caracteres.";
   }
-  return userMessage(error, "stock/actions");
+  return paymentFriendlyError(message) ?? userMessage(error, "stock/actions");
 }
 
 export async function stockEntryAction(input: {
@@ -103,35 +105,52 @@ export async function transferReceiveAction(input: {
   return { ok: true };
 }
 
+// Acerto da diferença (opcional): o banco calcula a diferença com o preço
+// vigente — positiva o cliente paga (payments = como pagou), negativa a loja
+// devolve (payments = como devolveu; vazio = sem devolução de valor).
 export async function stockExchangeAction(input: {
   storeId: string; returnedProductId: string; deliveredProductId: string;
   qty: number; reason: string; notes: string;
+  customerId?: string | null; payments?: PaymentInput[];
 }) {
+  if (input.customerId && !isUuid(input.customerId)) return { error: "Cliente inválido." };
+  const payments = sanitizePayments(input.payments);
+  if (!payments) return { error: "Formas de pagamento inválidas." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_stock_exchange", {
     p_store_id: input.storeId, p_returned_product_id: input.returnedProductId,
     p_delivered_product_id: input.deliveredProductId, p_qty: input.qty,
     p_reason: input.reason, p_notes: input.notes || null,
+    p_customer_id: input.customerId ?? null, p_payments: payments,
   });
   if (error) return { error: friendlyError(error) };
   scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
+  revalidatePath("/cash");
   return { id: data as string };
 }
 
+// Estorno opcional: payments = como o valor volta ao cliente (dinheiro do
+// caixa, PIX, crédito da loja, outro); vazio = devolve só o estoque.
 export async function stockReturnAction(input: {
   storeId: string; productId: string; qty: number; reason: string; restock: boolean; notes: string;
+  customerId?: string | null; payments?: PaymentInput[];
 }) {
+  if (input.customerId && !isUuid(input.customerId)) return { error: "Cliente inválido." };
+  const payments = sanitizePayments(input.payments);
+  if (!payments) return { error: "Formas de devolução inválidas." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_stock_return", {
     p_store_id: input.storeId, p_product_id: input.productId, p_qty: input.qty,
     p_reason: input.reason, p_restock: input.restock, p_notes: input.notes || null,
+    p_customer_id: input.customerId ?? null, p_payments: payments,
   });
   if (error) return { error: friendlyError(error) };
   scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
+  revalidatePath("/cash");
   return { id: data as string };
 }
 

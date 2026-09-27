@@ -15,6 +15,7 @@ const KIND = {
   out_of_stock: { tone: 'danger', icon: 'Alert' },
   low_stock: { tone: 'warning', icon: 'Alert' },
   access_request: { tone: 'info', icon: 'Lock' },
+  cash_discrepancy: { tone: 'warning', icon: 'Credit' },
 };
 
 function timeAgo(iso) {
@@ -36,7 +37,7 @@ export function Notifications({ notifications, preferences }) {
   const unreadCount = notifications.filter((n) => !n.read_at).length;
   const rows = filter === 'unread' ? notifications.filter((n) => !n.read_at)
     : filter === 'danger' ? notifications.filter((n) => n.kind === 'out_of_stock')
-    : filter === 'warning' ? notifications.filter((n) => n.kind === 'low_stock')
+    : filter === 'warning' ? notifications.filter((n) => n.kind === 'low_stock' || n.kind === 'cash_discrepancy')
     : notifications;
 
   const markRead = (ids) => startTransition(async () => {
@@ -57,6 +58,7 @@ export function Notifications({ notifications, preferences }) {
     if (!n.read_at) markRead([n.id]);
     if (n.target_type === 'product') navigate(`/products/detail?id=${n.target_id}`);
     if (n.target_type === 'user') navigate('/settings/users');
+    if (n.target_type === 'cash_session') navigate('/cash');
   };
 
   return (
@@ -69,7 +71,7 @@ export function Notifications({ notifications, preferences }) {
           { id: 'all', label: `Todas · ${notifications.length}` },
           { id: 'unread', label: `Não lidas · ${unreadCount}` },
           { id: 'danger', label: `Ruptura · ${notifications.filter((n) => n.kind === 'out_of_stock').length}` },
-          { id: 'warning', label: `Alertas · ${notifications.filter((n) => n.kind === 'low_stock').length}` },
+          { id: 'warning', label: `Alertas · ${notifications.filter((n) => n.kind === 'low_stock' || n.kind === 'cash_discrepancy').length}` },
         ]}
         activeTab={filter}
         onTab={setFilter}

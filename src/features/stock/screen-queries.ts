@@ -86,7 +86,7 @@ export async function loadPendingTransferCount() {
 export async function loadSaleCustomer(customerId?: string) {
   if (!isUuid(customerId)) return null;
   const supabase = await createClient();
-  return must(await supabase.from("customers").select("id, name, doc, phone").eq("id", customerId).maybeSingle(), "stock.saleCustomer") ?? null;
+  return must(await supabase.from("customers").select("id, name, doc, phone, credit_balance").eq("id", customerId).maybeSingle(), "stock.saleCustomer") ?? null;
 }
 
 // Produto pré-selecionado quando a tela vem do detalhe do produto

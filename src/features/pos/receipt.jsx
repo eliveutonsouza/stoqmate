@@ -4,15 +4,9 @@ import { useNavigate } from '@/hooks/use-navigate';
 import { I } from '@/components/icons';
 import { brl } from '@/lib/format';
 import { EmptyState } from '@/components/ui/empty-state';
+import { paymentLabel } from '@/lib/payment-methods';
 
-const PAYMENT_LABELS = {
-  dinheiro: 'Dinheiro',
-  pix: 'PIX',
-  debito: 'Débito',
-  credito: `Cartão de crédito`,
-  crediario: 'Crediário',
-  dividido: 'Dividido',
-};
+const describe = (p) => (p.method === 'credito' && p.installments > 1 ? `${paymentLabel(p.method)} ${p.installments}×` : paymentLabel(p.method));
 
 export function Receipt({ sale }) {
   const navigate = useNavigate();
@@ -36,8 +30,10 @@ export function Receipt({ sale }) {
   const gross = sale.subtotal;
   const off = sale.discount_amount;
   const net = sale.total;
-  const paymentLabel = PAYMENT_LABELS[sale.payment_method] ?? sale.payment_method;
-  const paymentDetail = sale.payment_method === 'credito' && sale.installments > 1 ? `${paymentLabel} ${sale.installments}×` : paymentLabel;
+  // Vendas antigas (antes do registro por forma) caem no rótulo da venda.
+  const payments = sale.payments?.length ? sale.payments
+    : net > 0 ? [{ method: sale.payment_method, amount: net, installments: sale.installments }] : [];
+  const paymentDetail = payments.length ? payments.map((p) => (payments.length > 1 ? `${describe(p)} ${brl(p.amount)}` : describe(p))).join(' · ') : 'Sem cobrança';
   const createdAt = new Date(sale.created_at);
   const shortId = sale.id.slice(0, 8).toUpperCase();
 
@@ -53,7 +49,7 @@ export function Receipt({ sale }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.015em' }}>Venda #{shortId} registrada</div>
             <div style={{ fontSize: 12.5, color: 'var(--fg-muted)', marginTop: 2 }}>
-              {brl(net)} em {paymentDetail.toLowerCase()} · estoque de {items.length} {items.length === 1 ? 'SKU' : 'SKUs'} atualizado
+              {brl(net)} · {paymentDetail} · estoque de {items.length} {items.length === 1 ? 'SKU' : 'SKUs'} atualizado
             </div>
           </div>
           <button onClick={() => navigate('/pos')} className="btn btn-primary btn-sm">Próximo atendimento</button>
@@ -97,9 +93,11 @@ export function Receipt({ sale }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, marginTop: 6, paddingTop: 6, borderTop: '1px solid #16140F' }}>
                 <span>TOTAL</span><span>{net.toFixed(2).replace('.', ',')}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10 }}>
-                <span>{paymentDetail.toUpperCase()}</span><span>{net.toFixed(2).replace('.', ',')}</span>
-              </div>
+              {payments.map((p, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginTop: i ? 2 : 6, fontSize: 10 }}>
+                  <span>{describe(p).toUpperCase()}</span><span>{Number(p.amount).toFixed(2).replace('.', ',')}</span>
+                </div>
+              ))}
             </div>
             <div style={{ textAlign: 'center', marginTop: 14, fontSize: 9, color: '#5C574F', lineHeight: 1.6 }}>
               NÃO É DOCUMENTO FISCAL

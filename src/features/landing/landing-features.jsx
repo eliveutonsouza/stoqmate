@@ -92,7 +92,7 @@ export function LandingFeatures({ navigate }) {
           navigate={navigate}
           eyebrow="Balcão"
           title="O caixa fecha o dia sem calculadora"
-          body="PDV de toque para tablet, com carrinho de vários itens, desconto por linha e no total, e fechamento de caixa com contagem cega por cédula."
+          body="PDV de toque para tablet, com carrinho de vários itens, desconto por linha e no total, várias formas de pagamento na mesma venda e fechamento de caixa com contagem cega por cédula. O Stoqmate registra como o cliente pagou — o dinheiro continua na maquininha e no PIX da sua loja."
           bullets={[
             'Alvos de toque de 56 px — feito para dedo, não para mouse',
             'Contagem cega: o esperado só aparece depois que você conta',

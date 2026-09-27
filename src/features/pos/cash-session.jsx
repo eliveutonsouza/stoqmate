@@ -15,6 +15,9 @@ import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { Modal } from '@/components/ui/modal';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useShell } from '@/components/layout/shell-context';
+import { useCan } from '@/hooks/use-can';
 import { cashSessionOpenAction, cashSessionMovementAction, cashSessionCloseAction } from '@/features/pos/actions';
 
 const NOTES = [200, 100, 50, 20, 10, 5, 2];
@@ -22,6 +25,7 @@ const KIND = {
   open: ['Abertura', 'var(--info)', 'var(--info-soft)'],
   supply: ['Suprimento', 'var(--success)', 'var(--success-soft)'],
   withdraw: ['Sangria', 'var(--warning)', 'var(--warning-soft)'],
+  refund: ['Devolução ao cliente', 'var(--danger)', 'var(--danger-soft)'],
   sale: ['Vendas', 'var(--fg-muted)', 'var(--bg-sunken)'],
 };
 const REASONS = ['Troco dado a mais', 'Troco dado a menos', 'Venda não registrada', 'Sangria não lançada', 'Erro de contagem anterior', 'Outro'];
@@ -38,8 +42,27 @@ export function CashSession({ stores, storeId, session }) {
   const [detail, setDetail] = React.useState('');
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
+  const cashControl = useShell()?.tenant?.cash_control !== false;
+  const canGo = useCan();
 
   const set = (k, v) => setCounted((c) => ({ ...c, [k]: v }));
+
+  // A rede desligou o controle de caixa (Configurações → Dados da empresa).
+  if (!cashControl) {
+    return (
+      <StoreShell route="/cash" breadcrumb={['Caixa']} navigate={navigate}>
+        <PageHeader title="Caixa" />
+        <Page>
+          <EmptyState
+            icon={<I.Credit size={18} />}
+            title="Controle de caixa desligado"
+            desc="As vendas continuam registrando a forma de pagamento, sem abertura e fechamento de turno."
+            action={canGo('/settings/store-data') ? <button onClick={() => navigate('/settings/store-data')} className="btn btn-primary btn-sm">Ligar em Dados da empresa</button> : null}
+          />
+        </Page>
+      </StoreShell>
+    );
+  }
 
   if (!session) {
     return (

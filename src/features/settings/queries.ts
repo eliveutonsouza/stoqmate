@@ -9,8 +9,8 @@ export async function loadFiscalMode() {
 
 export async function loadCompanyData() {
   const supabase = await createClient();
-  const data = must(await supabase.from("tenants").select("name, cnpj").single(), "settings/queries.loadCompanyData.data");
-  return { name: data?.name ?? "", cnpj: data?.cnpj ?? "" };
+  const data = must(await supabase.from("tenants").select("name, cnpj, cash_control").single(), "settings/queries.loadCompanyData.data");
+  return { name: data?.name ?? "", cnpj: data?.cnpj ?? "", cashControl: data?.cash_control ?? true };
 }
 
 export async function loadBranding() {

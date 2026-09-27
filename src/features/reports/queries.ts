@@ -41,6 +41,7 @@ export type SalesReportJson = {
   by_store: ({ store_id: string; revenue: number } & Row)[];
   by_category: ({ category_id: string } & Row)[];
   by_product: ({ sku: string; name: string; category_name: string; units: number; cost: number; revenue: number } & Row)[];
+  by_payment?: { method: string; amount_in: number; amount_out: number }[];
 };
 
 // Sem `filters`: últimos 30 dias da rede inteira (dashboard e rede usam assim).
@@ -59,6 +60,7 @@ export async function loadSalesReport(filters?: ReportFilters) {
     byStore: data?.by_store ?? [],
     byCategory: data?.by_category ?? [],
     byProduct: data?.by_product ?? [],
+    byPayment: data?.by_payment ?? [],
   };
 }
 

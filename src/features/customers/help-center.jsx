@@ -24,7 +24,7 @@ const TOPICS = [
   { i: 'Box', t: 'Cadastro e importação', d: 'Trazer catálogo de planilha, mapear colunas e corrigir erros.' },
   { i: 'Activity', t: 'Movimentações', d: 'Entrada, venda, troca, devolução, transferência e ajuste.' },
   { i: 'Swap', t: 'Multi-loja', d: 'Saldo por unidade, transferências e visão consolidada da rede.' },
-  { i: 'Credit', t: 'Caixa e balcão', d: 'Abertura, sangria, suprimento e fechamento de turno.' },
+  { i: 'Credit', t: 'Caixa e balcão', d: 'Formas de pagamento, crédito do cliente e, se ligado, abertura, sangria e fechamento de turno.' },
   { i: 'Chart', t: 'Relatórios', d: 'Vendas, lucratividade, curva ABC e exportações.' },
   { i: 'Users', t: 'Equipe e permissões', d: 'Perfis, o que cada um vê e limites de desconto.' },
   { i: 'Shield', t: 'Conta e assinatura', d: 'Planos, limites, faturas e dados da empresa.' },

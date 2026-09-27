@@ -13,7 +13,7 @@ export async function loadOpenCashSession(storeId: string) {
     .maybeSingle(), "pos/queries.loadOpenCashSession.session");
   if (!session) return null;
 
-  const [movementsRes, salesRes] = await Promise.all([
+  const [movementsRes, salesRes, paymentsRes] = await Promise.all([
     supabase
       .from("cash_session_movements")
       .select("id, kind, amount, note, created_at, created_by")
@@ -21,12 +21,22 @@ export async function loadOpenCashSession(storeId: string) {
       .order("created_at"),
     supabase
       .from("sales")
-      .select("id, total, discount_amount, payment_method")
+      .select("id, total, discount_amount")
       .eq("store_id", storeId)
+      .gte("created_at", session.opened_at),
+    // Formas de pagamento das vendas do turno: venda dividida conta a parte
+    // em dinheiro no dinheiro e o resto em "outros".
+    supabase
+      .from("payments")
+      .select("document_id, method, amount")
+      .eq("store_id", storeId).eq("document_type", "sale").eq("direction", "in")
       .gte("created_at", session.opened_at),
   ]);
   const movements = must(movementsRes, "pos/queries.loadOpenCashSession.movements");
   const sales = must(salesRes, "pos/queries.loadOpenCashSession.sales");
+  const payments = must(paymentsRes, "pos/queries.loadOpenCashSession.payments") ?? [];
+  const cashPayments = payments.filter((p) => p.method === "dinheiro");
+  const otherPayments = payments.filter((p) => p.method !== "dinheiro");
 
   const userIds = Array.from(
     new Set([session.created_by, ...(movements ?? []).map((m) => m.created_by)].filter((id): id is string => Boolean(id))),
@@ -39,10 +49,10 @@ export async function loadOpenCashSession(storeId: string) {
     count: sales?.length ?? 0,
     total: (sales ?? []).reduce((s, sale) => s + sale.total, 0),
     discount: (sales ?? []).reduce((s, sale) => s + sale.discount_amount, 0),
-    cashTotal: (sales ?? []).filter((s) => s.payment_method === "dinheiro").reduce((s, sale) => s + sale.total, 0),
-    cashCount: (sales ?? []).filter((s) => s.payment_method === "dinheiro").length,
-    otherTotal: (sales ?? []).filter((s) => s.payment_method !== "dinheiro").reduce((s, sale) => s + sale.total, 0),
-    otherCount: (sales ?? []).filter((s) => s.payment_method !== "dinheiro").length,
+    cashTotal: cashPayments.reduce((s, p) => s + Number(p.amount), 0),
+    cashCount: new Set(cashPayments.map((p) => p.document_id)).size,
+    otherTotal: otherPayments.reduce((s, p) => s + Number(p.amount), 0),
+    otherCount: new Set(otherPayments.map((p) => p.document_id)).size,
   };
 
   return {
@@ -65,7 +75,14 @@ export async function loadSaleReceipt(saleId: string) {
     `)
     .eq("id", saleId)
     .maybeSingle(), "pos/queries.loadSaleReceipt.sale");
-  return sale ?? null;
+  if (!sale) return null;
+  // Formas registradas (várias quando a venda foi dividida).
+  const payments = must(await supabase
+    .from("payments")
+    .select("method, amount, installments")
+    .eq("document_type", "sale").eq("document_id", saleId).eq("direction", "in")
+    .order("created_at"), "pos/queries.loadSaleReceipt.payments") ?? [];
+  return { ...sale, payments };
 }
 
 export async function loadPosData() {

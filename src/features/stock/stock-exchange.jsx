@@ -8,16 +8,23 @@ import { brl } from '@/lib/format';
 import { FormCard } from '@/components/ui/form-card';
 import { ProductPicker } from '@/components/ui/product-picker';
 import { I } from '@/components/icons';
-import { useDefaultStoreId } from '@/components/layout/shell-context';
+import { useDefaultStoreId, useShell } from '@/components/layout/shell-context';
+import { CustomerField } from '@/features/stock/customer-field';
+import { PaymentSplit } from '@/features/pos/payment-split';
+import { validatePayments } from '@/lib/payment-methods';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { stockExchangeAction } from '@/features/stock/actions';
 
+// Preço vigente (promoção inclusa) — o mesmo que fn_stock_exchange usa
+// pra calcular a diferença.
+const priceOf = (p) => Number(p?.effective_price ?? p?.sale_price ?? 0);
+
 const REASONS = ['Variação incorreta', 'Cor diferente da desejada', 'Defeito de fabricação', 'Desistência do cliente', 'Presente trocado'];
 
-export function StockExchange({ stores }) {
+export function StockExchange({ stores, cashSessionByStore = {} }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
   const [storeId, setStoreId] = React.useState(defaultStoreId);
@@ -26,14 +33,23 @@ export function StockExchange({ stores }) {
   const [qty, setQty] = React.useState(1);
   const [reason, setReason] = React.useState(REASONS[0]);
   const [notes, setNotes] = React.useState('');
+  const [customer, setCustomer] = React.useState(null);
+  const [payments, setPayments] = React.useState([{ method: 'pix', amount: 0, installments: 1 }]);
+  const [refundOn, setRefundOn] = React.useState(true);
+  const cashControl = useShell()?.tenant?.cash_control !== false;
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
   const returnedStock = (returned?.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
   const deliveredStock = (delivered?.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
   const insufficient = delivered ? qty > deliveredStock : false;
-  const diff = delivered && returned ? (delivered.sale_price - returned.sale_price) * qty : 0;
-  const canSave = returned && delivered && returned.id !== delivered.id && qty > 0 && !insufficient;
+  const diff = delivered && returned ? Math.round((priceOf(delivered) - priceOf(returned)) * qty * 100) / 100 : 0;
+  // Acerto: diferença a favor da loja é cobrada; a favor do cliente, a loja
+  // escolhe se devolve (e como) — política de "só troca" deixa desligado.
+  const settle = diff > 0 || (diff < 0 && refundOn);
+  const cashBlocked = cashControl && !cashSessionByStore[storeId] ? 'Caixa fechado' : null;
+  const payError = settle ? validatePayments(payments, Math.abs(diff), { customerId: customer?.id ?? null, refund: diff < 0 }) : null;
+  const canSave = returned && delivered && returned.id !== delivered.id && qty > 0 && !insufficient && !payError;
 
   const submit = () => {
     setError('');
@@ -44,6 +60,8 @@ export function StockExchange({ stores }) {
       const result = await stockExchangeAction({
         storeId, returnedProductId: returned.id, deliveredProductId: delivered.id,
         qty, reason, notes,
+        customerId: customer?.id ?? null,
+        payments: settle ? payments.map((p) => ({ method: p.method, amount: Number(p.amount), installments: p.installments ?? 1 })) : [],
       });
       if (result?.error) { setError(result.error); return; }
       navigate('/stock/history');
@@ -62,8 +80,8 @@ export function StockExchange({ stores }) {
         <div className="card" style={{ padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Resumo da troca</div>
           <SummaryRow label="Itens trocados" value={`${qty}`} />
-          {returned && <SummaryRow label="Valor do item devolvido" value={brl(returned.sale_price * qty)} />}
-          {delivered && <SummaryRow label="Valor do item entregue" value={brl(delivered.sale_price * qty)} />}
+          {returned && <SummaryRow label="Valor do item devolvido" value={brl(priceOf(returned) * qty)} />}
+          {delivered && <SummaryRow label="Valor do item entregue" value={brl(priceOf(delivered) * qty)} />}
           {returned && delivered && (
             <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
               <SummaryRow
@@ -100,6 +118,26 @@ export function StockExchange({ stores }) {
       <FormCard title="Item entregue ao cliente" desc="Sai do estoque na confirmação." cols={1}>
         <ProductPicker product={delivered} storeId={storeId} onSelect={setDelivered} onClear={() => setDelivered(null)} />
       </FormCard>
+
+      {returned && delivered && diff !== 0 && (
+        <FormCard title={diff > 0 ? 'Cliente paga a diferença' : 'Diferença a favor do cliente'}
+          desc={diff > 0 ? `Registre como o cliente pagou ${brl(diff)}.` : `A loja pode devolver ${brl(-diff)} — ou manter só a troca.`} cols={1}>
+          {diff < 0 && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+              <input type="checkbox" checked={refundOn} onChange={(e) => setRefundOn(e.target.checked)} /> Devolver a diferença ao cliente
+            </label>
+          )}
+          {settle && (
+            <>
+              <Field label="Cliente" hint="Obrigatório pra usar ou gerar crédito da loja.">
+                <CustomerField customer={customer} onChange={setCustomer} />
+              </Field>
+              <PaymentSplit refund={diff < 0} total={Math.abs(diff)} value={payments} onChange={setPayments} customer={customer} cashBlocked={cashBlocked} />
+              {payError && <div role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{payError}</div>}
+            </>
+          )}
+        </FormCard>
+      )}
 
       <FormCard title="Detalhes" cols={2}>
         <Field label="Unidade" required span={1}>

@@ -21,17 +21,11 @@ import { TextInput } from '@/components/ui/text-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { Modal } from '@/components/ui/modal';
-import { confirmSaleAction, requestDiscountApprovalAction, searchCustomersAction } from '@/features/pos/actions';
+import { confirmSaleAction, requestDiscountApprovalAction } from '@/features/pos/actions';
 import { useCan } from '@/hooks/use-can';
-
-const PAYMENTS = [
-  { label: 'Dinheiro', value: 'dinheiro' },
-  { label: 'PIX', value: 'pix' },
-  { label: 'Débito', value: 'debito' },
-  { label: 'Cartão de crédito', value: 'credito' },
-  { label: 'Crediário', value: 'crediario' },
-  { label: 'Dividido', value: 'dividido' },
-];
+import { CustomerField } from '@/features/stock/customer-field';
+import { PaymentSplit } from '@/features/pos/payment-split';
+import { validatePayments } from '@/lib/payment-methods';
 
 // Espelha has_access('money', 2) do banco: financeiro e proprietário vendem
 // com qualquer desconto e veem custo/margem; os demais precisam de aprovação
@@ -39,70 +33,15 @@ const PAYMENTS = [
 const MANAGER_ROLES = ['financeiro', 'proprietario'];
 const APPROVAL_THRESHOLD = 20;
 
-// Cliente da venda: busca por nome, CPF/CNPJ, telefone ou email. Lista
-// inline (não flutuante) pra não ser cortada pelo overflow do FormCard.
-function CustomerField({ customer, onChange }) {
-  const [query, setQuery] = React.useState('');
-  const [results, setResults] = React.useState([]);
-  const [status, setStatus] = React.useState('idle');
-  const [error, setError] = React.useState('');
-
-  React.useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) return;
-    let cancelled = false;
-    const handle = setTimeout(async () => {
-      setStatus('loading');
-      const res = await searchCustomersAction(q).catch(() => ({ error: 'Não foi possível buscar clientes agora.' }));
-      if (cancelled) return;
-      if (res.error) { setError(res.error); setResults([]); setStatus('error'); return; }
-      setError(''); setResults(res.rows); setStatus('done');
-    }, 250);
-    return () => { cancelled = true; clearTimeout(handle); };
-  }, [query]);
-
-  if (customer) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', border: '1px solid var(--line-strong)', borderRadius: 6, background: 'var(--bg-elev)' }}>
-        <I.Users size={13} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>{customer.name}</div>
-          {(customer.doc || customer.phone) && <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{customer.doc || customer.phone}</div>}
-        </div>
-        <button type="button" onClick={() => onChange(null)} className="btn btn-ghost btn-sm">Trocar</button>
-      </div>
-    );
-  }
-
-  const q = query.trim();
-  return (
-    <div>
-      <TextInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Consumidor final — ou busque por nome, CPF/CNPJ ou telefone" />
-      {q.length >= 2 && (
-        <div style={{ marginTop: 6, border: '1px solid var(--line)', borderRadius: 7, overflow: 'hidden' }}>
-          {status === 'loading' && <div style={{ padding: '8px 11px', fontSize: 12, color: 'var(--fg-muted)' }}>Buscando…</div>}
-          {status === 'error' && <div role="alert" style={{ padding: '8px 11px', fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
-          {status === 'done' && results.length === 0 && (
-            <div style={{ padding: '8px 11px', fontSize: 12, color: 'var(--fg-muted)' }}>Nenhum cliente encontrado. Cadastre em Clientes.</div>
-          )}
-          {status === 'done' && results.map((c) => (
-            <button key={c.id} type="button" onClick={() => { onChange(c); setQuery(''); setResults([]); setStatus('idle'); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 11px', background: 'transparent', borderBottom: '1px solid var(--line-soft)' }}>
-              <div style={{ fontSize: 12.5, fontWeight: 500 }}>{c.name}</div>
-              {(c.doc || c.phone) && <div style={{ fontSize: 10.5, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{c.doc || c.phone}</div>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function StockSale({ stores, cashSessionByStore, initialProduct, initialCustomer }) {
   const navigate = useNavigate();
   const canGo = useCan();
   const defaultStoreId = useDefaultStoreId(stores);
-  const isManager = MANAGER_ROLES.includes(useShell()?.user?.roleId);
+  const shell = useShell();
+  const isManager = MANAGER_ROLES.includes(shell?.user?.roleId);
+  // Rede sem controle de caixa: dinheiro não exige caixa aberto.
+  const cashControl = shell?.tenant?.cash_control !== false;
   const [customer, setCustomer] = React.useState(initialCustomer ?? null);
   const [approval, setApproval] = React.useState(null);
   const [approvalOpen, setApprovalOpen] = React.useState(false);
@@ -115,8 +54,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
     : []));
   const [orderOff, setOrderOff] = React.useState({ mode: 'pct', value: 0 });
   const [discountOpen, setDiscountOpen] = React.useState(false);
-  const [payment, setPayment] = React.useState('credito');
-  const [installments, setInstallments] = React.useState('1×');
+  const [payments, setPayments] = React.useState([{ method: 'credito', amount: 0, installments: 1 }]);
   const [received, setReceived] = React.useState(0);
   const [notes, setNotes] = React.useState('');
   const [error, setError] = React.useState('');
@@ -145,8 +83,12 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
   const overstock = cart.filter(l => l.qty > stockFor(l));
   const totalOffPct = gross > 0 ? ((gross - net) / gross) * 100 : 0;
   const cashSessionId = cashSessionByStore[storeId] ?? null;
-  const needsCashSession = payment === 'dinheiro' && !cashSessionId;
-  const canConfirm = cart.length > 0 && overstock.length === 0 && !needsCashSession;
+  const cashPart = payments.filter((p) => p.method === 'dinheiro').reduce((s, p) => s + Number(p.amount || 0), 0);
+  const needsCashSession = cashControl && cashPart > 0 && !cashSessionId;
+  const netRounded = Math.round(net * 100) / 100;
+  const paymentError = cart.length && netRounded > 0 ? validatePayments(payments, netRounded, { customerId: customer?.id ?? null }) : null;
+  const creditOver = payments.filter((p) => p.method === 'credito_loja').reduce((s, p) => s + Number(p.amount || 0), 0) > Number(customer?.credit_balance ?? 0) + 0.01;
+  const canConfirm = cart.length > 0 && overstock.length === 0 && !needsCashSession && !paymentError && !creditOver;
   // Arredonda como o banco (2 casas) pra não pedir aprovação por centavo.
   const offPct = Math.round(totalOffPct * 100) / 100;
   const needsApproval = !isManager && offPct > APPROVAL_THRESHOLD;
@@ -174,9 +116,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
       const result = await confirmSaleAction({
         storeId,
         customerId: customer?.id ?? null,
-        paymentMethod: payment,
-        installments: payment === 'credito' ? parseInt(installments, 10) || 1 : 1,
-        cashSessionId: payment === 'dinheiro' ? cashSessionId : null,
+        payments: netRounded <= 0 ? [] : payments.map((p) => ({ method: p.method, amount: Number(p.amount), installments: p.installments ?? 1 })),
         notes,
         items: cart.map((l) => ({ productId: l.id, qty: l.qty, unitPrice: l.price, discountPct: l.off })),
         orderDiscountAmount: orderOffValue,
@@ -343,25 +283,9 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
 
             <div className="card" style={{ padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--fg-muted)', marginBottom: 10 }}>Pagamento</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                {PAYMENTS.map((m) => (
-                  <button key={m.value} onClick={() => setPayment(m.value)} style={{
-                    padding: '8px 9px', fontSize: 12, fontWeight: 500,
-                    border: '1px solid ' + (payment === m.value ? 'var(--accent)' : 'var(--line)'),
-                    background: payment === m.value ? 'var(--accent-soft)' : 'var(--bg-elev)',
-                    color: payment === m.value ? 'var(--accent-text)' : 'var(--fg)',
-                    borderRadius: 6,
-                  }}>{m.label}</button>
-                ))}
-              </div>
-              {payment === 'credito' && (
-                <div style={{ marginTop: 12 }}>
-                  <Field label="Parcelas">
-                    <SelectInput value={installments} onChange={setInstallments} options={['1×', '2×', '3×', '4×', '6×', '10×', '12×']} />
-                  </Field>
-                </div>
-              )}
-              {payment === 'dinheiro' && (
+              <PaymentSplit total={netRounded} value={payments} onChange={setPayments} customer={customer}
+                cashBlocked={cashControl && !cashSessionId ? 'Caixa fechado' : null} />
+              {cashPart > 0 && (
                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {needsCashSession ? (
                     <div style={{ fontSize: 12, color: 'var(--danger)' }}>
@@ -370,7 +294,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
                   ) : (
                     <>
                       <Field label="Valor recebido"><TextInput mono prefix="R$" type="number" value={received} onChange={(e) => setReceived(+e.target.value || 0)} /></Field>
-                      <SummaryRow label="Troco" value={brl(Math.max(0, received - net))} strong tone="success" />
+                      <SummaryRow label="Troco" value={brl(Math.max(0, received - cashPart))} strong tone="success" />
                     </>
                   )}
                 </div>
@@ -387,6 +311,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
               disabled={!canConfirm || pending}
               style={{ justifyContent: 'center', width: '100%', opacity: canConfirm && !pending ? 1 : 0.45 }}>
               {overstock.length ? 'Estoque insuficiente' : needsCashSession ? 'Abra o caixa primeiro' : pending ? 'Confirmando…'
+                : cart.length && (paymentError || creditOver) ? 'Ajuste o pagamento'
                 : !cart.length ? 'Carrinho vazio' : needsApproval && !approvalCovers ? 'Pedir aprovação do gestor' : `Confirmar venda · ${brl(net)}`}
             </button>
             <button onClick={() => navigate('/stock')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Cancelar atendimento</button>

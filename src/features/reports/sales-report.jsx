@@ -10,6 +10,7 @@ import { CategoryBadge } from '@/components/ui/category-badge';
 import { brl } from '@/lib/format';
 import { downloadCsv, toCsv } from '@/lib/csv';
 import { useReportHeader } from '@/features/reports/use-report-header';
+import { paymentLabel } from '@/lib/payment-methods';
 
 export function SalesReport({ report, filters, stores }) {
   const navigate = useNavigate();
@@ -67,6 +68,24 @@ export function SalesReport({ report, filters, stores }) {
             </div>
           ) : (
             <MiniAreaChart data={series} height={200} />
+          )}
+        </div>
+
+        <div className="card" style={{ padding: 'var(--density-card-pad)' }}>
+          <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Por forma de pagamento</h3>
+          <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--fg-muted)' }}>Como os clientes pagaram (registrado na venda). Devoluções e trocas a favor do cliente aparecem como saída.</p>
+          {(report.byPayment ?? []).length === 0 ? (
+            <div style={{ fontSize: 12.5, color: 'var(--fg-muted)' }}>Nenhum pagamento registrado no período.</div>
+          ) : (
+            <div className="g3" style={{ gap: 10 }}>
+              {report.byPayment.map((p) => (
+                <div key={p.method} style={{ padding: '10px 12px', border: '1px solid var(--line)', borderRadius: 7 }}>
+                  <div style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>{paymentLabel(p.method)}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{brl(p.amount_in - p.amount_out)}</div>
+                  {p.amount_out > 0 && <div style={{ fontSize: 11, color: 'var(--warning)' }}>{brl(p.amount_in)} entrou · {brl(p.amount_out)} devolvido</div>}
+                </div>
+              ))}
+            </div>
           )}
         </div>
 

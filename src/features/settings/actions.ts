@@ -74,6 +74,22 @@ export async function updateFiscalModeAction(mode: string) {
   return { ok: true };
 }
 
+// Controle de caixa por turno (abertura, sangria, fechamento). Desligado:
+// vender em dinheiro não exige caixa e /cash some do menu.
+export async function setCashControlAction(enabled: boolean) {
+  if (typeof enabled !== "boolean") return { error: "Valor inválido." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fn_set_cash_control", { p_enabled: enabled });
+  if (error) {
+    if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para mudar essa configuração." };
+    if (error.message.includes("feche os caixas abertos")) return { error: "Feche os caixas abertos antes de desligar o controle de caixa." };
+    return { error: userMessage(error, "settings/cashControl") };
+  }
+  // Menu, paleta e telas de venda leem isso do layout da loja.
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function updateCompanyDataAction(input: { name: string; cnpj: string }) {
   const nameError = textError(input.name, "o nome da loja", 2, 120);
   if (nameError) return { error: nameError };

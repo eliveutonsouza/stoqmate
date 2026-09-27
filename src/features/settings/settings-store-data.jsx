@@ -10,7 +10,7 @@ import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { Modal } from '@/components/ui/modal';
 import { I } from '@/components/icons';
-import { updateCompanyDataAction, requestAccountDeletionAction } from '@/features/settings/actions';
+import { updateCompanyDataAction, requestAccountDeletionAction, setCashControlAction } from '@/features/settings/actions';
 
 export function SettingsStoreData({ company }) {
   const navigate = useNavigate();
@@ -19,6 +19,18 @@ export function SettingsStoreData({ company }) {
   const [error, setError] = React.useState('');
   const [saved, setSaved] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
+
+  const [cashControl, setCashControl] = React.useState(company.cashControl);
+  const [cashError, setCashError] = React.useState('');
+  const [cashPending, startCashTransition] = React.useTransition();
+  const toggleCash = (next) => {
+    setCashError('');
+    startCashTransition(async () => {
+      const result = await setCashControlAction(next);
+      if (result?.error) { setCashError(result.error); return; }
+      setCashControl(next);
+    });
+  };
 
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [confirmName, setConfirmName] = React.useState('');
@@ -54,6 +66,19 @@ export function SettingsStoreData({ company }) {
           <Field label="CNPJ" span={1}><TextInput mono value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0001-00" /></Field>
           {error && <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
           {saved && <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--success)' }}>Dados atualizados.</div>}
+        </FormCard>
+
+        <FormCard title="Operação do balcão" desc="O Stoqmate registra a venda e a forma de pagamento; o dinheiro passa pela maquininha e pelo PIX da loja." cols={1}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: cashPending ? 'wait' : 'pointer' }}>
+            <input type="checkbox" checked={cashControl} disabled={cashPending} onChange={(e) => toggleCash(e.target.checked)} style={{ marginTop: 3 }} />
+            <span>
+              <span style={{ display: 'block', fontWeight: 500 }}>Controlar caixa por turno</span>
+              <span style={{ display: 'block', fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
+                Abertura, sangria, suprimento e fechamento com contagem. Ligado, vender em dinheiro exige caixa aberto. Desligado, a tela de caixa sai do menu.
+              </span>
+            </span>
+          </label>
+          {cashError && <div role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{cashError}</div>}
         </FormCard>
 
         <div className="card" style={{ borderColor: 'var(--danger)', overflow: 'hidden' }}>

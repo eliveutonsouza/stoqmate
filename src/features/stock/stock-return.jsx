@@ -12,12 +12,15 @@ import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { I } from '@/components/icons';
-import { useDefaultStoreId } from '@/components/layout/shell-context';
+import { useDefaultStoreId, useShell } from '@/components/layout/shell-context';
+import { CustomerField } from '@/features/stock/customer-field';
+import { PaymentSplit } from '@/features/pos/payment-split';
+import { validatePayments } from '@/lib/payment-methods';
 import { stockReturnAction } from '@/features/stock/actions';
 
 const REASONS = ['Desistência do cliente', 'Defeito de fabricação', 'Variação incorreta', 'Produto errado entregue', 'Arrependimento (7 dias)'];
 
-export function StockReturn({ stores, initialProduct, initialStoreId, initialQty }) {
+export function StockReturn({ stores, cashSessionByStore = {}, initialProduct, initialStoreId, initialQty }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
   const [storeId, setStoreId] = React.useState(initialStoreId ?? defaultStoreId);
@@ -26,18 +29,31 @@ export function StockReturn({ stores, initialProduct, initialStoreId, initialQty
   const [reason, setReason] = React.useState(REASONS[0]);
   const [restock, setRestock] = React.useState(true);
   const [notes, setNotes] = React.useState('');
+  // Estorno: como o valor volta ao cliente. Desligado = devolve só o estoque.
+  const [refundOn, setRefundOn] = React.useState(false);
+  const [refundAmount, setRefundAmount] = React.useState(null);
+  const [payments, setPayments] = React.useState([{ method: 'pix', amount: 0, installments: 1 }]);
+  const [customer, setCustomer] = React.useState(null);
+  const cashControl = useShell()?.tenant?.cash_control !== false;
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
   const stock = (product?.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
-  const refund = product ? qty * product.sale_price : 0;
-  const canSave = product && storeId && qty > 0;
+  const refund = product ? Math.round(qty * product.sale_price * 100) / 100 : 0;
+  const amount = refundOn ? Math.min(refundAmount ?? refund, refund) : 0;
+  const cashBlocked = cashControl && !cashSessionByStore[storeId] ? 'Caixa fechado' : null;
+  const refundError = refundOn && amount > 0 ? validatePayments(payments, amount, { customerId: customer?.id ?? null, refund: true }) : null;
+  const canSave = product && storeId && qty > 0 && !refundError;
 
   const submit = () => {
     setError('');
     if (!product) { setError('Selecione um produto.'); return; }
     startTransition(async () => {
-      const result = await stockReturnAction({ storeId, productId: product.id, qty, reason, restock, notes });
+      const result = await stockReturnAction({
+        storeId, productId: product.id, qty, reason, restock, notes,
+        customerId: customer?.id ?? null,
+        payments: refundOn && amount > 0 ? payments.map((p) => ({ method: p.method, amount: Number(p.amount) })) : [],
+      });
       if (result?.error) { setError(result.error); return; }
       navigate('/stock/history');
     });
@@ -57,7 +73,8 @@ export function StockReturn({ stores, initialProduct, initialStoreId, initialQty
           <SummaryRow label="Itens devolvidos" value={`${qty}`} />
           {product && <SummaryRow label="Valor unitário" value={brl(product.sale_price)} />}
           <div style={{ borderTop: '1px solid var(--line)', marginTop: 8, paddingTop: 8 }}>
-            <SummaryRow label="Valor a estornar" value={brl(refund)} strong tone="warning" />
+            <SummaryRow label={refundOn ? 'Valor devolvido' : 'Valor dos itens'} value={brl(refundOn ? amount : refund)} strong tone={refundOn ? 'warning' : undefined} />
+            {!refundOn && <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 4 }}>Sem estorno registrado — só o estoque volta.</div>}
           </div>
           {product && (
             <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
@@ -91,6 +108,24 @@ export function StockReturn({ stores, initialProduct, initialStoreId, initialQty
         <Field label="Observações" span={2}>
           <TextareaInput value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: cliente apresentou nota fiscal, produto sem uso." />
         </Field>
+      </FormCard>
+
+      <FormCard title="Valor ao cliente" desc="Registra se a loja devolveu dinheiro, PIX ou crédito — o valor sai pela ferramenta da loja." cols={1}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={refundOn} onChange={(e) => setRefundOn(e.target.checked)} /> Devolver valor ao cliente
+        </label>
+        {refundOn && (
+          <>
+            <Field label="Valor devolvido" hint={`Até ${brl(refund)} (preço de tabela das unidades devolvidas).`}>
+              <TextInput mono prefix="R$" type="number" value={refundAmount ?? refund} onChange={(e) => setRefundAmount(Math.max(0, +e.target.value || 0))} />
+            </Field>
+            <Field label="Cliente" hint="Obrigatório pra devolver em crédito da loja.">
+              <CustomerField customer={customer} onChange={setCustomer} />
+            </Field>
+            <PaymentSplit refund total={amount} value={payments} onChange={setPayments} customer={customer} cashBlocked={cashBlocked} />
+            {refundError && <div role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{refundError}</div>}
+          </>
+        )}
       </FormCard>
 
       <FormCard title="Destino do item" cols={1}>

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { isEmail, isUuid } from "@/lib/validation";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
+import { paymentFriendlyError, sanitizePayments, type PaymentInput } from "@/lib/payment-errors";
 import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
 
 function friendlyError(error: DbErrorLike) {
@@ -25,15 +26,15 @@ function friendlyError(error: DbErrorLike) {
   if (message.includes("aprovação de desconto inválida")) return "A aprovação do gestor expirou ou já foi usada. Peça de novo.";
   if (message.includes("maior que o aprovado")) return "O desconto passou do limite que o gestor aprovou. Peça uma nova aprovação.";
   if (message.includes("cliente inválido")) return "Cliente inválido.";
-  return userMessage(error, "pos/actions");
+  return paymentFriendlyError(message) ?? userMessage(error, "pos/actions");
 }
 
 export async function confirmSaleAction(input: {
   storeId: string;
   customerId: string | null;
-  paymentMethod: string;
-  installments: number;
-  cashSessionId: string | null;
+  // Formas de pagamento registradas (o dinheiro passa pela maquininha/PIX
+  // da loja — aqui só se anota como foi pago).
+  payments: PaymentInput[];
   notes: string;
   items: { productId: string; qty: number; unitPrice: number; discountPct: number }[];
   orderDiscountAmount: number;
@@ -41,13 +42,13 @@ export async function confirmSaleAction(input: {
 }) {
   if (input.customerId && !isUuid(input.customerId)) return { error: "Cliente inválido." };
   if (input.discountApprovalId && !isUuid(input.discountApprovalId)) return { error: "Aprovação de desconto inválida." };
+  const payments = sanitizePayments(input.payments);
+  if (!payments) return { error: "Formas de pagamento inválidas." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_confirm_sale", {
     p_store_id: input.storeId,
     p_customer_id: input.customerId,
-    p_payment_method: input.paymentMethod,
-    p_installments: input.installments,
-    p_cash_session_id: input.cashSessionId,
+    p_payments: payments,
     p_notes: input.notes || null,
     p_items: input.items.map((i) => ({ product_id: i.productId, qty: i.qty, unit_price: i.unitPrice, discount_pct: i.discountPct })),
     p_order_discount_amount: input.orderDiscountAmount,
@@ -101,8 +102,9 @@ export async function searchCustomersAction(term: string) {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_customers_list", { p_term: q, p_with_credit: false, p_limit: 8, p_offset: 0 });
   if (error) return { error: userMessage(error, "pos/searchCustomers") };
-  const rows = ((data as { rows?: { id: string; name: string; doc: string | null; phone: string | null }[] } | null)?.rows ?? [])
-    .map((c) => ({ id: c.id, name: c.name, doc: c.doc, phone: c.phone }));
+  // Saldo de crédito vai junto: a venda mostra e deixa pagar com ele.
+  const rows = ((data as { rows?: { id: string; name: string; doc: string | null; phone: string | null; credit_balance: number | null }[] } | null)?.rows ?? [])
+    .map((c) => ({ id: c.id, name: c.name, doc: c.doc, phone: c.phone, credit_balance: Number(c.credit_balance ?? 0) }));
   return { rows };
 }
 

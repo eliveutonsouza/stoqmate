@@ -6,9 +6,11 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Page } from '@/components/ui/page-container';
 import { I } from '@/components/icons';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useCan } from '@/hooks/use-can';
 
 export function FirstRun({ status }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const steps = [
     { done: true, t: 'Loja criada', d: 'Sua rede já está configurada', r: '/settings/store-data' },
     { done: status.hasCategories, t: 'Categorias escolhidas', d: 'Esquema de atributos por linha de produto', r: '/categories' },
@@ -17,7 +19,7 @@ export function FirstRun({ status }) {
     { done: status.hasLocations, t: 'Criar os locais de estoque', d: 'Prateleiras, gôndolas, depósito', r: '/shelves/new' },
     { done: status.hasTeam, t: 'Convidar a equipe', d: 'Vendedores registram venda sem ver relatórios', r: '/settings/users' },
     { done: status.hasCashSession, t: 'Abrir o caixa', d: 'Primeiro turno no balcão', r: '/cash' },
-  ];
+  ].filter((s) => canGo(s.r));
   const done = steps.filter((s) => s.done).length;
 
   return (

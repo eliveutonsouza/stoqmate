@@ -9,7 +9,7 @@ import { SidebarItem } from '@/components/layout/sidebar-item';
 import { SidebarGroup } from '@/components/layout/sidebar-group';
 import { RowMenu } from '@/components/ui/row-menu';
 import { useShell, countBadge } from '@/components/layout/shell-context';
-import { can } from '@/lib/permissions';
+import { useCan } from '@/hooks/use-can';
 
 export function StoreSidebar({ navigate }) {
   const pathname = usePathname();
@@ -17,9 +17,9 @@ export function StoreSidebar({ navigate }) {
   const [switchError, setSwitchError] = React.useState(null);
   const is = (r) => pathname === r;
   const c = shell?.counts ?? {};
-  const roleId = shell?.user?.roleId;
-  // Sem sessão (Storybook) mostra tudo; com sessão, só o que o perfil alcança.
-  const visible = (r) => !roleId || can(roleId, r);
+  // Sem sessão (Storybook) mostra tudo; com sessão, só o que o perfil alcança
+  // e a rede usa (ex.: caixa desligado em Configurações).
+  const visible = useCan();
   const only = (items) => items.filter((it) => visible(it.r));
   const item = (r, props) => visible(r) && <SidebarItem href={r} active={is(r)} onClick={() => navigate(r)} {...props} />;
   const group = (props) => {

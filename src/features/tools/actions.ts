@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { toCsv, csvFilename, type CsvCell } from "@/lib/csv";
 import { last30Days } from "@/features/reports/queries";
+import { paymentLabel } from "@/lib/payment-methods";
 import type { SalesReportJson } from "@/features/reports/queries";
 import { movementCostMap, productCostMap } from "@/lib/supabase/costs";
 
@@ -54,15 +55,30 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
     const { start, end } = last30Days();
     const data = await fetchAll((from, to) => supabase
       .from("sales")
-      .select("created_at, total, discount_amount, payment_method, store:stores(name), customer:customers(name)")
+      .select("id, created_at, total, discount_amount, payment_method, store:stores(name), customer:customers(name)")
       .gte("created_at", start.toISOString()).lt("created_at", end.toISOString())
       .order("created_at").range(from, to));
+    // Formas registradas por venda (dividida vira "PIX 30,00 + Dinheiro 20,00").
+    const pays = await fetchAll((from, to) => supabase
+      .from("payments")
+      .select("document_id, method, amount")
+      .eq("document_type", "sale").eq("direction", "in")
+      .gte("created_at", start.toISOString()).lt("created_at", end.toISOString())
+      .order("created_at").range(from, to));
+    const bySale = new Map<string, { method: string; amount: number }[]>();
+    for (const p of pays) bySale.set(p.document_id, [...(bySale.get(p.document_id) ?? []), { method: p.method, amount: Number(p.amount) }]);
+    const describe = (id: string, fallback: string) => {
+      const list = bySale.get(id);
+      if (!list?.length) return paymentLabel(fallback);
+      if (list.length === 1) return paymentLabel(list[0].method);
+      return list.map((p) => `${paymentLabel(p.method)} ${p.amount.toFixed(2).replace(".", ",")}`).join(" + ");
+    };
     return {
       base: "vendas",
       headers: ["Data", "Unidade", "Cliente", "Pagamento", "Desconto", "Total"],
       rows: data.map((s) => [
         date(s.created_at), one<{ name: string }>(s.store)?.name, one<{ name: string }>(s.customer)?.name ?? "consumidor final",
-        s.payment_method, s.discount_amount, s.total,
+        describe(s.id, s.payment_method), s.discount_amount, s.total,
       ]),
     };
   }
