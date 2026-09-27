@@ -111,7 +111,7 @@ export function AdminPlanForm({ mode = 'new', plan }) {
               <Field label="Máx. SKUs" span={1} hint="Em branco = ilimitado"><TextInput mono value={limits.skus} onChange={(e) => setLimit('skus', e.target.value)} placeholder="∞" /></Field>
               <Field label="Máx. usuários" span={1} hint="Em branco = ilimitado"><TextInput mono value={limits.users} onChange={(e) => setLimit('users', e.target.value)} placeholder="∞" /></Field>
               <Field label="Máx. lojas" span={1} hint="Em branco = ilimitado"><TextInput mono value={limits.stores} onChange={(e) => setLimit('stores', e.target.value)} placeholder="∞" /></Field>
-              <Field label="Máx. categorias" span={1} hint="Em branco = ilimitado"><TextInput mono value={limits.cats} onChange={(e) => setLimit('cats', e.target.value)} placeholder="∞" /></Field>
+              <Field label="Máx. categorias" span={1} hint="Informativo: o sistema não bloqueia categorias"><TextInput mono value={limits.cats} onChange={(e) => setLimit('cats', e.target.value)} placeholder="∞" /></Field>
             </FormCard>
 
             <FormCard title="Disponibilidade" cols={2}>

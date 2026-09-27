@@ -107,12 +107,14 @@ export function Pricing({ plans, trialDays, creditPacks }) {
                   borderTop: '1px solid ' + (p.popular ? 'rgba(255,255,255,0.15)' : 'var(--line)'),
                   display: 'flex', flexDirection: 'column', gap: 7,
                 }}>
+                  {/* Só os limites que o banco aplica (SKU, usuários, lojas).
+                      limits.cats/history existem no cadastro do plano, mas
+                      nada os aplica — mostrar seria prometer uma regra falsa. */}
                   {[
                     p.limits.skus ? `${p.limits.skus} SKUs` : 'SKUs ilimitados',
                     p.limits.users ? `${p.limits.users} usuários` : 'Usuários ilimitados',
                     p.limits.stores ? (p.limits.stores === 1 ? '1 loja' : `Até ${p.limits.stores} lojas`) : 'Lojas ilimitadas',
-                    p.limits.cats ? `${p.limits.cats} categorias` : 'Categorias ilimitadas',
-                    `Histórico de ${p.limits.history}`,
+                    'Histórico completo guardado',
                   ].map(l => (
                     <div key={l} style={{ display: 'flex', gap: 8, fontSize: 12.5, alignItems: 'flex-start' }}>
                       <span style={{ color: p.popular ? '#fff' : 'var(--accent-text)', marginTop: 2, flexShrink: 0 }}><I.Check size={12} stroke={2.4} /></span>
