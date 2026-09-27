@@ -15,11 +15,13 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { brl } from '@/lib/format';
 import { downloadCsv, csvFilename } from '@/lib/csv';
 import { exportStockHistoryCsvAction } from '@/features/stock/history-actions';
+import { useCan } from '@/hooks/use-can';
 
 // Busca (?q), tipo (?kind), loja (?store) e página (?page) na URL — o
 // servidor filtra e pagina (fn_stock_movements_list).
 export function StockHistory({ filters, pageSize, rows, total, allTotal, kinds, kpis, stores }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const { update, pending } = useQueryUpdate();
   const [exporting, startExport] = React.useTransition();
   const [notice, setNotice] = React.useState(null);
@@ -50,7 +52,7 @@ export function StockHistory({ filters, pageSize, rows, total, allTotal, kinds, 
             <button onClick={exportCsv} disabled={total === 0 || exporting} className="btn btn-outline btn-sm">
               <I.Download size={13} /> {exporting ? 'Exportando…' : 'Exportar CSV'}
             </button>
-            <button onClick={() => navigate('/stock/entry')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova movimentação</button>
+            {canGo('/stock/entry') && (<button onClick={() => navigate('/stock/entry')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova movimentação</button>)}
           </>
         )}
         tabs={allTotal === 0 ? undefined : [
@@ -71,7 +73,7 @@ export function StockHistory({ filters, pageSize, rows, total, allTotal, kinds, 
             icon={<I.Activity size={18} />}
             title="Nenhuma movimentação registrada ainda"
             desc="Entradas, transferências, ajustes e contagens aparecem aqui assim que forem confirmados."
-            action={<button onClick={() => navigate('/stock/entry')} className="btn btn-primary btn-sm"><I.Plus size={12} /> Nova entrada</button>}
+            action={canGo('/stock/entry') ? <button onClick={() => navigate('/stock/entry')} className="btn btn-primary btn-sm"><I.Plus size={12} /> Nova entrada</button> : null}
           />
         ) : (
           <>

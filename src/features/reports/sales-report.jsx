@@ -14,8 +14,8 @@ import { useReportHeader } from '@/features/reports/use-report-header';
 export function SalesReport({ report, filters, stores }) {
   const navigate = useNavigate();
   const { headerProps, scopeLabel, fileSuffix } = useReportHeader(filters, stores);
-  const profit = report.revenue - report.cost;
-  const margin = report.revenue > 0 ? (profit / report.revenue) * 100 : 0;
+  const seesCost = report.cost != null;
+  const margin = seesCost && report.revenue > 0 ? ((report.revenue - report.cost) / report.revenue) * 100 : 0;
   const ticket = report.saleCount > 0 ? report.revenue / report.saleCount : 0;
   const series = report.dailySeries.map((d) => ({
     d: new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
@@ -50,7 +50,7 @@ export function SalesReport({ report, filters, stores }) {
             { l: 'Receita total', v: brl(report.revenue) },
             { l: 'Unidades vendidas', v: report.units.toLocaleString('pt-BR') },
             { l: 'Ticket médio', v: brl(ticket) },
-            { l: 'Margem média', v: margin.toFixed(1) + '%' },
+            { l: 'Margem média', v: seesCost ? margin.toFixed(1) + '%' : '—' },
           ].map((m, i) => (
             <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>

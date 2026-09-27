@@ -50,7 +50,7 @@ export async function loadDashboardData() {
   const pctDelta = (curr: number, prev: number) => (prev > 0 ? ((curr - prev) / prev) * 100 : null);
   const revenueDelta = pctDelta(salesReport.revenue, prevReport?.revenue ?? 0);
   const unitsDelta = pctDelta(salesReport.units, prevReport?.units ?? 0);
-  const turnover = overview && overview.total_cost_value > 0 ? salesReport.cost / overview.total_cost_value : null;
+  const turnover = overview && salesReport.cost != null && overview.total_cost_value > 0 ? salesReport.cost / overview.total_cost_value : null;
 
   const categoriesActive = new Set((salesReport.byCategory ?? []).map((c: { category_id: string }) => c.category_id)).size;
 

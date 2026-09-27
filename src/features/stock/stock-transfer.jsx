@@ -16,13 +16,14 @@ import { transferDispatchAction } from '@/features/stock/actions';
 
 const REASONS = ['Reposição por ruptura no destino', 'Balanceamento de estoque', 'Remanejamento sazonal', 'Devolução ao centro de distribuição', 'Pedido de cliente em outra loja'];
 
-export function StockTransfer({ stores, initialProduct, pendingCount = 0 }) {
+export function StockTransfer({ stores, initialProduct, pendingCount = 0, initialOriginId = '', initialDestId = '', initialQty = 1 }) {
   const navigate = useNavigate();
   const [product, setProduct] = React.useState(initialProduct ?? null);
   const defaultStoreId = useDefaultStoreId(stores);
-  const [originId, setOriginId] = React.useState(defaultStoreId);
-  const [destId, setDestId] = React.useState(stores[1]?.id ?? '');
-  const [qty, setQty] = React.useState(1);
+  const [originId, setOriginId] = React.useState(initialOriginId || defaultStoreId);
+  // Destino padrão: a primeira unidade que não seja a origem.
+  const [destId, setDestId] = React.useState(() => initialDestId || (stores.find((s) => s.id !== (initialOriginId || defaultStoreId))?.id ?? ''));
+  const [qty, setQty] = React.useState(initialQty);
   const [reason, setReason] = React.useState(REASONS[0]);
   const [carrier, setCarrier] = React.useState('Malha interna');
   const [notes, setNotes] = React.useState('');

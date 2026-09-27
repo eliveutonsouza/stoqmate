@@ -15,6 +15,7 @@ import { addAttributeValuesAction } from '@/features/products/actions';
 import { Modal } from '@/components/ui/modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { createCategoryAction } from '@/features/products/actions';
+import { useCan } from '@/hooks/use-can';
 
 const ICON_OPTIONS = ['Box', 'Shirt', 'Zap', 'Home', 'Coffee', 'Book', 'Truck', 'Tag', 'Layers', 'Pkg'];
 const UNIT_OPTIONS = ['unidade', 'par', 'peça', 'caixa', 'kg', 'litro', 'metro'];
@@ -29,6 +30,8 @@ function emptyAttrRow() {
 
 export function Categories({ initialCategories }) {
   const navigate = useNavigate();
+  // Esquema é do estoque/dono; vendedor só consulta.
+  const canEdit = useCan()('/products/new');
   const categories = React.useMemo(
     () => initialCategories.map((c) => ({
       ...c,
@@ -76,7 +79,7 @@ export function Categories({ initialCategories }) {
       <PageHeader
         title="Categorias e atributos"
         sub="O esquema de cada categoria define os atributos do SKU e a unidade de medida do estoque."
-        actions={<button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova categoria</button>}
+        actions={canEdit ? <button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova categoria</button> : null}
       />
       <Page>
         {categories.length === 0 ? (
@@ -84,7 +87,7 @@ export function Categories({ initialCategories }) {
             icon={<I.Sliders size={18} />}
             title="Nenhuma categoria ainda"
             desc="Categorias definem os atributos e a unidade de medida dos produtos. Crie a primeira pra começar a cadastrar o catálogo."
-            action={<button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Nova categoria</button>}
+            action={canEdit ? <button onClick={() => setFormOpen(true)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Nova categoria</button> : null}
           />
         ) : (
           <div className="split-nav" style={{ '--nav': '288px' }}>
@@ -178,7 +181,7 @@ export function Categories({ initialCategories }) {
                               ))}
                               {a.values.length > 6 && <span style={{ fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>+{a.values.length - 6}</span>}
                             </div>
-                            <AddValues attributeId={a.id} label={a.label} />
+                            {canEdit && <AddValues attributeId={a.id} label={a.label} />}
                           </td>
                           <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{a.values.length}</td>
                         </tr>

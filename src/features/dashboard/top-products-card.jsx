@@ -2,6 +2,7 @@
 
 import { I } from '@/components/icons';
 import { EmptyState } from '@/components/ui/empty-state';
+import { brl } from '@/lib/format';
 
 export function TopProductsCard({ navigate, topProducts }) {
   const maxSold = Math.max(1, ...topProducts.map((p) => p.units));
@@ -51,7 +52,7 @@ export function TopProductsCard({ navigate, topProducts }) {
                     </span>
                   </div>
                 </td>
-                <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>R$ {Number(p.revenue).toLocaleString('pt-BR')}</td>
+                <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{brl(p.revenue)}</td>
                 <td className="num">
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: p.stock_qty < 20 ? 'var(--warning)' : 'var(--fg-muted)' }}>{p.stock_qty}</span>
                 </td>

@@ -2,6 +2,7 @@
 
 import { I } from '@/components/icons';
 import { EmptyState } from '@/components/ui/empty-state';
+import { brl } from '@/lib/format';
 
 export function CategoryMixCard({ navigate, byCategory }) {
   const total = byCategory.reduce((s, c) => s + Number(c.revenue), 0);
@@ -40,7 +41,7 @@ export function CategoryMixCard({ navigate, byCategory }) {
                     {Number(m.units).toLocaleString('pt-BR')} {m.unit_plural}
                   </span>
                   <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', minWidth: 78, textAlign: 'right' }}>
-                    R$ {Number(m.revenue).toLocaleString('pt-BR')}
+                    {brl(m.revenue)}
                   </span>
                   <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)', minWidth: 34, textAlign: 'right' }}>
                     {((m.revenue / total) * 100).toFixed(0)}%

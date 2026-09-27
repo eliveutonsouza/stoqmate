@@ -29,7 +29,7 @@ export function NetworkDashboard({ revenue, margin, totalQty, ruptureCount, stor
           {[
             { l: 'Receita da rede (30d)', v: brl(revenue) },
             { l: 'Itens em estoque', v: totalQty.toLocaleString('pt-BR') },
-            { l: 'Margem consolidada', v: `${margin.toFixed(1)}%` },
+            { l: 'Margem consolidada', v: margin == null ? "—" : `${margin.toFixed(1)}%` },
             { l: 'SKUs em ruptura', v: `${ruptureCount}`, tone: ruptureCount > 0 ? 'down' : undefined },
           ].map((m, i) => (
             <div key={i} style={{ padding: '16px 18px' }}>
@@ -107,7 +107,7 @@ export function NetworkDashboard({ revenue, margin, totalQty, ruptureCount, stor
                     <td className="num">
                       <span style={{ display: 'inline-block', minWidth: 34, textAlign: 'center', padding: '2px 7px', borderRadius: 4, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500, background: 'var(--info-soft)', color: 'var(--info)' }}>{r.max.qty}</span>
                     </td>
-                    <td><button onClick={() => navigate('/stock/transfer')} className="btn btn-outline btn-sm">Transferir</button></td>
+                    <td><button onClick={() => navigate(`/stock/transfer?product=${r.productId}&from=${r.max.store_id}&to=${r.min.store_id}&qty=${Math.max(1, Math.floor(r.gap / 2))}`)} className="btn btn-outline btn-sm">Transferir</button></td>
                   </tr>
                 ))}
               </tbody>

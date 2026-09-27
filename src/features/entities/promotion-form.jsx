@@ -17,6 +17,7 @@ import { brl } from '@/lib/format';
 import { FormPageFooter } from '@/components/ui/form-page-footer';
 import { createPromotionAction, setPromotionActiveAction } from '@/features/operations/promotions-actions';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useCan } from '@/hooks/use-can';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -214,6 +215,7 @@ function PromotionCreateForm({ categories }) {
 
 function PromotionView({ promotion }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState('');
 
@@ -275,9 +277,11 @@ function PromotionView({ promotion }) {
             {error && (
               <div role="alert" style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{error}</div>
             )}
-            <button onClick={toggle} disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%' }}>
-              {pending ? 'Salvando…' : promotion.active ? 'Encerrar promoção agora' : 'Reativar promoção'}
-            </button>
+            {canGo('/promotions/new') && (
+              <button onClick={toggle} disabled={pending} className="btn btn-primary btn-lg" style={{ justifyContent: 'center', width: '100%' }}>
+                {pending ? 'Salvando…' : promotion.active ? 'Encerrar promoção agora' : 'Reativar promoção'}
+              </button>
+            )}
             <button onClick={() => navigate('/promotions')} className="btn btn-ghost" style={{ justifyContent: 'center', width: '100%' }}>Voltar</button>
           </div>
         </div>

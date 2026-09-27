@@ -16,8 +16,9 @@ function fmtRange(range) {
 
 export function ReportsHub({ report }) {
   const navigate = useNavigate();
-  const profit = report.revenue - report.cost;
-  const margin = report.revenue > 0 ? (profit / report.revenue) * 100 : 0;
+  const seesCost = report.cost != null;
+  const profit = seesCost ? report.revenue - report.cost : null;
+  const margin = seesCost && report.revenue > 0 ? (profit / report.revenue) * 100 : 0;
   const ticket = report.saleCount > 0 ? report.revenue / report.saleCount : 0;
   const series = report.dailySeries.map((d) => ({
     d: new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
@@ -33,8 +34,8 @@ export function ReportsHub({ report }) {
           {[
             { l: 'Receita do período', v: brl(report.revenue) },
             { l: 'Unidades vendidas', v: report.units.toLocaleString('pt-BR') },
-            { l: 'Lucro bruto', v: brl(profit) },
-            { l: 'Margem média', v: margin.toFixed(1) + '%' },
+            { l: 'Lucro bruto', v: seesCost ? brl(profit) : '—' },
+            { l: 'Margem média', v: seesCost ? margin.toFixed(1) + '%' : '—' },
           ].map((m, i) => (
             <div key={i} style={{ padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{m.l}</div>
@@ -55,9 +56,9 @@ export function ReportsHub({ report }) {
             <HubCard icon={<I.Sliders size={15} />} accent title="Atributos mais vendidos" onClick={() => navigate('/reports/attributes')}
               desc="Quais variações giram, no esquema de cada categoria. Adapta-se quando você muda os atributos."
               meta={[['Categorias', `${report.byCategory.length}`]]} />
-            <HubCard icon={<I.Credit size={15} />} accent title="Lucratividade" onClick={() => navigate('/reports/profit')}
+            {seesCost && (<HubCard icon={<I.Credit size={15} />} accent title="Lucratividade" onClick={() => navigate('/reports/profit')}
               desc="Compras vs. vendas item a item, com lucro bruto e margem por produto."
-              meta={[['Lucro', brl(profit)], ['Margem', margin.toFixed(1) + '%']]} />
+              meta={[['Lucro', brl(profit)], ['Margem', margin.toFixed(1) + '%']]} />)}
           </div>
         </div>
 

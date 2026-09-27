@@ -17,9 +17,11 @@ import { TextInput } from '@/components/ui/text-input';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { SelectInput } from '@/components/ui/select-input';
 import { createLocationAction } from '@/features/operations/actions';
+import { useCan } from '@/hooks/use-can';
 
 export function Shelves({ initialLocations, products, stores }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const locations = React.useMemo(
     () => initialLocations.map((l) => ({ ...l, skus: l.products?.[0]?.count ?? 0 })),
     [initialLocations],
@@ -125,8 +127,8 @@ export function Shelves({ initialLocations, products, stores }) {
                     <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--fg-muted)' }}>{selected.description ?? '—'}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => navigate(`/shelves/edit?id=${selected.id}`)} className="btn btn-outline btn-sm"><I.Settings size={12} /> Editar local</button>
-                    <button onClick={() => navigate(`/products/new?location=${selected.id}`)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto aqui</button>
+                    {canGo('/shelves/edit') && (<button onClick={() => navigate(`/shelves/edit?id=${selected.id}`)} className="btn btn-outline btn-sm"><I.Settings size={12} /> Editar local</button>)}
+                    {canGo('/products/new') && (<button onClick={() => navigate(`/products/new?location=${selected.id}`)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto aqui</button>)}
                   </div>
                 </div>
                 {locProducts.length > 0 ? (
@@ -150,7 +152,7 @@ export function Shelves({ initialLocations, products, stores }) {
                     icon={<I.Grid size={18} />}
                     title="Nenhum produto neste local ainda"
                     desc={`${selected.code} está cadastrado mas sem itens alocados como local padrão.`}
-                    action={<button onClick={() => navigate(`/products/new?location=${selected.id}`)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto</button>}
+                    action={canGo('/products/new') ? <button onClick={() => navigate(`/products/new?location=${selected.id}`)} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto</button> : null}
                   />
                 )}
               </div>

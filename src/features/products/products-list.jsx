@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { brl } from '@/lib/format';
 import { RowMenu } from '@/components/ui/row-menu';
 import { duplicateProductAction, setProductActiveAction } from '@/features/products/actions';
+import { useCan } from '@/hooks/use-can';
 
 const STOCK_OPTIONS = [
   { value: '', label: 'Todos' },
@@ -29,6 +30,7 @@ const STOCK_OPTIONS = [
 // ?location ?page) — o servidor filtra e pagina (fn_products_list).
 export function ProductsList({ filters, pageSize, rows, total, catalogTotal, countByCategory, brands, categories, locations }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const { update, pending } = useQueryUpdate();
   const [selected, setSelected] = React.useState(() => new Set());
   const [error, setError] = React.useState('');
@@ -41,7 +43,9 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
       if (result?.error) setError(result.error);
     });
   };
-  const rowItems = (p) => [
+  // Quem só consulta o catálogo (vendedor) vê só o detalhe.
+  const canEdit = canGo('/products/edit');
+  const rowItems = (p) => (canEdit ? [
     { label: 'Ver detalhe', onSelect: () => navigate(`/products/detail?id=${p.id}`) },
     { label: 'Editar', onSelect: () => navigate(`/products/edit?id=${p.id}`) },
     {
@@ -55,7 +59,9 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
     p.active
       ? { label: 'Desativar', tone: 'danger', onSelect: () => runAction(() => setProductActiveAction({ id: p.id, active: false })) }
       : { label: 'Reativar', onSelect: () => runAction(() => setProductActiveAction({ id: p.id, active: true })) },
-  ];
+  ] : [
+    { label: 'Ver detalhe', onSelect: () => navigate(`/products/detail?id=${p.id}`) },
+  ]);
 
   // Ações em lote da seleção (só a página atual).
   const selectedRows = rows.filter((p) => selected.has(p.id));
@@ -113,8 +119,8 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
         actions={(
           <>
             <button onClick={() => navigate('/categories')} className="btn btn-outline btn-sm"><I.Sliders size={13} /> Categorias</button>
-            <button onClick={() => navigate('/products/import')} className="btn btn-outline btn-sm"><I.Download size={13} /> Importar planilha</button>
-            <button onClick={() => navigate('/products/new')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Cadastrar produto</button>
+            {canGo('/products/import') && (<button onClick={() => navigate('/products/import')} className="btn btn-outline btn-sm"><I.Download size={13} /> Importar planilha</button>)}
+            {canGo('/products/new') && (<button onClick={() => navigate('/products/new')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Cadastrar produto</button>)}
           </>
         )}
         tabs={[
@@ -135,7 +141,7 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
               : 'Cadastre o primeiro SKU pra começar a controlar o estoque.'}
             action={categories.length === 0
               ? <button onClick={() => navigate('/categories')} className="btn btn-primary btn-sm">Criar categoria</button>
-              : <button onClick={() => navigate('/products/new')} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto</button>}
+              : (canGo('/products/new') ? <button onClick={() => navigate('/products/new')} className="btn btn-primary btn-sm"><I.Plus size={12} /> Cadastrar produto</button> : null)}
           />
         ) : (
           <>
@@ -152,7 +158,7 @@ export function ProductsList({ filters, pageSize, rows, total, catalogTotal, cou
                   {selectedCount > 0 && (
                     <>
                       <button type="button" onClick={printSelected} className="btn btn-outline btn-sm">Imprimir etiquetas</button>
-                      <button type="button" onClick={deactivateSelected} className="btn btn-outline btn-sm" style={{ color: 'var(--danger)' }}>Desativar</button>
+                      {canEdit && <button type="button" onClick={deactivateSelected} className="btn btn-outline btn-sm" style={{ color: 'var(--danger)' }}>Desativar</button>}
                     </>
                   )}
                 </span>

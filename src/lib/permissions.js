@@ -152,12 +152,26 @@ export const ROUTE_AREA = (() => {
 export const TENANT_AREAS = AREAS.filter(a => !a.staff);
 export const COVERED_COUNT = Object.keys(ROUTE_AREA).length + OPEN_ROUTES.length;
 
+// Telas que existem só pra gravar (formulário de movimentação, cadastro,
+// reajuste). Quem tem "Só consulta" na área não abre: antes o vendedor via o
+// formulário inteiro e só descobria no "Confirmar" que o banco recusa.
+export const EDIT_ROUTES = new Set([
+  '/products/new', '/products/edit', '/products/import', '/products/pricing', '/mobile/capture',
+  '/stock/entry', '/stock/entry/ocr', '/stock/transfer', '/stock/transfer/receive', '/stock/exchange',
+  '/stock/return', '/stock/adjustment', '/stock/count', '/stock/receive/match', '/mobile/count',
+  '/shelves/new', '/shelves/edit',
+  '/purchase-orders/new', '/suppliers/new', '/suppliers/edit',
+  '/promotions/new',
+  '/settings/branding', '/settings/store-data',
+]);
+
 // A pergunta que o app faz em toda navegação e a API repete em todo endpoint.
 export function can(roleId, route, level = 'view') {
   if (OPEN_ROUTES.indexOf(route) > -1) return true;
   const area = ROUTE_AREA[route];
   if (!area) return false;                       // rota nova é negada até ser classificada
-  return ACCESS[area.access[roleId] || 'none'] >= ACCESS[level];
+  const needed = EDIT_ROUTES.has(route) && ACCESS[level] < ACCESS.edit ? 'edit' : level;
+  return ACCESS[area.access[roleId] || 'none'] >= ACCESS[needed];
 }
 export function areaFor(route) { return ROUTE_AREA[route] || null; }
 export function rolesThatCan(route, level = 'view') {

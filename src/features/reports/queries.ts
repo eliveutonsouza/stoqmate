@@ -51,7 +51,8 @@ export async function loadSalesReport(filters?: ReportFilters) {
   return {
     range: { start, end },
     revenue: data?.revenue ?? 0,
-    cost: data?.cost ?? 0,
+    // null = perfil sem acesso a custo (fn_can_see_cost) — nunca tratar como 0.
+    cost: (data?.cost ?? null) as number | null,
     saleCount: data?.sale_count ?? 0,
     units: data?.units ?? 0,
     dailySeries: data?.daily_series ?? [],

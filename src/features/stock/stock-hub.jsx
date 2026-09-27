@@ -8,9 +8,11 @@ import { Page } from '@/components/ui/page-container';
 import { HubCard } from '@/components/domain/hub-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { brl } from '@/lib/format';
+import { useCan } from '@/hooks/use-can';
 
 export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const maxStock = Math.max(1, ...categoryBalances.map((c) => c.qty));
 
   const flows = [
@@ -30,7 +32,7 @@ export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems
         actions={(
           <>
             <button onClick={() => navigate('/stock/history')} className="btn btn-outline btn-sm"><I.Activity size={13} /> Histórico</button>
-            <button onClick={() => navigate('/stock/entry')} className="btn btn-outline btn-sm"><I.Plus size={13} /> Entrada</button>
+            {canGo('/stock/entry') && (<button onClick={() => navigate('/stock/entry')} className="btn btn-outline btn-sm"><I.Plus size={13} /> Entrada</button>)}
             <button onClick={() => navigate('/stock/sale')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova venda</button>
           </>
         )}
@@ -57,7 +59,7 @@ export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems
         <div>
           <div className="section-h"><h3>Registrar movimentação</h3></div>
           <div className="g3" style={{ gap: 10 }}>
-            {flows.map(f => (
+            {flows.filter(f => canGo(f.r)).map(f => (
               <HubCard key={f.r} icon={f.i} title={f.t} desc={f.d} accent onClick={() => navigate(f.r)} meta={[['30 dias', `${flowCounts[f.k] ?? 0}`]]} />
             ))}
           </div>
@@ -127,7 +129,7 @@ export function StockHub({ overview, categoryBalances, flowCounts, lowStockItems
                       <div style={{ fontSize: 12, fontWeight: 500 }} className="truncate">{p.name}</div>
                       <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{p.sku}</div>
                     </div>
-                    <button onClick={() => navigate(`/stock/entry?product=${p.id}`)} className="btn btn-outline btn-sm">Repor</button>
+                    {canGo('/stock/entry') && (<button onClick={() => navigate(`/stock/entry?product=${p.id}`)} className="btn btn-outline btn-sm">Repor</button>)}
                   </div>
                 ))}
                 {overview.low_stock_count > lowStockItems.length && (

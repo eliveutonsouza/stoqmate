@@ -2,8 +2,10 @@
 
 import { I } from '@/components/icons';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useCan } from '@/hooks/use-can';
 
 export function LowStockCard({ navigate, items, count }) {
+  const canGo = useCan();
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
       <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
@@ -37,7 +39,7 @@ export function LowStockCard({ navigate, items, count }) {
                   <div style={{ fontSize: 12, fontWeight: 500 }} className="truncate">{p.name}</div>
                   <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{p.sku}</div>
                 </div>
-                <button onClick={() => navigate(`/stock/entry?product=${p.id}`)} className="btn btn-outline btn-sm">Repor</button>
+                {canGo('/stock/entry') && (<button onClick={() => navigate(`/stock/entry?product=${p.id}`)} className="btn btn-outline btn-sm">Repor</button>)}
               </div>
             ))}
           </div>

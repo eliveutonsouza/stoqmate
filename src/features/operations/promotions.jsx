@@ -10,6 +10,7 @@ import { Page } from '@/components/ui/page-container';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { brl } from '@/lib/format';
 import { setPromotionActiveAction } from '@/features/operations/promotions-actions';
+import { useCan } from '@/hooks/use-can';
 
 function statusOf(p) {
   if (!p.active) return 'ended';
@@ -22,6 +23,7 @@ function statusOf(p) {
 
 export function Promotions({ promotions }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const router = useRouter();
   const [tab, setTab] = React.useState('all');
   const [pending, startTransition] = React.useTransition();
@@ -55,7 +57,7 @@ export function Promotions({ promotions }) {
       <PageHeader
         title="Promoções"
         sub={`${counts.active} ativas · ${counts.scheduled} agendadas`}
-        actions={<button onClick={() => navigate('/promotions/new')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Criar promoção</button>}
+        actions={canGo('/promotions/new') ? <button onClick={() => navigate('/promotions/new')} className="btn btn-primary btn-sm"><I.Plus size={13} /> Criar promoção</button> : null}
         tabs={[
           { id: 'all', label: `Todas · ${counts.all}` },
           { id: 'active', label: `Ativas · ${counts.active}` },
@@ -110,7 +112,8 @@ export function Promotions({ promotions }) {
                       <td><span className={`badge ${st.cls}`}>{p.status === 'active' && <span className="badge-dot"></span>} {st.label}</span></td>
                       <td>
                         {/* Vencida pela data: reativar não muda nada — a vigência não se edita, só se cria outra. */}
-                        {!p.until_stock && p.ends_at && new Date(p.ends_at) < new Date() ? (
+                        {/* Quem só consulta promoções (vendedor) não encerra nem reativa. */}
+                        {!p.until_stock && p.ends_at && new Date(p.ends_at) < new Date() || !canGo('/promotions/new') ? (
                           <button onClick={() => navigate(`/promotions/edit?id=${p.id}`)} className="btn btn-ghost btn-sm">Detalhes</button>
                         ) : (
                           <button onClick={() => toggle(p)} disabled={pending} className="btn btn-outline btn-sm">

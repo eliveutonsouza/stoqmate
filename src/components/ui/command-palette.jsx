@@ -12,11 +12,11 @@ export const STORE_COMMANDS = [
   { g: 'Ir para', l: 'Relatórios', r: '/reports', i: 'Chart' },
   { g: 'Ir para', l: 'Compras e reposição', r: '/purchase-orders', i: 'Truck' },
   { g: 'Ir para', l: 'Configurações', r: '/settings', i: 'Settings' },
-  { g: 'Ações', l: 'Nova venda', r: '/stock/sale', i: 'Plus', k: 'V' },
-  { g: 'Ações', l: 'Entrada de estoque', r: '/stock/entry', i: 'ArrowUp', k: 'E' },
-  { g: 'Ações', l: 'Transferir entre lojas', r: '/stock/transfer', i: 'Swap', k: 'T' },
-  { g: 'Ações', l: 'Cadastrar produto', r: '/products/new', i: 'Layers', k: 'N' },
-  { g: 'Ações', l: 'Contagem de inventário', r: '/stock/count', i: 'Grid', k: 'C' },
+  { g: 'Ações', l: 'Nova venda', r: '/stock/sale', i: 'Plus' },
+  { g: 'Ações', l: 'Entrada de estoque', r: '/stock/entry', i: 'ArrowUp' },
+  { g: 'Ações', l: 'Transferir entre lojas', r: '/stock/transfer', i: 'Swap' },
+  { g: 'Ações', l: 'Cadastrar produto', r: '/products/new', i: 'Layers' },
+  { g: 'Ações', l: 'Contagem de inventário', r: '/stock/count', i: 'Grid' },
   { g: 'Ações', l: 'Imprimir etiquetas', r: '/labels', i: 'QR' },
   { g: 'Ações', l: 'Exportar dados', r: '/exports', i: 'Download' },
   { g: 'Buscar', l: 'Abrir busca completa', r: '/search', i: 'Search' },
@@ -35,14 +35,16 @@ export const ADMIN_COMMANDS = [
   { g: 'Ações', l: 'Convidar administrador', r: '/admin/users', i: 'Users' },
 ];
 
-export function CommandPalette({ navigate, admin }) {
+// `allowed` (opcional) tira da lista o que o perfil não alcança — mesma
+// regra do menu lateral.
+export function CommandPalette({ navigate, admin, allowed }) {
   const inShowcase = React.useContext(ShowcaseCtx);
   const [open, setOpen] = React.useState(false);
   const [q, setQ] = React.useState('');
   const [sel, setSel] = React.useState(0);
   const [prevQ, setPrevQ] = React.useState(q);
   if (q !== prevQ) { setPrevQ(q); setSel(0); }
-  const all = admin ? ADMIN_COMMANDS : STORE_COMMANDS;
+  const all = (admin ? ADMIN_COMMANDS : STORE_COMMANDS).filter((c) => !allowed || allowed(c.r));
 
   const hits = q.trim()
     ? all.filter(c => (c.l + ' ' + c.g).toLowerCase().includes(q.trim().toLowerCase()))

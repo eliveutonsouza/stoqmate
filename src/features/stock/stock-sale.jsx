@@ -22,6 +22,7 @@ import { TextareaInput } from '@/components/ui/textarea-input';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { Modal } from '@/components/ui/modal';
 import { confirmSaleAction, requestDiscountApprovalAction, searchCustomersAction } from '@/features/pos/actions';
+import { useCan } from '@/hooks/use-can';
 
 const PAYMENTS = [
   { label: 'Dinheiro', value: 'dinheiro' },
@@ -99,6 +100,7 @@ function CustomerField({ customer, onChange }) {
 
 export function StockSale({ stores, cashSessionByStore, initialProduct, initialCustomer }) {
   const navigate = useNavigate();
+  const canGo = useCan();
   const defaultStoreId = useDefaultStoreId(stores);
   const isManager = MANAGER_ROLES.includes(useShell()?.user?.roleId);
   const [customer, setCustomer] = React.useState(initialCustomer ?? null);
@@ -300,7 +302,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
                   <strong>{overstock[0].name}</strong> tem só {stockFor(overstock[0])} em estoque nesta unidade.
                   Reduza a quantidade ou transfira de outra loja.
                 </span>
-                <button onClick={() => navigate('/stock/transfer')} className="btn btn-outline btn-sm">Transferir</button>
+                {canGo('/stock/transfer') && (<button onClick={() => navigate('/stock/transfer')} className="btn btn-outline btn-sm">Transferir</button>)}
               </div>
             )}
 

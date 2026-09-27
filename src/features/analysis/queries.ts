@@ -45,7 +45,7 @@ export async function loadNetworkData() {
 
   return {
     revenue: salesReport.revenue,
-    margin: salesReport.revenue > 0 ? ((salesReport.revenue - salesReport.cost) / salesReport.revenue) * 100 : 0,
+    margin: salesReport.cost == null ? null : salesReport.revenue > 0 ? ((salesReport.revenue - salesReport.cost) / salesReport.revenue) * 100 : 0,
     totalQty: overview?.total_qty ?? 0,
     ruptureCount: overview?.rupture_count ?? 0,
     stores: storeRows,

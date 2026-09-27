@@ -1,8 +1,10 @@
 "use client";
 
 import { I } from '@/components/icons';
+import { useCan } from '@/hooks/use-can';
 
 export function StoreBalanceCard({ navigate, storeBalances }) {
+  const canGo = useCan();
   const maxSkus = Math.max(1, ...storeBalances.map((s) => s.skuCount));
   const totalSkus = storeBalances.reduce((s, u) => s + u.skuCount, 0);
   return (
@@ -14,7 +16,7 @@ export function StoreBalanceCard({ navigate, storeBalances }) {
             {storeBalances.length} unidade{storeBalances.length === 1 ? '' : 's'} · {totalSkus.toLocaleString('pt-BR')} SKUs com saldo.
           </p>
         </div>
-        <button onClick={() => navigate('/stock/transfer')} className="btn btn-outline btn-sm"><I.Swap size={12} /> Transferir</button>
+        {canGo('/stock/transfer') && (<button onClick={() => navigate('/stock/transfer')} className="btn btn-outline btn-sm"><I.Swap size={12} /> Transferir</button>)}
       </div>
       <div>
         {storeBalances.map((s, i) => (

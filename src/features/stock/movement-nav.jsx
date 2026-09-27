@@ -1,11 +1,13 @@
 "use client";
 
 import { MOVEMENT_TABS } from '@/features/stock/movement-tabs';
+import { useCan } from '@/hooks/use-can';
 
 export function MovementNav({ route, navigate }) {
+  const canGo = useCan();
   return (
     <div className="no-bars" style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 8, alignSelf: 'flex-start', maxWidth: '100%', overflowX: 'auto' }}>
-      {MOVEMENT_TABS.map(t => {
+      {MOVEMENT_TABS.filter(t => canGo(t.r)).map(t => {
         const active = route === t.r;
         return (
           <button key={t.r} onClick={() => navigate(t.r)} style={{

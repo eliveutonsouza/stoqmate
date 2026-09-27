@@ -12,9 +12,11 @@ import { CategoryBadge } from '@/components/ui/category-badge';
 import { brl } from '@/lib/format';
 import { SummaryRow } from '@/components/ui/summary-row';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useCan } from '@/hooks/use-can';
 
 export function MovementDetail({ movement: m }) {
   const navigate = useNavigate();
+  const canGo = useCan();
 
   if (!m) {
     return (
@@ -47,8 +49,8 @@ export function MovementDetail({ movement: m }) {
             {canOpenReceipt && (
               <button onClick={() => navigate(`/receipt?id=${m.reference_id}`)} className="btn btn-outline btn-sm"><I.Download size={13} /> Ver recibo</button>
             )}
-            {m.kind === 'sale' && (
-              <button onClick={() => navigate(`/stock/return?product=${m.product?.id ?? ''}&store=${m.store?.id ?? ''}&qty=${Math.abs(m.qty)}`)} className="btn btn-outline btn-sm">Registrar devolução</button>
+            {m.kind === 'sale' && canGo('/stock/return') && (
+              (<button onClick={() => navigate(`/stock/return?product=${m.product?.id ?? ''}&store=${m.store?.id ?? ''}&qty=${Math.abs(m.qty)}`)} className="btn btn-outline btn-sm">Registrar devolução</button>)
             )}
           </>
         )}

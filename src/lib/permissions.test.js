@@ -10,6 +10,11 @@ describe("can", () => {
   it("nega nível acima do configurado", () => {
     expect(can("vendedor", "/products", "edit")).toBe(false);
     expect(can("vendedor", "/products", "view")).toBe(true);
+    // Formulário de gravação exige "Pode editar" mesmo pedindo só "view".
+    expect(can("vendedor", "/stock/entry")).toBe(false);
+    expect(can("vendedor", "/stock/history")).toBe(true);
+    expect(can("estoquista", "/stock/entry")).toBe(true);
+    expect(can("vendedor", "/stock/sale")).toBe(true);
   });
 
   it("libera rota pública pra qualquer perfil", () => {

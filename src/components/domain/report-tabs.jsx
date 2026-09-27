@@ -1,5 +1,7 @@
 "use client";
 
+import { useCan } from '@/hooks/use-can';
+
 const REPORT_TABS = [
   { r: '/reports/sales', l: 'Vendas' },
   { r: '/reports/categories', l: 'Categorias e produtos' },
@@ -24,9 +26,10 @@ function withSharedFilters(route) {
 }
 
 export function ReportTabs({ route, navigate }) {
+  const canGo = useCan();
   return (
     <div className="no-bars" style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--bg-sunken)', border: '1px solid var(--line)', borderRadius: 8, alignSelf: 'flex-start', maxWidth: '100%', overflowX: 'auto' }}>
-      {REPORT_TABS.map(t => {
+      {REPORT_TABS.filter(t => canGo(t.r)).map(t => {
         const active = route === t.r;
         return (
           <button key={t.r} onClick={() => navigate(withSharedFilters(t.r))} style={{

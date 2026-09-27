@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { I } from '@/components/icons';
+import { useShell } from '@/components/layout/shell-context';
+import { can } from '@/lib/permissions';
 
 const SHORTCUTS = {
   V: '/stock/sale', E: '/stock/entry', T: '/stock/transfer',
@@ -9,6 +11,9 @@ const SHORTCUTS = {
 };
 
 export function QuickActionsCard({ navigate }) {
+  // Só as ações que o perfil consegue concluir (vendedor não lança entrada).
+  const roleId = useShell()?.user?.roleId;
+  const allowed = (route) => !roleId || can(roleId, route);
   // Atalhos que o card anuncia: tecla solta (sem Ctrl/⌘/Alt) fora de campo
   // de texto leva à ação.
   React.useEffect(() => {
@@ -16,13 +21,14 @@ export function QuickActionsCard({ navigate }) {
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
       const route = SHORTCUTS[e.key.toUpperCase()];
-      if (!route) return;
+      if (!route || !allowed(route)) return;
       e.preventDefault();
       navigate(route);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, roleId]);
 
   const actions = [
     { icon: <I.Plus size={14} />, label: 'Nova venda', sub: 'Saída · balcão', kbd: 'V', r: '/stock/sale' },
@@ -39,7 +45,7 @@ export function QuickActionsCard({ navigate }) {
         <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>Atalhos via teclado</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6 }}>
-        {actions.map((a, i) => (
+        {actions.filter((a) => allowed(a.r)).map((a, i) => (
           <a key={i} href={a.r} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate(a.r); }} style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '9px 10px', border: '1px solid var(--line)',
