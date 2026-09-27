@@ -52,7 +52,7 @@ export function LandingHero({ navigate, trialDays }) {
           </div>
 
           <div style={{ display: 'flex', gap: 20, marginTop: 22, fontSize: 12.5, color: 'var(--fg-muted)', flexWrap: 'wrap' }}>
-            {['Sem cartão de crédito', 'Migração da planilha inclusa', 'Cancela quando quiser'].map(t => (
+            {['Sem cartão de crédito', 'Importação da planilha inclusa', 'Cancela quando quiser'].map(t => (
               <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ color: 'var(--success)', display: 'flex' }}><I.Check size={13} stroke={2.4} /></span> {t}
               </span>

@@ -7,13 +7,12 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Page } from '@/components/ui/page-container';
 import { I } from '@/components/icons';
 import { HubCard } from '@/components/domain/hub-card';
-
-const SUPPORT_EMAIL = 'suporte@stoqmate.com.br';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 const FAQ = [
   ['Como conto estoque sem parar a loja?', 'Abra uma contagem por local e conte pelo celular enquanto atende. A sessão fica aberta e você fecha quando terminar.', '/stock/count'],
   ['Meu fornecedor aumentou o preço. Como repasso?', 'Use o reajuste em lote por fornecedor, categoria ou marca — ele simula a margem de cada SKU antes de aplicar.', '/products/pricing'],
-  ['Falta produto numa loja e sobra na outra. O que faço?', 'A visão da rede aponta os SKUs desbalanceados e sugere a transferência.', '/network'],
+  ['Falta produto numa loja e sobra na outra. O que faço?', 'A ficha do produto mostra o saldo em cada loja. Transfira da que sobra para a que falta — o item só entra no destino depois da conferência.', '/stock/transfer'],
   ['Como sei quais produtos valem a pena?', 'A curva ABC mostra quais SKUs fazem a maior parte da receita e onde o capital está parado.', '/reports/abc'],
   ['Cliente quer trocar sem o cupom. Consigo?', 'Sim, se a venda estiver vinculada a um cliente cadastrado — o histórico serve de comprovante.', '/customers'],
   ['O caixa não fechou. E agora?', 'O fechamento exige justificativa da diferença. O turno seguinte não herda o erro.', '/cash'],

@@ -45,6 +45,9 @@ export const OP_TOKENS = [
 
 export const opCost = (o) => usd((o.cache * TOKEN.cached + o.in * TOKEN.in + o.out * TOKEN.out) / 1e6);
 export const AI_OPS = OP_TOKENS.map(o => ({ ...o, cost: opCost(o), perCredit: opCost(o) / o.credits }));
+// 'price' e 'anomaly' entram no custo do crédito (pior caso), mas ainda não
+// existem no app — a tabela pública mostra só as operações em uso.
+export const LIVE_AI_OPS = AI_OPS.filter(o => !['price', 'anomaly'].includes(o.id));
 
 // Custo do crédito = pior operação por crédito, com folga. Nenhum mix de uso
 // consegue custar mais que isso, então a cota vendida nunca vira prejuízo.
@@ -128,57 +131,53 @@ export const PLANS = [
   },
 ];
 
-// What each plan unlocks. Gating logic:
-//  · manual tools that cost us nothing → open early, they drive adoption
-//  · features that only make sense with several stores → gate by tier, not by cost
-//  · AI that is expensive per call → gated by tier AND metered by credits
+// O que cada plano inclui — só recurso que existe no app. Hoje nada é
+// bloqueado por plano além dos limites que o banco aplica (SKUs, usuários,
+// lojas) e da cota de créditos de IA; por isso todo recurso vale pros três.
+// Se um recurso passar a ser exclusivo de um plano, o bloqueio entra no
+// banco (plans.features + fn_tenant_has_feature) ANTES de a linha mudar aqui.
 export const FEATURE_MATRIX = [
   { g: 'Catálogo e cadastro', rows: [
-    ['Categorias e atributos personalizados', 3, 'ilimitadas', 'ilimitadas', 'Sem isso o produto não serve a nenhum ramo. Nunca travar.'],
-    ['Cadastro manual de produtos', true, true, true, 'Função básica, custo zero.'],
-    ['Importação de planilha (CSV)', true, true, true, 'Remove a maior barreira de entrada. Travar isso mata a ativação.'],
-    ['Código de barras e etiquetas', true, true, true, 'Custo zero, aumenta o uso diário.'],
-    ['Reajuste de preços em lote', false, true, true, 'Só importa com catálogo grande — sinal natural de upgrade.'],
-    ['Histórico de alterações', '3 meses', '24 meses', '5 anos', 'Retenção custa armazenamento: escalona bem.'],
+    ['Categorias e atributos personalizados', true, true, true, 'Sem isso o produto não serve a nenhum ramo.'],
+    ['Cadastro manual de produtos', true, true, true, 'Função básica.'],
+    ['Importação de planilha (CSV)', true, true, true, 'Remove a maior barreira de entrada.'],
+    ['Código de barras e etiquetas', true, true, true, 'Aumenta o uso diário.'],
+    ['Reajuste de preços em lote', true, true, true, 'Catálogo grande.'],
   ]},
   { g: 'Estoque e balcão', rows: [
-    ['PDV de balcão (tablet e desktop)', true, true, true, 'É o coração da operação. Travar espanta o cliente.'],
+    ['PDV de balcão (tablet e desktop)', true, true, true, 'Coração da operação.'],
     ['Entrada, venda, troca, devolução', true, true, true, 'Função básica.'],
-    ['Fechamento de caixa por turno', true, true, true, 'Sem isso a loja não fecha o dia.'],
-    ['Ajuste e contagem de inventário', true, true, true, 'Custo zero.'],
-    ['Conferência pelo celular', false, true, true, 'Diferencial operacional que justifica o tier do meio.'],
-    ['Transferência entre lojas', false, true, true, 'Só existe com 2+ lojas. Gate natural.'],
-    ['Recebimento com conferência cega', false, false, true, 'Controle de rede madura.'],
+    ['Várias formas de pagamento por venda', true, true, true, 'Registro — o dinheiro passa pela maquininha/PIX da loja.'],
+    ['Controle de caixa por turno (opcional)', true, true, true, 'Liga e desliga em Dados da empresa.'],
+    ['Ajuste e contagem de inventário', true, true, true, 'Função básica.'],
+    ['Contagem pelo celular', true, true, true, 'Operação no corredor.'],
+    ['Transferência entre lojas com conferência', true, true, true, 'Precisa de 2+ lojas (limite do plano).'],
   ]},
   { g: 'Compras e fornecedores', rows: [
     ['Cadastro de fornecedores', true, true, true, 'Função básica.'],
-    ['Sugestão de reposição por média', false, true, true, 'Cálculo local, mas é valor de gestão — cobra.'],
-    ['Pedido de compra', false, true, true, 'Acompanha a reposição.'],
-    ['Leitura de XML da NF-e', false, true, true, 'Sem custo de IA (XML é estruturado), mas alto valor percebido.'],
+    ['Sugestão de reposição por venda e estoque mínimo', true, true, true, 'Cálculo local, sem IA.'],
+    ['Pedido de compra e recebimento', true, true, true, 'Acompanha a reposição.'],
   ]},
   { g: 'Relatórios', rows: [
-    ['Vendas e movimentações', true, true, true, 'Relatório essencial retém cliente.'],
-    ['Lucratividade e margem', false, true, true, 'A pergunta que o dono faz. Ancora o tier do meio.'],
-    ['Curva ABC e giro de estoque', false, true, true, 'Decisão de capital.'],
-    ['Visão consolidada da rede', false, false, true, 'Só faz sentido multi-loja.'],
-    ['Exportações agendadas por email', false, true, true, 'Custo marginal baixo.'],
+    ['Vendas e movimentações', true, true, true, 'Relatório essencial.'],
+    ['Lucratividade e margem', true, true, true, 'A pergunta que o dono faz.'],
+    ['Curva ABC e giro de estoque', true, true, true, 'Decisão de capital.'],
+    ['Alertas de ruptura e estoque parado', true, true, true, 'Calculado sobre dado real, sem IA.'],
+    ['Visão consolidada da rede', true, true, true, 'Faz sentido com várias lojas.'],
+    ['Exportação em CSV', true, true, true, 'Os dados são do lojista.'],
   ]},
   { g: 'Inteligência artificial', rows: [
     ['Créditos de IA por mês', '300', '1.500', '3.500', 'Metragem é o que protege a margem.'],
-    ['Pergunta em linguagem natural', true, true, true, '1 crédito. Barato e vira hábito — melhor vitrine da IA.'],
-    ['Classificação no cadastro', true, true, true, '1 crédito. Acelera a ativação do cliente novo.'],
-    ['Enriquecimento de catálogo', false, true, true, '1 crédito/SKU. Em lote, consome rápido.'],
-    ['Leitura de nota fiscal por foto', false, true, true, '5 créditos. Operação mais caro do sistema.'],
-    ['Previsão de demanda', false, true, true, '2 créditos/SKU.'],
-    ['Detecção de anomalia', false, false, true, '6 créditos/varredura. Diária, então é o maior consumo recorrente.'],
-    ['Preço sugerido por elasticidade', false, false, true, '2 créditos/SKU.'],
+    ['Pergunta em linguagem natural', true, true, true, '1 crédito.'],
+    ['Classificação no cadastro', true, true, true, '1 crédito.'],
+    ['Enriquecimento de catálogo', true, true, true, '1 crédito/SKU.'],
+    ['Leitura de nota fiscal por foto', true, true, true, '5 créditos.'],
+    ['Previsão de demanda', true, true, true, '2 créditos/SKU.'],
   ]},
-  { g: 'Conta e suporte', rows: [
-    ['Usuários', '2', '8', 'ilimitados', 'Assento extra custa quase nada, mas sinaliza tamanho.'],
-    ['Lojas', '1', '3', 'ilimitadas', 'Principal eixo de expansão de receita.'],
-    ['Perfis e permissões', 'básico', 'completo', 'completo', 'Rede precisa separar quem vê custo.'],
-    ['Suporte', 'email', 'chat prioritário', 'CSM dedicado', 'Custo de atendimento cresce com o tier.'],
-    ['API de integração', false, false, true, 'Suporte de integração é caro.'],
+  { g: 'Conta', rows: [
+    ['Usuários', '2', '8', 'ilimitados', 'Limite aplicado no convite.'],
+    ['Lojas', '1', '3', 'ilimitadas', 'Limite aplicado ao criar loja.'],
+    ['Perfis de acesso (vendedor, estoque, financeiro, proprietário)', true, true, true, 'Rede precisa separar quem vê custo.'],
   ]},
 ];
 
@@ -206,17 +205,14 @@ export function planEconomics(plan) {
   return { infra, support, gateway, whatsapp, fixed, aiCost, aiCostP50, cogs, gross, margin, p50Cost, p50Margin, breakEvenCredits, abuseHeadroom };
 }
 
-// Plano anual — o mecanismo de fidelidade. Três alavancas, todas com custo
-// controlado: desconto de 2 mensalidades, créditos de IA que acumulam dentro do
-// ciclo (o teto anual é o mesmo, então a margem não muda) e preço travado por 12
-// meses. Reajuste anual do mercado é ~IPCA; travar preço custa pouco e retém muito.
+// Plano anual: desconto de 2 mensalidades e preço fixo durante a vigência.
+// Os créditos de IA renovam todo mês (não acumulam — fn_ai_renew_cycle);
+// crédito de pacote avulso não expira.
 export const ANNUAL = {
   freeMonths: 2,
   perks: [
     ['Dois meses grátis', 'Paga 10, usa 12. É o desconto embutido no preço anual.'],
     ['Preço travado por 12 meses', 'Nenhum reajuste durante a vigência, mesmo se a tabela subir.'],
-    ['Migração e treinamento inclusos', 'Importação do catálogo e uma sessão com a equipe, sem custo.'],
-    ['Boleto liberado', 'Pagamento por boleto ou PIX, além do cartão.'],
   ],
 };
 export function annualSavings(plan, units = 1) {
@@ -224,13 +220,4 @@ export function annualSavings(plan, units = 1) {
   const yearly = plan.yearly * units;
   return { monthly, yearly, save: monthly - yearly, pct: ((monthly - yearly) / monthly) * 100 };
 }
-
-export const MARKET = [
-  { name: 'Stoqmate · Controle', price: 149, us: true, note: 'IA inclusa com cota' },
-  { name: 'GestãoClick · Prata', price: 199, note: 'sem IA' },
-  { name: 'Concorrente A · Intermediário', price: 149.9, note: 'sem IA' },
-  { name: 'Concorrente B · Avançado', price: 279.9, note: 'sem IA' },
-  { name: 'GestãoClick · Ouro', price: 289, note: 'sem IA' },
-  { name: 'GestãoClick · Platina', price: 379, note: 'sem IA' },
-];
 

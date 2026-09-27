@@ -74,11 +74,11 @@ export function LandingFeatures({ navigate }) {
           navigate={navigate}
           eyebrow="Multi-loja"
           title="Falta numa loja, sobra na outra — e agora você vê isso"
-          body="A visão da rede compara todas as unidades por receita, meta, margem e ruptura. E aponta o SKU que está em falta aqui e parado no depósito."
+          body="A visão da rede mostra, lado a lado, receita dos últimos 30 dias, SKUs e itens em estoque de cada unidade, com os itens em ruptura em destaque."
           bullets={[
             'Saldo isolado por unidade, consolidado da rede numa tela',
-            'Transferência com conferência cega no recebimento',
-            'Vendedor consulta o estoque das outras lojas sem sair do balcão',
+            'Transferência com conferência no recebimento e diferença registrada',
+            'A ficha do produto mostra o saldo de cada loja',
           ]}
           cta={{ l: 'Ver a visão da rede', r: '/network' }}
         >
@@ -92,11 +92,11 @@ export function LandingFeatures({ navigate }) {
           navigate={navigate}
           eyebrow="Balcão"
           title="O caixa fecha o dia sem calculadora"
-          body="PDV de toque para tablet, com carrinho de vários itens, desconto por linha e no total, várias formas de pagamento na mesma venda e fechamento de caixa com contagem cega por cédula. O Stoqmate registra como o cliente pagou — o dinheiro continua na maquininha e no PIX da sua loja."
+          body="PDV de toque para tablet, com carrinho de vários itens, desconto por linha e no total, várias formas de pagamento na mesma venda e fechamento de caixa com contagem por cédula. O Stoqmate registra como o cliente pagou — o dinheiro continua na maquininha e no PIX da sua loja."
           bullets={[
             'Alvos de toque de 56 px — feito para dedo, não para mouse',
-            'Contagem cega: o esperado só aparece depois que você conta',
-            'Diferença no caixa exige justificativa e avisa o gestor',
+            'Contagem por cédula, com a diferença calculada na hora',
+            'Diferença no caixa exige justificativa e avisa o proprietário',
           ]}
           cta={{ l: 'Abrir o PDV de balcão', r: '/pos' }}
         >

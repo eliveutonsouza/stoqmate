@@ -17,7 +17,7 @@ export function LandingPricingTeaser({ navigate, plans }) {
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <Eyebrow>Planos</Eyebrow>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <H2 max={560}>Preço por loja. Sem taxa de implantação.</H2>
+          <H2 max={560}>Uma assinatura por rede. Sem taxa de implantação.</H2>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Lead max={520}>Todos os planos incluem créditos de IA. Você vê quanto usou e nunca recebe cobrança surpresa.</Lead>
@@ -43,7 +43,8 @@ export function LandingPricingTeaser({ navigate, plans }) {
         {plans.filter((p) => p.active).map(p => {
           const s = annualSavings(p, 1);
           const shown = annual ? Math.round(p.yearly / 12) : p.monthly;
-          const ben = PLAN_BENEFITS[p.id];
+          // Plano criado no console (fora dos três de fábrica) não tem texto próprio.
+          const ben = PLAN_BENEFITS[p.id] ?? { head: null, items: [] };
           const ink = p.popular ? 'var(--bg)' : 'var(--fg)';
           return (
             <div key={p.id} style={{
@@ -64,7 +65,7 @@ export function LandingPricingTeaser({ navigate, plans }) {
 
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 12 }}>
                 <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.03em' }}>R$ {shown}</span>
-                <span style={{ fontSize: 12.5, opacity: 0.65 }}>/loja/mês</span>
+                <span style={{ fontSize: 12.5, opacity: 0.65 }}>/mês</span>
               </div>
               <div style={{ fontSize: 11.5, marginTop: 4, minHeight: 17, fontFamily: 'var(--font-mono)', opacity: annual ? 0.85 : 0.55 }}>
                 {annual

@@ -9,13 +9,14 @@ import { ShowcaseFrame } from '@/components/ui/showcase-frame';
 import { AIQueue } from '@/features/ai-flows/ai-queue';
 
 export function LandingAI({ navigate }) {
+  // `save` mostra o custo em créditos (tabela de planos) — sem estimativa de
+  // tempo economizado, que não medimos.
   const feats = [
-    { icon: 'Truck', t: 'Leitura de nota por foto', d: 'Fotografe a nota do fornecedor. Os itens vêm casados aos seus SKUs pelo código de barras.', save: '6 min por nota' },
-    { icon: 'Layers', t: 'Classificação no cadastro', d: 'Descreva o produto como veio do fornecedor. Categoria, atributos e unidade vêm preenchidos.', save: '40 s por SKU' },
-    { icon: 'Chart', t: 'Previsão de demanda', d: 'Reposição com sazonalidade, tendência e calendário — não média simples de 30 dias.', save: 'menos ruptura' },
-    { icon: 'Alert', t: 'Detecção de anomalia', d: 'Acha estoque fantasma: saldo certo no sistema, prateleira vazia na loja.', save: 'acha o invisível' },
-    { icon: 'Search', t: 'Pergunta em português', d: '“Quais produtos estão abaixo do mínimo?” A IA monta o filtro, o sistema faz a conta.', save: 'sem relatório' },
-    { icon: 'Credit', t: 'Preço por elasticidade', d: 'Preço sugerido a partir do seu próprio histórico de venda, não de tabela genérica.', save: 'margem real' },
+    { icon: 'Truck', t: 'Leitura de nota por foto', d: 'Fotografe a nota do fornecedor. Os itens vêm casados aos seus SKUs para você conferir antes de dar entrada.', save: '5 créditos por nota' },
+    { icon: 'Layers', t: 'Classificação no cadastro', d: 'Descreva o produto como veio do fornecedor. Categoria e atributos vêm sugeridos.', save: '1 crédito' },
+    { icon: 'Chart', t: 'Previsão de demanda', d: 'Ajusta a reposição com sazonalidade, tendência e calendário comercial — não só a média de 30 dias.', save: '2 créditos por SKU' },
+    { icon: 'Layers', t: 'Enriquecimento de catálogo', d: 'Completa atributos em branco e sugere uma descrição curta, a partir do nome do produto, em lote.', save: '1 crédito por SKU' },
+    { icon: 'Search', t: 'Pergunta em português', d: '“Quais produtos estão abaixo do mínimo?” A IA monta o filtro, o sistema faz a conta.', save: '1 crédito' },
   ];
   return (
     <section style={{ background: 'var(--bg-sunken)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '76px 0' }}>

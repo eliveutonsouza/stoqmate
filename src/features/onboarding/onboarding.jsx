@@ -11,6 +11,7 @@ import { OnbStep4 } from '@/features/onboarding/onb-step4';
 import { OnbStepFiscal } from '@/features/onboarding/onb-step-fiscal';
 import { OnbStep5 } from '@/features/onboarding/onb-step5';
 import { completeOnboardingAction, uploadStoreLogoAction } from '@/features/onboarding/actions';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 export function Onboarding() {
   const navigate = useNavigate();
@@ -105,7 +106,7 @@ export function Onboarding() {
 
         <div style={{ flex: 1 }}></div>
         <div style={{ fontSize: 11, color: 'var(--fg-soft)', lineHeight: 1.55 }}>
-          Precisa de ajuda? Escreva para <a href="mailto:suporte@stoqmate.com.br" style={{ color: 'var(--fg-muted)' }}>suporte@stoqmate.com.br</a>.
+          Precisa de ajuda? Escreva para <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: 'var(--fg-muted)' }}>{SUPPORT_EMAIL}</a>.
         </div>
       </aside>
 

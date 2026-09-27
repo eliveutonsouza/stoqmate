@@ -8,9 +8,7 @@ import { LandingCost } from '@/features/landing/landing-cost';
 import { LandingSegments } from '@/features/landing/landing-segments';
 import { LandingFeatures } from '@/features/landing/landing-features';
 import { LandingAI } from '@/features/landing/landing-ai';
-import { LandingROI } from '@/features/landing/landing-roi';
 import { LandingCompare } from '@/features/landing/landing-compare';
-import { LandingTestimonials } from '@/features/landing/landing-testimonials';
 import { LandingPricingTeaser } from '@/features/landing/landing-pricing-teaser';
 import { LandingFAQ } from '@/features/landing/landing-faq';
 import { LandingFinalCTA } from '@/features/landing/landing-final-cta';
@@ -25,9 +23,7 @@ export function Landing({ plans, trialDays }) {
       <LandingSegments />
       <LandingFeatures navigate={navigate} />
       <LandingAI navigate={navigate} />
-      <LandingROI navigate={navigate} plans={plans} trialDays={trialDays} />
       <LandingCompare navigate={navigate} />
-      <LandingTestimonials />
       <LandingPricingTeaser navigate={navigate} plans={plans} />
       <LandingFAQ />
       <LandingFinalCTA navigate={navigate} trialDays={trialDays} />

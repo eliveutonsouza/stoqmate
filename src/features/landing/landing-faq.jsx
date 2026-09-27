@@ -11,15 +11,15 @@ export function LandingFAQ() {
     ['Serve para o meu ramo?',
      'Provavelmente sim. Você define as categorias e os atributos que fazem sentido no seu negócio — de autopeças a farmácia, de vestuário a alimentos. Existem modelos prontos para os ramos mais comuns, e você pode criar o seu do zero.'],
     ['Vou perder tempo migrando da planilha?',
-     'Uma tarde, no pior caso. O assistente importa planilha em CSV (no Excel: Salvar como › CSV) com mapeamento de colunas automático, mostra as linhas com erro antes de gravar e deixa você corrigir. No plano Controle e acima, nossa equipe faz a migração junto com você por videochamada.'],
+     'Uma tarde, no pior caso. O assistente importa planilha em CSV (no Excel: Salvar como › CSV) com mapeamento de colunas automático, mostra as linhas com erro antes de gravar e deixa você corrigir.'],
     ['O que conta como um SKU?',
-     'Cada combinação de atributos da categoria. Se Vestuário tem Cor e Tamanho, uma camiseta em 6 tamanhos e 2 cores ocupa 12 SKUs. No plano Controle os SKUs são ilimitados.'],
+     'Cada combinação de atributos da categoria. Se Vestuário tem Cor e Tamanho, uma camiseta em 6 tamanhos e 2 cores ocupa 12 SKUs. No Controle e na Rede os SKUs são ilimitados.'],
     ['E se eu acabar os créditos de IA?',
-     'Os recursos de IA pausam até virar o mês, e o resto do sistema continua funcionando normalmente. Avisamos em 80% da cota. Você pode comprar um pacote adicional ou subir de plano — nunca há cobrança automática sem você pedir.'],
+     'Os recursos de IA pausam até a cota renovar, e o resto do sistema continua funcionando normalmente. O saldo de créditos aparece na central de IA. Você pode comprar um pacote adicional ou subir de plano — nunca há cobrança automática sem você pedir.'],
     ['A IA pode errar e estragar meu estoque?',
      'Não, porque ela não escreve no estoque. Toda sugestão passa por uma fila de revisão com a confiança e o motivo à mostra, e só entra depois que uma pessoa aprova. Você define quem tem permissão para aprovar.'],
     ['Meus dados ficam seguros?',
-     'O saldo é isolado por unidade no banco, o acesso é por perfil e todo evento entra no log de alterações. Seus dados não treinam modelos de IA. Você pode exportar catálogo, estoque e movimentações em CSV a qualquer momento — inclusive no dia em que decidir sair.'],
+     'Cada rede só enxerga os próprios dados, o acesso é por perfil e as alterações importantes entram no log de auditoria. Seus dados não treinam modelos de IA. Você pode exportar catálogo, estoque e movimentações em CSV a qualquer momento — inclusive no dia em que decidir sair.'],
   ];
   return (
     <section style={{ ...SECTION, paddingBottom: 80 }}>
@@ -30,7 +30,7 @@ export function LandingFAQ() {
             As três perguntas que todo lojista faz
           </h2>
           <p style={{ margin: '12px 0 0', fontSize: 14, color: 'var(--fg-muted)', lineHeight: 1.6 }}>
-            Não achou a sua? O suporte responde em 14 minutos, em média.
+            Não achou a sua? A central de ajuda, dentro do app, explica cada tela.
           </p>
         </div>
 

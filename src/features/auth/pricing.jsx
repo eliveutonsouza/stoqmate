@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useNavigate } from '@/hooks/use-navigate';
-import { AI_OPS, ANNUAL, FEATURE_MATRIX, MARKET } from '@/lib/plans';
+import { ANNUAL, FEATURE_MATRIX, LIVE_AI_OPS } from '@/lib/plans';
 import { I } from '@/components/icons';
 import { LayoutPublic } from '@/components/layout/layout-public';
 import { AIChip } from '@/features/ai/ai-chip';
@@ -27,7 +27,7 @@ export function Pricing({ plans, trialDays, creditPacks }) {
       <section style={{ maxWidth: 1180, margin: '0 auto', padding: '48px var(--page-pad) 28px', textAlign: 'center' }}>
         <div style={{ fontSize: 11.5, color: 'var(--accent-text)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Planos</div>
         <h1 className="lp-h1" style={{ margin: 0, fontWeight: 600, letterSpacing: '-0.036em', lineHeight: 1.06 }}>
-          Preço por loja.<br/>Créditos de IA inclusos.
+          Uma assinatura por rede.<br/>Créditos de IA inclusos.
         </h1>
         <p style={{ margin: '20px auto 0', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 560, lineHeight: 1.6 }}>
           {trialDays} dias grátis em qualquer plano, sem cartão. Você vê quanto de IA consumiu e nunca recebe
@@ -79,10 +79,10 @@ export function Pricing({ plans, trialDays, creditPacks }) {
                 <div style={{ fontSize: 13, opacity: 0.72, marginTop: 4, minHeight: 38, lineHeight: 1.5 }}>{p.tagline}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 8 }}>
                   <span style={{ fontSize: 'clamp(30px, 7vw, 38px)', fontWeight: 600, letterSpacing: '-0.032em', fontVariantNumeric: 'tabular-nums' }}>R$ {shown}</span>
-                  <span style={{ fontSize: 13, opacity: 0.62 }}>/loja/mês</span>
+                  <span style={{ fontSize: 13, opacity: 0.62 }}>/mês</span>
                 </div>
                 <div style={{ fontSize: 11, opacity: 0.6, marginTop: 3, fontFamily: 'var(--font-mono)', minHeight: 15 }}>
-                  {annual ? `cobrado R$ ${p.yearly.toLocaleString('pt-BR')}/ano por loja` : ''}
+                  {annual ? `cobrado R$ ${p.yearly.toLocaleString('pt-BR')}/ano` : ''}
                 </div>
 
                 <div style={{
@@ -154,7 +154,7 @@ export function Pricing({ plans, trialDays, creditPacks }) {
                 </tr>
               </thead>
               <tbody>
-                {AI_OPS.map(op => (
+                {LIVE_AI_OPS.map(op => (
                   <tr key={op.id}>
                     <td style={{ fontSize: 13 }}>{op.label}</td>
                     <td className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600 }}>
@@ -197,7 +197,7 @@ export function Pricing({ plans, trialDays, creditPacks }) {
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)' }}>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-0.014em' }}>Comparativo completo</h3>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--fg-muted)' }}>
-              O que é operação básica está em todos os planos. O que só existe com várias lojas sobe de tier.
+              Todos os recursos estão nos três planos. O que muda são os limites (SKUs, usuários, lojas) e a cota mensal de créditos de IA.
             </p>
           </div>
           <div className="table-scroll">
@@ -237,45 +237,17 @@ export function Pricing({ plans, trialDays, creditPacks }) {
         </div>
       </section>
 
-      {/* Market anchor */}
-      <section style={{ maxWidth: 1180, margin: '0 auto', padding: '16px var(--page-pad) 40px' }}>
-        <div className="card" style={{ padding: 22 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-0.014em' }}>Onde isso fica no mercado</h3>
-          <p style={{ margin: '5px 0 20px', fontSize: 13, color: 'var(--fg-muted)', lineHeight: 1.55 }}>
-            Sistemas de gestão para varejo no Brasil, plano equivalente ao nosso Controle.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-            {MARKET.map(m => (
-              <div key={m.name}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontSize: 12.5, fontWeight: m.us ? 600 : 400, color: m.us ? 'var(--accent-text)' : 'var(--fg)' }}>
-                    {m.name} <span style={{ color: 'var(--fg-muted)', fontWeight: 400 }}>· {m.note}</span>
-                  </span>
-                  <span style={{ fontSize: 12.5, fontFamily: 'var(--font-mono)', fontWeight: m.us ? 600 : 400 }}>R$ {m.price.toFixed(2).replace('.', ',')}</span>
-                </div>
-                <div style={{ height: 6, background: 'var(--bg-sunken)', borderRadius: 3 }}>
-                  <div style={{
-                    width: `${(m.price / 379) * 100}%`, height: '100%', borderRadius: 3,
-                    background: m.us ? 'var(--accent)' : 'var(--fg-faint)',
-                  }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ */}
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '32px var(--page-pad) 72px' }}>
         <h2 style={{ margin: '0 0 22px', fontSize: 26, fontWeight: 600, letterSpacing: '-0.026em' }}>Dúvidas sobre cobrança</h2>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {[
-            ['Por que o preço é por loja?', 'Porque o custo de operar cresce por loja: mais movimentações, mais estoque, mais usuários e mais chamadas de IA. Cobrar por rede faria a loja pequena pagar pela grande.'],
+            ['O preço é por loja?', 'Não: é uma assinatura por rede, que cobre todas as lojas até o limite do plano (1 no Balcão, 3 no Controle, sem limite na Rede).'],
             ['O que conta como um SKU?', 'Cada combinação de atributos da categoria. Se Vestuário tem Cor e Tamanho, uma camiseta em 6 tamanhos e 2 cores ocupa 12 SKUs. No Controle e na Rede os SKUs são ilimitados.'],
-            ['Os créditos de IA acumulam de um mês para o outro?', 'Não. A cota zera no primeiro dia do ciclo. Créditos de pacote adicional, esses sim, não expiram.'],
-            ['Posso mudar de plano no meio do mês?', 'Sim. Ao subir, a diferença é proporcional e os créditos novos entram na hora. Ao descer, vale no próximo ciclo.'],
-            ['Como funciona o cancelamento?', 'A qualquer momento no painel, sem falar com ninguém. O acesso continua até o fim do ciclo pago e os dados ficam exportáveis por 90 dias.'],
-            ['Tem taxa de implantação ou de migração?', 'Não. A importação do catálogo é do próprio sistema, e no Controle e na Rede a migração assistida por videochamada está inclusa.'],
+            ['Os créditos de IA acumulam de um mês para o outro?', 'Não. A cota do plano renova a cada mês, inclusive no plano anual. Créditos de pacote adicional, esses sim, não expiram.'],
+            ['Posso mudar de plano no meio do mês?', 'Sim, pelo painel de assinatura. A cobrança é ajustada pelo Stripe e a cota de créditos do plano novo entra quando a troca é confirmada.'],
+            ['Como funciona o cancelamento?', 'A qualquer momento no painel, sem falar com ninguém. O acesso continua até o fim do ciclo pago. Antes de sair, exporte catálogo, estoque e movimentações em CSV.'],
+            ['Tem taxa de implantação ou de migração?', 'Não. A importação do catálogo por planilha é feita no próprio sistema.'],
           ].map(([q, a], i) => (
             <div key={i} style={{ padding: '16px 0', borderBottom: '1px solid var(--line)' }}>
               <div style={{ fontSize: 14, fontWeight: 500, letterSpacing: '-0.01em' }}>{q}</div>

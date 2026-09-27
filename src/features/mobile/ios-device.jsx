@@ -1,17 +1,10 @@
 "use client";
 
 import { IOSStatusBar } from '@/features/mobile/ios-status-bar';
-import { IOSNavBar } from '@/features/mobile/ios-nav-bar';
-import { IOSKeyboard } from '@/features/mobile/ios-keyboard';
 
-export function IOSDevice({
-  children, width = 402, height = 874, dark = false,
-  title, keyboard = false,
-}) {
+export function IOSDevice({ children, width = 402, height = 874, dark = false }) {
   return (
-    // data-om-starter: inert presence marker — Claude Design's starter-usage
-    // probe reads it; it renders nothing. Keep it on this root element.
-    <div data-om-starter="ios-frame" style={{
+    <div style={{
       width, height, borderRadius: 48, overflow: 'hidden',
       position: 'relative', background: dark ? '#000' : '#F2F2F7',
       boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
@@ -27,11 +20,9 @@ export function IOSDevice({
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
         <IOSStatusBar dark={dark} />
       </div>
-      {/* nav + content */}
+      {/* content */}
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {title !== undefined && <IOSNavBar title={title} dark={dark} />}
         <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
-        {keyboard && <IOSKeyboard dark={dark} />}
       </div>
       {/* home indicator — always on top */}
       <div style={{
@@ -47,7 +38,3 @@ export function IOSDevice({
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────
-// Keyboard — iOS 26 liquid glass
-// ─────────────────────────────────────────────────────────────

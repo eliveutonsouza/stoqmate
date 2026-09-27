@@ -1,28 +1,28 @@
 "use client";
 
 
+// Lateral do login do console. Regras de acesso que o banco aplica de fato
+// (is_platform_staff, has_platform_role, fn_start_impersonation) — sem
+// painel de status: não há monitor por trás que o alimente.
+const RULES = [
+  ['Só equipe Stoqmate', 'Nenhum perfil de loja alcança o console.'],
+  ['Verificação em duas etapas', 'Sem o segundo fator, a sessão não tem acesso de equipe.'],
+  ['Papel define o que se altera', 'Planos e configurações globais: super admin. Redes: super admin e suporte.'],
+  ['Acesso a rede de cliente é auditado', 'Exige motivo e fica registrado no log de auditoria da rede.'],
+];
+
 export function AuthAdminAside() {
   return (
     <div style={{ maxWidth: 400, width: '100%' }}>
       <div style={{ fontSize: 11, color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>
-        Status da plataforma
+        Console da plataforma
       </div>
-      {[
-        ['API · Storefront', 'ok', '42ms'],
-        ['API · Admin', 'ok', '38ms'],
-        ['Banco · Postgres', 'ok', '12ms'],
-        ['OpenAI · GPT-4o', 'degraded', '1.8s'],
-        ['Stripe · Webhooks', 'ok', '120ms'],
-      ].map(([n, s, l]) => (
-        <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: s === 'ok' ? 'var(--success)' : 'var(--warning)' }}></span>
-          <span style={{ fontSize: 13, flex: 1 }}>{n}</span>
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{l}</span>
+      {RULES.map(([t, d]) => (
+        <div key={t} style={{ padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
+          <div style={{ fontSize: 13 }}>{t}</div>
+          <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 2, lineHeight: 1.5 }}>{d}</div>
         </div>
       ))}
-      <div style={{ fontSize: 11, color: 'var(--fg-soft)', marginTop: 20, lineHeight: 1.6 }}>
-        Sessões administrativas registram IP, dispositivo e toda ação de impersonate no log de auditoria.
-      </div>
     </div>
   );
 }

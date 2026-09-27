@@ -2,8 +2,8 @@
 
 import { useNavigate } from '@/hooks/use-navigate';
 import { LayoutPublic } from '@/components/layout/layout-public';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
-const SUPPORT_EMAIL = 'suporte@stoqmate.com.br';
 const UPDATED_AT = '26 de setembro de 2026';
 
 function LegalLayout({ route, title, intro, sections }) {
