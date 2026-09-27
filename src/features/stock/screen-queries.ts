@@ -8,12 +8,19 @@ import { loadStores } from "@/features/stock/queries";
 
 export async function loadStockSaleScreen() {
   const supabase = await createClient();
-  const [stores, sessionsRes] = await Promise.all([
+  const [stores, sessionsRes, refundRes] = await Promise.all([
     loadStores(),
     supabase.from("cash_sessions").select("id, store_id").eq("status", "open"),
+    // Devolver valor ao cliente é do financeiro (money ≥ 2) — o banco recusa
+    // pros outros; a tela nem oferece.
+    supabase.rpc("has_access", { p_area: "money", p_min_level: 2 }),
   ]);
   const sessions = must(sessionsRes, "stock.sale.cashSessions") ?? [];
-  return { stores, cashSessionByStore: Object.fromEntries(sessions.map((s) => [s.store_id, s.id])) };
+  return {
+    stores,
+    cashSessionByStore: Object.fromEntries(sessions.map((s) => [s.store_id, s.id])),
+    canRefund: must(refundRes, "stock.sale.canRefund") === true,
+  };
 }
 
 export async function loadStockEntryScreen() {

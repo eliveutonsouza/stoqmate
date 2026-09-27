@@ -2320,6 +2320,10 @@ export type Database = {
       }
       fn_ai_debit_credits: { Args: { p_op_id: string | null }; Returns: number }
       fn_ai_refund_credits: { Args: { p_op_id: string | null }; Returns: number }
+      fn_ai_refund_credits_for: {
+        Args: { p_op_id: string | null; p_tenant_id: string | null }
+        Returns: number
+      }
       fn_ai_renew_cycle: { Args: never; Returns: number }
       fn_attribute_sales_report: {
         Args: {
@@ -2369,6 +2373,17 @@ export type Database = {
         Returns: string
       }
       fn_claim_notification_emails: {
+        Args: { p_limit?: number | null }
+        Returns: {
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          recipients: string[]
+          title: string
+        }[]
+      }
+      fn_claim_notification_emails_svc: {
         Args: { p_limit?: number | null }
         Returns: {
           created_at: string
@@ -2675,6 +2690,10 @@ export type Database = {
         Args: { p_error: string | null; p_id: string | null }
         Returns: undefined
       }
+      fn_record_notification_email_result_svc: {
+        Args: { p_error: string | null; p_id: string | null }
+        Returns: undefined
+      }
       fn_register_payments: {
         Args: {
           p_customer_id: string | null
@@ -2930,6 +2949,21 @@ export type Database = {
           p_status: string | null
           p_tokens_in: number | null
           p_tokens_out: number | null
+        }
+        Returns: undefined
+      }
+      fn_write_ai_usage_for: {
+        Args: {
+          p_cost_usd: number | null
+          p_error_message?: string | null
+          p_latency_ms?: number | null
+          p_model: string | null
+          p_op_id: string | null
+          p_status: string | null
+          p_tenant_id: string | null
+          p_tokens_in: number | null
+          p_tokens_out: number | null
+          p_user_id: string | null
         }
         Returns: undefined
       }

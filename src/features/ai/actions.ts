@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { aiCompleteJSON, type AiAttachment } from "@/lib/anthropic";
+import { createClient, getTenantId } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { AI_MODEL, aiCompleteJSON, type AiAttachment } from "@/lib/anthropic";
 import { loadOcrContext } from "@/features/ai-flows/queries";
 import { GENERIC_ERROR, userMessage } from "@/lib/errors";
 import { productCostMap } from "@/lib/supabase/costs";
@@ -41,6 +42,33 @@ async function requireAi(supabase: Awaited<ReturnType<typeof createClient>>, min
   if (!allowed) throw new UserFacingError("Seu perfil não tem permissão para usar IA aqui.");
 }
 
+// Estorno e log de uso não ficam na mão do usuário (ele chamaria o estorno
+// depois de uma resposta boa, ou gravaria custo inventado): o servidor
+// resolve tenant/usuário pela sessão e grava com service_role.
+const NONE = null as unknown as number;
+
+async function aiLedger(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const [tenantId, { data: auth }] = await Promise.all([getTenantId(supabase), supabase.auth.getUser()]);
+  const admin = createServiceRoleClient();
+  const userId = auth.user?.id ?? null;
+  return {
+    ok: async (opId: string, r: { model: string; tokensIn: number; tokensOut: number; costUsd: number }, latencyMs: number) =>
+      logIfFailed("registro de uso", opId, await admin.rpc("fn_write_ai_usage_for", {
+        p_tenant_id: tenantId, p_user_id: userId as string, p_op_id: opId, p_model: r.model,
+        p_tokens_in: r.tokensIn, p_tokens_out: r.tokensOut, p_cost_usd: r.costUsd, p_status: "ok", p_latency_ms: latencyMs,
+      })),
+    failed: async (opId: string, err: unknown, latencyMs: number) => {
+      logIfFailed("estorno", opId, await admin.rpc("fn_ai_refund_credits_for", { p_tenant_id: tenantId, p_op_id: opId }));
+      logIfFailed("registro de uso", opId, await admin.rpc("fn_write_ai_usage_for", {
+        p_tenant_id: tenantId, p_user_id: userId as string, p_op_id: opId, p_model: AI_MODEL,
+        // Sem resposta, sem tokens nem custo (colunas aceitam nulo).
+        p_tokens_in: NONE, p_tokens_out: NONE, p_cost_usd: NONE,
+        p_status: "error", p_error_message: err instanceof Error ? err.message : String(err), p_latency_ms: latencyMs,
+      }));
+    },
+  };
+}
+
 // Débito -> chamada -> log. Se a chamada à Anthropic falhar depois do
 // débito, estorna o crédito (o lojista não paga por uma resposta que não
 // recebeu). Todo op novo (enrich/forecast/ocr) passa por aqui — só muda
@@ -66,35 +94,17 @@ async function runAiOp({
   const supabase = await createClient();
   await requireAi(supabase, minLevel);
 
+  const ledger = await aiLedger(supabase);
   const { error: debitError } = await supabase.rpc("fn_ai_debit_credits", { p_op_id: opId });
   if (debitError) throw new UserFacingError(userMessage(debitError, "ai/debit"));
 
   const startedAt = Date.now();
   try {
     const result = await aiCompleteJSON({ system, prompt, maxTokens, attachment });
-    logIfFailed("registro de uso", opId, await supabase.rpc("fn_write_ai_usage", {
-      p_op_id: opId,
-      p_model: result.model,
-      p_tokens_in: result.tokensIn,
-      p_tokens_out: result.tokensOut,
-      p_cost_usd: result.costUsd,
-      p_status: "ok",
-      p_latency_ms: Date.now() - startedAt,
-    }));
+    await ledger.ok(opId, result, Date.now() - startedAt);
     return result.data;
   } catch (err) {
-    logIfFailed("estorno", opId, await supabase.rpc("fn_ai_refund_credits", { p_op_id: opId }));
-    const message = err instanceof Error ? err.message : String(err);
-    logIfFailed("registro de uso", opId, await supabase.rpc("fn_write_ai_usage", {
-      p_op_id: opId,
-      p_model: "claude-haiku-4-5-20251001",
-      p_tokens_in: null,
-      p_tokens_out: null,
-      p_cost_usd: null,
-      p_status: "error",
-      p_error_message: message,
-      p_latency_ms: Date.now() - startedAt,
-    }));
+    await ledger.failed(opId, err, Date.now() - startedAt);
     throw err;
   }
 }
@@ -138,6 +148,7 @@ async function askInventoryActionImpl(question: string) {
     };
   });
 
+  const ledger = await aiLedger(supabase);
   const { error: debitError } = await supabase.rpc("fn_ai_debit_credits", { p_op_id: "ask" });
   if (debitError) throw new UserFacingError(userMessage(debitError, "ai/debit"));
 
@@ -178,17 +189,9 @@ Devolva JSON com a especificação. Nada de contagens ou valores calculados.
       maxTokens: 700,
     });
     spec = result.data as FilterSpec;
-    logIfFailed("registro de uso", "ask", await supabase.rpc("fn_write_ai_usage", {
-      p_op_id: "ask", p_model: result.model, p_tokens_in: result.tokensIn, p_tokens_out: result.tokensOut,
-      p_cost_usd: result.costUsd, p_status: "ok", p_latency_ms: Date.now() - startedAt,
-    }));
+    await ledger.ok("ask", result, Date.now() - startedAt);
   } catch (err) {
-    logIfFailed("estorno", "ask", await supabase.rpc("fn_ai_refund_credits", { p_op_id: "ask" }));
-    const message = err instanceof Error ? err.message : String(err);
-    logIfFailed("registro de uso", "ask", await supabase.rpc("fn_write_ai_usage", {
-      p_op_id: "ask", p_model: "claude-haiku-4-5-20251001", p_tokens_in: null, p_tokens_out: null,
-      p_cost_usd: null, p_status: "error", p_error_message: message, p_latency_ms: Date.now() - startedAt,
-    }));
+    await ledger.failed("ask", err, Date.now() - startedAt);
     throw err;
   }
 

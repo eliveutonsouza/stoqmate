@@ -20,7 +20,7 @@ import { stockReturnAction } from '@/features/stock/actions';
 
 const REASONS = ['Desistência do cliente', 'Defeito de fabricação', 'Variação incorreta', 'Produto errado entregue', 'Arrependimento (7 dias)'];
 
-export function StockReturn({ stores, cashSessionByStore = {}, initialProduct, initialStoreId, initialQty }) {
+export function StockReturn({ stores, cashSessionByStore = {}, canRefund = false, initialProduct, initialStoreId, initialQty }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
   const [storeId, setStoreId] = React.useState(initialStoreId ?? defaultStoreId);
@@ -110,6 +110,7 @@ export function StockReturn({ stores, cashSessionByStore = {}, initialProduct, i
         </Field>
       </FormCard>
 
+      {canRefund ? (
       <FormCard title="Valor ao cliente" desc="Registra se a loja devolveu dinheiro, PIX ou crédito — o valor sai pela ferramenta da loja." cols={1}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
           <input type="checkbox" checked={refundOn} onChange={(e) => setRefundOn(e.target.checked)} /> Devolver valor ao cliente
@@ -127,6 +128,13 @@ export function StockReturn({ stores, cashSessionByStore = {}, initialProduct, i
           </>
         )}
       </FormCard>
+      ) : (
+        <FormCard title="Valor ao cliente" cols={1}>
+          <div style={{ fontSize: 12.5, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
+            Devolver dinheiro, PIX ou crédito ao cliente fica com quem cuida do financeiro. Aqui você registra a volta do item; o acerto é feito por um gestor financeiro ou pelo proprietário.
+          </div>
+        </FormCard>
+      )}
 
       <FormCard title="Destino do item" cols={1}>
         {[

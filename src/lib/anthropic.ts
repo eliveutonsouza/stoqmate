@@ -2,7 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { TOKEN } from "@/lib/plans";
 
-const MODEL = "claude-haiku-4-5-20251001";
+export const AI_MODEL = "claude-haiku-4-5-20251001";
 
 // Arquivo que acompanha o prompt (foto ou PDF de nota fiscal), em base64.
 export type AiAttachment =
@@ -39,7 +39,7 @@ export async function aiCompleteJSON({
   }
   content.push({ type: "text", text: prompt });
   const message = await client.messages.create({
-    model: MODEL,
+    model: AI_MODEL,
     max_tokens: maxTokens,
     system: `${system}\n\nResponda APENAS com o JSON pedido, sem texto antes ou depois, sem markdown.`,
     messages: [{ role: "user", content }],
@@ -63,7 +63,7 @@ export async function aiCompleteJSON({
 
   return {
     data,
-    model: MODEL,
+    model: AI_MODEL,
     tokensIn: message.usage.input_tokens,
     tokensOut: message.usage.output_tokens,
     costUsd,

@@ -4,8 +4,8 @@ import { loadMovementProduct, loadStockSaleScreen } from '@/features/stock/scree
 export default async function Page({ searchParams }: { searchParams: Promise<{ product?: string; store?: string; qty?: string }> }) {
   const { product, store, qty } = await searchParams;
   // Caixas abertos: devolver em dinheiro sai do caixa da loja.
-  const [{ stores, cashSessionByStore }, initialProduct] = await Promise.all([loadStockSaleScreen(), loadMovementProduct(product)]);
+  const [{ stores, cashSessionByStore, canRefund }, initialProduct] = await Promise.all([loadStockSaleScreen(), loadMovementProduct(product)]);
   const initialQty = Math.max(1, Math.min(9999, Math.floor(Number(qty)) || 1));
   const initialStoreId = stores.some((s) => s.id === store) ? store : null;
-  return <StockReturn stores={stores} cashSessionByStore={cashSessionByStore} initialProduct={initialProduct} initialStoreId={initialStoreId} initialQty={initialQty} />;
+  return <StockReturn stores={stores} cashSessionByStore={cashSessionByStore} canRefund={canRefund} initialProduct={initialProduct} initialStoreId={initialStoreId} initialQty={initialQty} />;
 }

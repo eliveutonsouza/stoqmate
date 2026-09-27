@@ -39,6 +39,7 @@ const PASS_THROUGH = [
   "troca sem diferença",
   "feche os caixas abertos",
   "valor de pagamento precisa",
+  "seu perfil não pode devolver valores",
 ];
 
 export function paymentFriendlyError(message: string): string | null {

@@ -24,7 +24,7 @@ const priceOf = (p) => Number(p?.effective_price ?? p?.sale_price ?? 0);
 
 const REASONS = ['Variação incorreta', 'Cor diferente da desejada', 'Defeito de fabricação', 'Desistência do cliente', 'Presente trocado'];
 
-export function StockExchange({ stores, cashSessionByStore = {} }) {
+export function StockExchange({ stores, cashSessionByStore = {}, canRefund = false }) {
   const navigate = useNavigate();
   const defaultStoreId = useDefaultStoreId(stores);
   const [storeId, setStoreId] = React.useState(defaultStoreId);
@@ -46,7 +46,7 @@ export function StockExchange({ stores, cashSessionByStore = {} }) {
   const diff = delivered && returned ? Math.round((priceOf(delivered) - priceOf(returned)) * qty * 100) / 100 : 0;
   // Acerto: diferença a favor da loja é cobrada; a favor do cliente, a loja
   // escolhe se devolve (e como) — política de "só troca" deixa desligado.
-  const settle = diff > 0 || (diff < 0 && refundOn);
+  const settle = diff > 0 || (diff < 0 && refundOn && canRefund);
   const cashBlocked = cashControl && !cashSessionByStore[storeId] ? 'Caixa fechado' : null;
   const payError = settle ? validatePayments(payments, Math.abs(diff), { customerId: customer?.id ?? null, refund: diff < 0 }) : null;
   const canSave = returned && delivered && returned.id !== delivered.id && qty > 0 && !insufficient && !payError;
@@ -121,8 +121,8 @@ export function StockExchange({ stores, cashSessionByStore = {} }) {
 
       {returned && delivered && diff !== 0 && (
         <FormCard title={diff > 0 ? 'Cliente paga a diferença' : 'Diferença a favor do cliente'}
-          desc={diff > 0 ? `Registre como o cliente pagou ${brl(diff)}.` : `A loja pode devolver ${brl(-diff)} — ou manter só a troca.`} cols={1}>
-          {diff < 0 && (
+          desc={diff > 0 ? `Registre como o cliente pagou ${brl(diff)}.` : canRefund ? `A loja pode devolver ${brl(-diff)} — ou manter só a troca.` : `Devolver ${brl(-diff)} ao cliente fica com quem cuida do financeiro; aqui a troca sai sem acerto.`} cols={1}>
+          {diff < 0 && canRefund && (
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
               <input type="checkbox" checked={refundOn} onChange={(e) => setRefundOn(e.target.checked)} /> Devolver a diferença ao cliente
             </label>
