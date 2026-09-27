@@ -371,7 +371,7 @@ export async function loadPlatformSettings() {
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const [settingsRes, spendRes] = await Promise.all([
-    supabase.from("platform_settings").select("trial_days, ai_spend_ceiling_usd, ai_alert_pct, updated_at").maybeSingle(),
+    supabase.from("platform_settings").select("trial_days, trial_ai_credits, ai_spend_ceiling_usd, ai_alert_pct, updated_at").maybeSingle(),
     supabase.rpc("fn_platform_ai_spend", { p_since: monthStart.toISOString() }),
   ]);
   const settings = must(settingsRes, "admin/queries.loadPlatformSettings.settings");
@@ -401,6 +401,7 @@ export async function loadPlatformSettings() {
   return {
     settings: {
       trialDays: settings?.trial_days ?? 14,
+      trialAiCredits: settings?.trial_ai_credits ?? 100,
       aiSpendCeilingUsd: Number(settings?.ai_spend_ceiling_usd ?? 2500),
       aiAlertPct: settings?.ai_alert_pct ?? 80,
       updatedAt: settings?.updated_at ?? null,

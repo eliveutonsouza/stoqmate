@@ -25,6 +25,10 @@ Portões inegociáveis antes de considerar qualquer mudança pronta:
    aplicado — sempre um arquivo novo com `create or replace function`/
    `alter table`. Editar uma migration aplicada quebra o histórico entre
    ambientes (dev local vs. produção) de forma silenciosa.
+   Exceção única, autorizada pelo desenvolvedor em 2026-09-27:
+   `20260924130805_security_hardening.sql` — o `revoke` de
+   `rls_auto_enable()` virou condicional (a função só existe no Supabase em
+   nuvem e o `db reset` num banco novo quebrava). Não muda o schema.
 8. Toda função Postgres `security definer` que recebe id vindo do cliente
    valida esse id contra `auth_tenant_id()` antes de usar — ela roda com
    privilégio elevado, então pular essa checagem é abrir brecha

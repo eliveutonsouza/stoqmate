@@ -18,6 +18,7 @@ const SOON = { disabled: true, title: 'Em breve' };
 export function AdminSettings({ settings, aiMonth, integrations }) {
   const navigate = useNavigate();
   const [trialDays, setTrialDays] = React.useState(settings.trialDays);
+  const [trialCredits, setTrialCredits] = React.useState(settings.trialAiCredits);
   const [ceiling, setCeiling] = React.useState(settings.aiSpendCeilingUsd);
   const [alertPct, setAlertPct] = React.useState(settings.aiAlertPct);
   const [feedback, setFeedback] = React.useState(null);
@@ -27,7 +28,7 @@ export function AdminSettings({ settings, aiMonth, integrations }) {
     setFeedback(null);
     startTransition(async () => {
       const result = await updatePlatformSettingsAction({
-        trialDays: Number(trialDays), aiSpendCeilingUsd: Number(ceiling), aiAlertPct: Number(alertPct),
+        trialDays: Number(trialDays), trialAiCredits: Number(trialCredits), aiSpendCeilingUsd: Number(ceiling), aiAlertPct: Number(alertPct),
       });
       setFeedback(result?.error ? { tone: 'danger', text: result.error } : { tone: 'success', text: 'Configurações salvas.' });
     });
@@ -50,6 +51,9 @@ export function AdminSettings({ settings, aiMonth, integrations }) {
         <FormCard title="Cadastro" desc="Vale para toda rede nova criada a partir de agora (signup e console)." cols={2} footer={saveButton}>
           <Field label="Duração do trial" span={1} hint="Entre 1 e 90 dias.">
             <TextInput mono type="number" min={1} max={90} value={trialDays} onChange={(e) => setTrialDays(e.target.value)} suffix="dias" />
+          </Field>
+          <Field label="Créditos de IA no trial" span={1} hint="Teto durante o teste (plano menor vale o menor). Ao assinar, entra a cota cheia do plano.">
+            <TextInput mono type="number" min={0} max={100000} value={trialCredits} onChange={(e) => setTrialCredits(e.target.value)} suffix="créditos" />
           </Field>
           <Field label="Limites por plano" span={1} hint="SKUs, usuários, lojas e cota de IA ficam no catálogo de planos.">
             <button onClick={() => navigate('/admin/plans')} className="btn btn-outline btn-sm" style={{ height: 36 }}>Abrir planos</button>

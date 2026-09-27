@@ -169,19 +169,23 @@ export async function updateTenantAction(input: {
 }
 
 export async function updatePlatformSettingsAction(input: {
-  trialDays: number; aiSpendCeilingUsd: number; aiAlertPct: number;
+  trialDays: number; trialAiCredits: number; aiSpendCeilingUsd: number; aiAlertPct: number;
 }) {
   const supabase = await staffClient(["super_admin"]);
   if (!supabase) return { error: NO_ACCESS };
   if (!Number.isInteger(input.trialDays) || input.trialDays < 1 || input.trialDays > 90) {
     return { error: "Duração do trial deve ficar entre 1 e 90 dias." };
   }
+  if (!Number.isInteger(input.trialAiCredits) || input.trialAiCredits < 0 || input.trialAiCredits > 100_000) {
+    return { error: "Créditos de IA do trial: número inteiro entre 0 e 100.000." };
+  }
   if (!(input.aiSpendCeilingUsd >= 0 && input.aiSpendCeilingUsd <= 1_000_000)) return { error: "Teto de gasto inválido." };
   if (!Number.isInteger(input.aiAlertPct) || input.aiAlertPct < 1 || input.aiAlertPct > 100) {
     return { error: "Alerta deve ficar entre 1% e 100%." };
   }
   const { error } = await supabase.rpc("fn_platform_settings_update", {
-    p_trial_days: input.trialDays, p_ai_spend_ceiling_usd: input.aiSpendCeilingUsd, p_ai_alert_pct: input.aiAlertPct,
+    p_trial_days: input.trialDays, p_trial_ai_credits: input.trialAiCredits,
+    p_ai_spend_ceiling_usd: input.aiSpendCeilingUsd, p_ai_alert_pct: input.aiAlertPct,
   });
   if (error) return { error: friendlyError(error) };
   revalidatePath("/admin/settings");

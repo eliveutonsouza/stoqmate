@@ -1055,6 +1055,7 @@ export type Database = {
           ai_alert_pct: number
           ai_spend_ceiling_usd: number
           id: boolean
+          trial_ai_credits: number
           trial_days: number
           updated_at: string
           updated_by: string | null
@@ -1063,6 +1064,7 @@ export type Database = {
           ai_alert_pct?: number
           ai_spend_ceiling_usd?: number
           id?: boolean
+          trial_ai_credits?: number
           trial_days?: number
           updated_at?: string
           updated_by?: string | null
@@ -1071,6 +1073,7 @@ export type Database = {
           ai_alert_pct?: number
           ai_spend_ceiling_usd?: number
           id?: boolean
+          trial_ai_credits?: number
           trial_days?: number
           updated_at?: string
           updated_by?: string | null
@@ -2319,6 +2322,13 @@ export type Database = {
         Returns: undefined
       }
       fn_ai_debit_credits: { Args: { p_op_id: string | null }; Returns: number }
+      fn_ai_quota_for: {
+        Args: {
+          p_plan_id: string | null
+          p_status: Database["public"]["Enums"]["tenant_status"] | null
+        }
+        Returns: number
+      }
       fn_ai_refund_credits: { Args: { p_op_id: string | null }; Returns: number }
       fn_ai_refund_credits_for: {
         Args: { p_op_id: string | null; p_tenant_id: string | null }
@@ -2608,14 +2618,24 @@ export type Database = {
         }
         Returns: undefined
       }
-      fn_platform_settings_update: {
-        Args: {
-          p_ai_alert_pct: number | null
-          p_ai_spend_ceiling_usd: number | null
-          p_trial_days: number | null
-        }
-        Returns: undefined
-      }
+      fn_platform_settings_update:
+        | {
+            Args: {
+              p_ai_alert_pct: number | null
+              p_ai_spend_ceiling_usd: number | null
+              p_trial_days: number | null
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_ai_alert_pct: number | null
+              p_ai_spend_ceiling_usd: number | null
+              p_trial_ai_credits: number | null
+              p_trial_days: number | null
+            }
+            Returns: undefined
+          }
       fn_platform_tenant_usage: {
         Args: never
         Returns: {

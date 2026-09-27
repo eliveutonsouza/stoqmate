@@ -30,7 +30,8 @@ export function Pricing({ plans, trialDays, creditPacks }) {
           Uma assinatura por rede.<br/>Créditos de IA inclusos.
         </h1>
         <p style={{ margin: '20px auto 0', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 560, lineHeight: 1.6 }}>
-          {trialDays} dias grátis em qualquer plano, sem cartão. Você vê quanto de IA consumiu e nunca recebe
+          {trialDays} dias grátis em qualquer plano, sem cartão. No teste a IA vem com uma cota menor pra
+          experimentar; a cota do plano entra quando você assina. Você vê quanto consumiu e nunca recebe
           cobrança automática por excedente.
         </p>
 

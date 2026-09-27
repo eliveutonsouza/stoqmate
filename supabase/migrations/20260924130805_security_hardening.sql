@@ -43,7 +43,17 @@ grant execute on function public.fn_ai_renew_cycle() to service_role;
 
 -- Funções internas (trigger/event trigger) não são RPC.
 revoke execute on function public.fn_enforce_sku_limit() from authenticated;
-revoke execute on function public.rls_auto_enable() from authenticated;
+-- rls_auto_enable() é criada pelo Supabase só nos projetos em nuvem: num
+-- banco novo (db reset local) ela não existe e o revoke direto quebrava a
+-- migration. Exceção autorizada ao append-only (ver .spec/quality-gates.md,
+-- item 7) — em produção nada muda, esta versão já estava aplicada.
+do $$
+begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+             where n.nspname = 'public' and p.proname = 'rls_auto_enable') then
+    execute 'revoke execute on function public.rls_auto_enable() from authenticated';
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- 2. profiles: só colunas de perfil são editáveis pelo próprio usuário
