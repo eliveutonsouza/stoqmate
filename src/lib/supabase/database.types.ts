@@ -2618,24 +2618,15 @@ export type Database = {
         }
         Returns: undefined
       }
-      fn_platform_settings_update:
-        | {
-            Args: {
-              p_ai_alert_pct: number | null
-              p_ai_spend_ceiling_usd: number | null
-              p_trial_days: number | null
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_ai_alert_pct: number | null
-              p_ai_spend_ceiling_usd: number | null
-              p_trial_ai_credits: number | null
-              p_trial_days: number | null
-            }
-            Returns: undefined
-          }
+      fn_platform_settings_update: {
+        Args: {
+          p_ai_alert_pct: number | null
+          p_ai_spend_ceiling_usd: number | null
+          p_trial_ai_credits: number | null
+          p_trial_days: number | null
+        }
+        Returns: undefined
+      }
       fn_platform_tenant_usage: {
         Args: never
         Returns: {
