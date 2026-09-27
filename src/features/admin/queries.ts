@@ -31,7 +31,7 @@ export async function loadTenantDetail(tenantId: string) {
   const supabase = await requireStaff();
   const admin = createServiceRoleClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const [tenantRes, storesRes, storeUsersRes, auditLogRes, skuCountRes, openSessionRes] = await Promise.all([
+  const [tenantRes, storesRes, storeUsersRes, auditLogRes, skuCountRes, openSessionRes, liveSubRes] = await Promise.all([
     admin.from("tenants").select("id, name, cnpj, plan_id, status, legal_name, segment, city, state, trial_ends_at, created_at").eq("id", tenantId).maybeSingle(),
     admin.from("stores").select("id, name, type").eq("tenant_id", tenantId).order("name"),
     admin.from("store_users").select("user_id, role, status, joined_at").eq("tenant_id", tenantId),
@@ -41,7 +41,9 @@ export async function loadTenantDetail(tenantId: string) {
     supabase.from("impersonation_sessions").select("id, reason, ticket_ref, started_at")
       .eq("tenant_id", tenantId).eq("staff_user_id", user?.id ?? "").is("ended_at", null)
       .order("started_at", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).neq("status", "canceled"),
   ]);
+  must(liveSubRes, "admin.loadTenantDetail.liveSub");
   const openSession = must(openSessionRes, "admin.loadTenantDetail.openSession");
   const tenant = must(tenantRes, "admin.loadTenantDetail.tenant");
   const stores = must(storesRes, "admin.loadTenantDetail.stores");
@@ -61,15 +63,19 @@ export async function loadTenantDetail(tenantId: string) {
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
   const phoneById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.phone || ""]));
   const emailById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, u.email]));
+  // Convidado que nunca entrou ainda não é "ativo" de verdade.
+  const signedInById = Object.fromEntries((authUsers?.users ?? []).map((u) => [u.id, Boolean(u.last_sign_in_at)]));
   const owner = (storeUsers ?? []).find((u) => u.role === "proprietario");
 
   return {
     tenant,
     owner: owner ? { name: nameById[owner.user_id] || "", email: emailById[owner.user_id] || "", phone: phoneById[owner.user_id] || "" } : null,
     stores: stores ?? [],
-    users: (storeUsers ?? []).map((u) => ({ ...u, name: nameById[u.user_id] || "Usuário", email: emailById[u.user_id] || "" })),
+    users: (storeUsers ?? []).map((u) => ({ ...u, name: nameById[u.user_id] || "Usuário", email: emailById[u.user_id] || "", signedIn: signedInById[u.user_id] ?? false })),
     auditLog: (auditLog ?? []).map((a) => ({ ...a, who: nameById[a.created_by ?? ""] || emailById[a.created_by ?? ""] || "—" })),
     skuCount: skuCount ?? 0,
+    // Com assinatura no Stripe, o plano vem de lá (webhook) — o console não troca.
+    hasStripeSubscription: (liveSubRes.count ?? 0) > 0,
     openSession,
   };
 }

@@ -98,7 +98,7 @@ export function AdminSettings({ settings, aiMonth, integrations }) {
         <FormCard title="Branding da plataforma" desc="Em breve — ainda sem efeito no produto." cols={2}>
           <Field label="Nome do produto" span={1}><TextInput {...SOON} defaultValue="Stoqmate" /></Field>
           <Field label="Domínio principal" span={1}><TextInput {...SOON} mono defaultValue="stoqmate.com.br" /></Field>
-          <Field label="Email remetente" span={1} hint="Nenhum email transacional próprio é enviado hoje."><TextInput {...SOON} type="email" placeholder="Não configurado" /></Field>
+          <Field label="Email remetente" span={1} hint="Avisos da loja saem pelo Resend (EMAIL_FROM no deploy); convite e senha, pelo Supabase Auth."><TextInput {...SOON} type="email" placeholder="Não configurado" /></Field>
           <Field label="Logo da plataforma" span={1}>
             <button {...SOON} className="btn btn-outline btn-sm" style={{ height: 36 }}>Substituir logo</button>
           </Field>

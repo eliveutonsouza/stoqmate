@@ -37,7 +37,7 @@ export function AdminSubscriptionDetail({ detail }) {
         sub={`Plano ${plan?.name ?? tenant.plan_id}${sub ? ` · ${sub.cycle === 'yearly' ? 'anual' : 'mensal'}` : ''}${sub?.stripe_subscription_id ? ` · Stripe ${sub.stripe_subscription_id}` : ''}`}
         actions={(
           <>
-            <button onClick={() => navigate(`/admin/stores/edit?id=${tenant.id}`)} className="btn btn-outline btn-sm">Trocar plano</button>
+            <button onClick={() => navigate(`/admin/stores/edit?id=${tenant.id}`)} className="btn btn-outline btn-sm">Editar rede</button>
             <button onClick={() => navigate(`/admin/stores/detail?id=${tenant.id}`)} className="btn btn-primary btn-sm">Abrir rede</button>
           </>
         )}

@@ -58,7 +58,7 @@ export function AdminStores({ tenants }) {
           )}
         </div>
         <div style={{ marginTop: 12, fontSize: 11, color: 'var(--fg-muted)' }}>
-          MRR e status de assinatura chegam quando a cobrança (Stripe) estiver configurada.
+          Valor e status da assinatura de cada rede ficam em Assinaturas.
         </div>
       </div>
     </AdminShell>

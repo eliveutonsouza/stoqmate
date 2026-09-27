@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { requireStaff } from "@/features/admin/queries";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
-import { textError } from "@/lib/validation";
+import { formatCnpj, isCnpj, isEmail, textError } from "@/lib/validation";
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -76,6 +76,13 @@ export async function createTenantAction(input: {
   ownerName: string; ownerEmail: string;
 }) {
   const supabase = await requireStaff();
+  // Valida antes do convite: o convite dispara email e cria usuário no Auth.
+  const invalid = textError(input.name, "o nome da rede", 2, 120)
+    ?? (/^[a-z0-9][a-z0-9-]{1,40}$/.test(input.subdomain ?? "") ? null : "Subdomínio: só letras minúsculas, números e hífen.")
+    ?? (input.cnpj?.trim() && !isCnpj(input.cnpj) ? "CNPJ inválido — confira os 14 dígitos." : null)
+    ?? textError(input.ownerName, "o nome do responsável", 2, 120)
+    ?? (isEmail(input.ownerEmail) ? null : "Informe um email válido pro responsável.");
+  if (invalid) return { error: invalid };
 
   const admin = createServiceRoleClient();
   const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(input.ownerEmail, {
@@ -84,7 +91,7 @@ export async function createTenantAction(input: {
   if (inviteErr) return { error: userMessage(inviteErr, "admin/actions") };
 
   const { data: tenantId, error } = await supabase.rpc("fn_platform_create_tenant", {
-    p_name: input.name, p_subdomain: input.subdomain, p_cnpj: input.cnpj || null, p_plan_id: input.planId,
+    p_name: input.name.trim(), p_subdomain: input.subdomain, p_cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : null, p_plan_id: input.planId,
     p_legal_name: input.legalName || null, p_segment: input.segment || null, p_city: input.city || null, p_state: input.state || null,
     p_owner_user_id: invited.user.id, p_owner_full_name: input.ownerName,
   });
@@ -104,8 +111,21 @@ export async function updateTenantAction(input: {
   legalName: string; segment: string; city: string; state: string;
 }) {
   const supabase = await requireStaff();
+  const invalid = textError(input.name, "o nome da rede", 2, 120)
+    ?? (input.cnpj?.trim() && !isCnpj(input.cnpj) ? "CNPJ inválido — confira os 14 dígitos." : null);
+  if (invalid) return { error: invalid };
+  // Plano de rede com assinatura ativa é o do Stripe: trocar só aqui divergia
+  // da cobrança e o próximo webhook desfazia.
+  const admin = createServiceRoleClient();
+  const [{ data: current }, { count: liveSubs }] = await Promise.all([
+    admin.from("tenants").select("plan_id").eq("id", input.tenantId).maybeSingle(),
+    admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("tenant_id", input.tenantId).neq("status", "canceled"),
+  ]);
+  if (current && current.plan_id !== input.planId && (liveSubs ?? 0) > 0) {
+    return { error: "Esta rede tem assinatura no Stripe — a troca de plano é feita pela assinatura (portal do cliente), não aqui." };
+  }
   const { error } = await supabase.rpc("fn_platform_update_tenant", {
-    p_tenant_id: input.tenantId, p_name: input.name, p_cnpj: input.cnpj || null, p_plan_id: input.planId, p_status: input.status,
+    p_tenant_id: input.tenantId, p_name: input.name.trim(), p_cnpj: input.cnpj?.trim() ? formatCnpj(input.cnpj) : null, p_plan_id: input.planId, p_status: input.status,
     p_legal_name: input.legalName || null, p_segment: input.segment || null, p_city: input.city || null, p_state: input.state || null,
   });
   if (error) return { error: friendlyError(error) };

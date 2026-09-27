@@ -122,12 +122,12 @@ export function AdminStoreForm({ mode = 'new', plans, detail }) {
             </FormCard>
 
             <FormCard title="Plano e assinatura" cols={1}>
-              <Field label="Plano" required>
+              <Field label="Plano" required hint={detail?.hasStripeSubscription ? 'Rede com assinatura no Stripe: o plano segue a assinatura e muda pelo portal do cliente.' : null}>
                 <div className={plans.length === 1 ? undefined : `g${Math.min(plans.length, 5)}`} style={{ gap: 8 }}>
                   {plans.map((p) => {
                     const on = planId === p.id;
                     return (
-                      <button key={p.id} onClick={() => setPlanId(p.id)} style={{
+                      <button key={p.id} type="button" disabled={Boolean(detail?.hasStripeSubscription)} onClick={() => setPlanId(p.id)} style={{
                         display: 'flex', flexDirection: 'column', gap: 4, textAlign: 'left',
                         padding: '11px 13px',
                         border: '1px solid ' + (on ? 'var(--accent)' : 'var(--line)'),

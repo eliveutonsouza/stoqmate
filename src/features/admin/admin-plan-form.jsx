@@ -31,7 +31,9 @@ export function AdminPlanForm({ mode = 'new', plan }) {
     skus: plan?.limits?.skus ?? '', users: plan?.limits?.users ?? '', stores: plan?.limits?.stores ?? '', cats: plan?.limits?.cats ?? '',
   });
   const [popular, setPopular] = React.useState(plan?.popular ?? false);
-  const [active, setActive] = React.useState(plan?.active ?? true);
+  // Plano novo nasce fora do site: sem preço no Stripe ninguém consegue assinar,
+  // e o catálogo é o mesmo que a produção lê.
+  const [active, setActive] = React.useState(plan?.active ?? false);
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
@@ -65,7 +67,7 @@ export function AdminPlanForm({ mode = 'new', plan }) {
     <AdminShell breadcrumb={['Planos', editing ? 'Editar plano' : 'Novo plano']} navigate={navigate}>
       <PageHeader
         title={editing ? `Editar ${plan.name}` : 'Novo plano'}
-        sub="Este catálogo é o que /admin/subscriptions vai referenciar quando a assinatura (Stripe) estiver configurada."
+        sub="Plano novo começa desativado. Ative só depois de criar os preços no Stripe — o site público lê este catálogo."
       />
       <Page>
         <div className="split-aside" style={{ '--aside': '320px' }}>

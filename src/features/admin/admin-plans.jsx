@@ -53,7 +53,7 @@ export function AdminPlans({ plans }) {
           )}
         </div>
         <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
-          MRR e migração entre planos aparecem aqui quando a assinatura (Stripe) estiver configurada.
+          Receita por plano e assinaturas ativas ficam em Assinaturas.
         </div>
       </Page>
     </AdminShell>

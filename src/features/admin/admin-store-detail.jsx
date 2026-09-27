@@ -13,6 +13,7 @@ import { SelectInput } from '@/components/ui/select-input';
 import { TextInput } from '@/components/ui/text-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { endImpersonationAction, startImpersonationAction } from '@/features/admin/actions';
+import { ROLES } from '@/lib/permissions';
 
 const PLAN_NAMES = { balcao: 'Balcão', controle: 'Controle', rede: 'Rede' };
 const REASONS = ['Atendimento de ticket de suporte', 'Investigação de bug reportado', 'Demonstração comercial', 'Migração de dados assistida'];
@@ -68,7 +69,9 @@ export function AdminStoreDetail({ detail, subscription }) {
       <PageHeader
         title={t.name}
         sub={`${PLAN_NAMES[t.plan_id] ?? t.plan_id} · ${stores.length} ${stores.length === 1 ? 'loja' : 'lojas'} · cliente desde ${new Date(t.created_at).toLocaleDateString('pt-BR')}`}
-        actions={openSession ? (
+        actions={<>
+          <button onClick={() => navigate(`/admin/stores/edit?id=${t.id}`)} className="btn btn-outline btn-sm">Editar rede</button>
+          {openSession ? (
           <button onClick={endAccess} disabled={pending} className="btn btn-outline btn-sm">
             <I.Logout size={13} /> {pending ? 'Encerrando…' : 'Encerrar acesso de suporte'}
           </button>
@@ -77,6 +80,7 @@ export function AdminStoreDetail({ detail, subscription }) {
             <I.Logout size={13} style={{ transform: 'scaleX(-1)' }} /> Registrar acesso de suporte
           </button>
         )}
+        </>}
       />
       <Page>
         {openSession && (
@@ -160,8 +164,10 @@ export function AdminStoreDetail({ detail, subscription }) {
                   <tr key={u.user_id}>
                     <td style={{ fontSize: 13, fontWeight: 500 }}>{u.name}</td>
                     <td style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{u.email}</td>
-                    <td style={{ fontSize: 12 }}>{u.role}</td>
-                    <td>{u.status === 'active' ? <span className="badge badge-success"><span className="badge-dot"></span> Ativo</span> : <span className="badge">{u.status}</span>}</td>
+                    <td style={{ fontSize: 12 }}>{ROLES.find((r) => r.id === u.role)?.name ?? u.role}</td>
+                    <td>{u.status !== 'active' ? <span className="badge">{u.status}</span>
+                      : u.signedIn ? <span className="badge badge-success"><span className="badge-dot"></span> Ativo</span>
+                      : <span className="badge badge-warning">Convite pendente</span>}</td>
                   </tr>
                 ))}
               </tbody>
