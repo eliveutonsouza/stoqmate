@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
+import { isUuid, textError } from "@/lib/validation";
+
+const isDate = (v: unknown): v is string => typeof v === "string" && v.length <= 40 && !Number.isNaN(Date.parse(v));
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -32,12 +35,21 @@ export async function createPromotionAction(input: {
   endsAt: string | null;
   untilStock: boolean;
 }) {
+  const nameError = textError(input.name, "um nome para a promoção", 2, 80);
+  if (nameError) return { error: nameError };
+  if (!["product", "category", "store"].includes(input.scopeType)) return { error: "Abrangência inválida." };
+  if (input.scopeType === "product" && !isUuid(input.productId)) return { error: "Selecione o produto." };
+  if (input.scopeType === "category" && !isUuid(input.categoryId)) return { error: "Selecione a categoria." };
+  if (typeof input.promoPrice !== "number" || !Number.isFinite(input.promoPrice) || input.promoPrice <= 0) return { error: "O preço promocional precisa ser positivo." };
+  if (!isDate(input.startsAt)) return { error: "Data de início inválida." };
+  if (input.endsAt != null && !isDate(input.endsAt)) return { error: "Data de término inválida." };
+  if (input.endsAt != null && Date.parse(input.endsAt) < Date.parse(input.startsAt)) return { error: "O término precisa ser depois do início." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_promotion_create", {
-    p_name: input.name,
+    p_name: input.name.trim(),
     p_scope_type: input.scopeType,
-    p_product_id: input.productId,
-    p_category_id: input.categoryId,
+    p_product_id: input.scopeType === "product" ? input.productId : null,
+    p_category_id: input.scopeType === "category" ? input.categoryId : null,
     p_promo_price: input.promoPrice,
     p_starts_at: input.startsAt,
     p_ends_at: input.endsAt,
@@ -57,6 +69,7 @@ export async function createPromotionAction(input: {
 }
 
 export async function setPromotionActiveAction(input: { id: string; active: boolean }) {
+  if (!isUuid(input.id) || typeof input.active !== "boolean") return { error: "Promoção não encontrada." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_promotion_set_active", { p_id: input.id, p_active: input.active });
   if (error) return { error: friendlyError(error) };

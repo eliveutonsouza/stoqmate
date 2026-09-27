@@ -2,12 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, getTenantId } from "@/lib/supabase/server";
-import { userMessage } from "@/lib/errors";
+import { NOT_FOUND_ERROR, userMessage } from "@/lib/errors";
 import { isUuid } from "@/lib/validation";
+import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
 
 export async function applyEnrichmentAction(items: { sku: string; filled: Record<string, string | null> }[]) {
+  if (!Array.isArray(items) || !items.length || items.length > 500
+    || items.some((i) => typeof i?.sku !== "string" || !i.filled || typeof i.filled !== "object"
+      || Object.entries(i.filled).some(([k, v]) => k.length > 40 || (v != null && (typeof v !== "string" || v.length > 60))))) {
+    return { error: "Sugestões inválidas. Rode o enriquecimento de novo." };
+  }
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
+  const tenantId = await getTenantId(supabase).catch(() => null);
+  if (!tenantId) return { error: "Sessão expirada. Entre de novo." };
 
   const { data: products, error: readError } = await supabase
     .from("products")
@@ -24,14 +31,17 @@ export async function applyEnrichmentAction(items: { sku: string; filled: Record
     const product = productBySku[item.sku];
     if (!product) continue;
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("products")
       .update({ attrs: { ...(product.attrs as Record<string, string>), ...values } })
-      .eq("id", product.id);
+      .eq("id", product.id)
+      .select("id");
     if (error) return { error: userMessage(error, "ai-flows/actions") };
+    if (!updated?.length) return { error: NOT_FOUND_ERROR };
   }
 
   revalidatePath("/products");
+  revalidatePath("/products/detail");
   revalidatePath("/ai/enrich");
   return { ok: true };
 }
@@ -111,6 +121,7 @@ export async function confirmInvoiceEntryAction(input: {
     return { error: userMessage(error, "ai-flows/confirmInvoice", { "duplicate key": "Um SKU novo da nota já existe no catálogo — marque-o como existente." }) };
   }
 
+  scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/products");
   return { ok: true };

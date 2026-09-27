@@ -4,10 +4,13 @@ import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseEnv } from "@/lib/supabase/env";
-import { isEmail, isUuid } from "@/lib/validation";
+import { allUuids, isEmail, isUuid } from "@/lib/validation";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
 import { paymentFriendlyError, sanitizePayments, type PaymentInput } from "@/lib/payment-errors";
 import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
+
+const isMoney = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 10_000_000;
+const tooLong = (v: unknown, max: number) => typeof v === "string" && v.length > max;
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -40,8 +43,17 @@ export async function confirmSaleAction(input: {
   orderDiscountAmount: number;
   discountApprovalId?: string | null;
 }) {
+  if (!isUuid(input.storeId)) return { error: "Selecione a unidade." };
   if (input.customerId && !isUuid(input.customerId)) return { error: "Cliente inválido." };
   if (input.discountApprovalId && !isUuid(input.discountApprovalId)) return { error: "Aprovação de desconto inválida." };
+  if (!Array.isArray(input.items) || !input.items.length || input.items.length > 200
+    || !allUuids(input.items.map((i) => i?.productId))
+    || !input.items.every((i) => Number.isInteger(i.qty) && i.qty > 0 && i.qty <= 100_000 && isMoney(i.unitPrice)
+      && typeof i.discountPct === "number" && i.discountPct >= 0 && i.discountPct <= 100)) {
+    return { error: "Itens do carrinho inválidos. Recarregue a tela e tente de novo." };
+  }
+  if (!isMoney(input.orderDiscountAmount)) return { error: "Desconto inválido." };
+  if (tooLong(input.notes, 1000)) return { error: "Observações longas demais (máximo 1.000 caracteres)." };
   const payments = sanitizePayments(input.payments);
   if (!payments) return { error: "Formas de pagamento inválidas." };
   const supabase = await createClient();
@@ -59,10 +71,14 @@ export async function confirmSaleAction(input: {
   revalidatePath("/stock/history");
   revalidatePath("/products");
   revalidatePath("/cash");
+  revalidatePath("/customers");
+  revalidatePath("/customers/detail");
   return { id: data as string };
 }
 
 export async function cashSessionOpenAction(input: { storeId: string; openingAmount: number }) {
+  if (!isUuid(input.storeId)) return { error: "Selecione a unidade." };
+  if (!isMoney(input.openingAmount)) return { error: "Valor de abertura inválido." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_cash_session_open", {
     p_store_id: input.storeId, p_opening_amount: input.openingAmount,
@@ -73,6 +89,10 @@ export async function cashSessionOpenAction(input: { storeId: string; openingAmo
 }
 
 export async function cashSessionMovementAction(input: { sessionId: string; kind: "supply" | "withdraw"; amount: number; note: string }) {
+  if (!isUuid(input.sessionId)) return { error: "Sessão de caixa não encontrada ou já fechada." };
+  if (input.kind !== "supply" && input.kind !== "withdraw") return { error: "Tipo de movimento inválido." };
+  if (!isMoney(input.amount) || input.amount <= 0) return { error: "Informe um valor maior que zero." };
+  if (tooLong(input.note, 300)) return { error: "Observação longa demais (máximo 300 caracteres)." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_cash_session_movement", {
     p_session_id: input.sessionId, p_kind: input.kind, p_amount: input.amount, p_note: input.note || null,
@@ -85,6 +105,9 @@ export async function cashSessionMovementAction(input: { sessionId: string; kind
 export async function cashSessionCloseAction(input: {
   sessionId: string; countedAmount: number; discrepancyReason: string; discrepancyDetail: string;
 }) {
+  if (!isUuid(input.sessionId)) return { error: "Sessão de caixa não encontrada ou já fechada." };
+  if (!isMoney(input.countedAmount)) return { error: "Valor contado inválido." };
+  if (tooLong(input.discrepancyReason, 120) || tooLong(input.discrepancyDetail, 1000)) return { error: "Texto longo demais." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_cash_session_close", {
     p_session_id: input.sessionId, p_counted_amount: input.countedAmount,

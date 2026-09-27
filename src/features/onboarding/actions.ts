@@ -5,7 +5,7 @@ import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { CATEGORY_TEMPLATES } from "@/lib/category-templates";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
-import { isOwnStorageUrl } from "@/lib/validation";
+import { isOwnStorageUrl, textError } from "@/lib/validation";
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -21,7 +21,8 @@ export async function uploadStoreLogoAction(formData: FormData) {
   if ("error" in checked) return checked;
 
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
+  const tenantId = await getTenantId(supabase).catch(() => null);
+  if (!tenantId) return { error: "Sessão expirada. Entre de novo." };
   const path = uploadPath(tenantId, checked.ext);
 
   const { error } = await supabase.storage.from("store-branding").upload(path, file as File);
@@ -40,6 +41,10 @@ export async function completeOnboardingAction(input: {
 }) {
   if (input.logoUrl && !isOwnStorageUrl(input.logoUrl, "store-branding")) return { error: "Logo inválido — envie a imagem pelo botão de upload." };
   if (!/^#[0-9a-fA-F]{6}$/.test(input.brandColor ?? "")) return { error: "Cor inválida." };
+  const nameError = textError(input.storeName, "o nome da loja", 2, 120);
+  if (nameError) return { error: nameError };
+  if (!Array.isArray(input.categoryIds) || input.categoryIds.some((id) => typeof id !== "string")) return { error: "Categorias inválidas." };
+  if (typeof input.fiscalMode !== "string" || input.fiscalMode.length > 40) return { error: "Escolha uma opção de emissão fiscal válida." };
   const supabase = await createClient();
   const templates = CATEGORY_TEMPLATES.filter((c) => input.categoryIds.includes(c.id)).map((c) => ({
     name: c.name, code: c.code, icon: c.icon, color: c.color, unit: c.unit, unit_plural: c.unitPlural,
@@ -47,7 +52,7 @@ export async function completeOnboardingAction(input: {
   }));
 
   const { error } = await supabase.rpc("fn_complete_onboarding", {
-    p_store_name: input.storeName,
+    p_store_name: input.storeName.trim(),
     p_logo_url: input.logoUrl,
     p_brand_color: input.brandColor,
     p_fiscal_mode: input.fiscalMode,

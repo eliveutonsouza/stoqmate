@@ -94,7 +94,8 @@ export async function loadPosData() {
     supabase.from("categories").select("id, name, icon, color, code").order("name"),
     supabase
       .from("products")
-      .select("id, sku, brand, name, attrs, sale_price, category:categories(id, name, icon, color, code), stock_balances(store_id, qty)")
+      .select("id, sku, barcode, brand, name, attrs, sale_price, category:categories(id, name, icon, color, code), stock_balances(store_id, qty)")
+      .eq("active", true)
       .order("name")
       .limit(60),
     supabase.from("cash_sessions").select("id, store_id").eq("status", "open"),

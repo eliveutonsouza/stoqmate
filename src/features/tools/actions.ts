@@ -6,29 +6,12 @@ import { last30Days } from "@/features/reports/queries";
 import { paymentLabel } from "@/lib/payment-methods";
 import type { SalesReportJson } from "@/features/reports/queries";
 import { movementCostMap, productCostMap } from "@/lib/supabase/costs";
+import { fetchAll } from "@/lib/supabase/fetch-all";
+import { movementLabel } from "@/lib/movement-labels";
 
 export type ExportKind = "catalog" | "sales" | "profit" | "movements" | "suppliers" | "count-sheet";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
-type Page<T> = { data: T[] | null; error: { message: string } | null };
-
-// O PostgREST devolve no máximo 1000 linhas por chamada; "catálogo completo"
-// cortava em silêncio. Busca em páginas até esgotar.
-async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<Page<T>>): Promise<T[]> {
-  const size = 1000;
-  const out: T[] = [];
-  for (let from = 0; ; from += size) {
-    const { data, error } = await page(from, from + size - 1);
-    if (error) throw new Error(error.message);
-    out.push(...(data ?? []));
-    if (!data || data.length < size) return out;
-  }
-}
-
-const MOVEMENT_LABEL: Record<string, string> = {
-  sale: "Venda", entry: "Entrada", return: "Devolução", exchange: "Troca",
-  transfer: "Transferência", adjustment: "Ajuste", count: "Contagem",
-};
 
 const one = <T,>(v: unknown) => (Array.isArray(v) ? v[0] : v) as T | null;
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR") : "");
@@ -110,7 +93,7 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
       rows: data.map((m) => {
         const product = one<{ sku: string; name: string }>(m.product);
         return [
-          date(m.created_at), one<{ name: string }>(m.store)?.name, MOVEMENT_LABEL[m.kind] ?? m.kind,
+          date(m.created_at), one<{ name: string }>(m.store)?.name, movementLabel(m.kind),
           product?.sku, product?.name, m.qty, m.before_qty, m.after_qty, costById.get(m.id) ?? null, m.unit_price, m.reason, m.justification,
         ];
       }),

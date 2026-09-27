@@ -6,6 +6,7 @@ import { AI_MODEL, aiCompleteJSON, type AiAttachment } from "@/lib/anthropic";
 import { loadOcrContext } from "@/features/ai-flows/queries";
 import { GENERIC_ERROR, userMessage } from "@/lib/errors";
 import { productCostMap } from "@/lib/supabase/costs";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 // Server Action que lança tem a mensagem trocada por um texto genérico no
 // build de produção — o lojista nunca via "créditos insuficientes". Toda
@@ -117,20 +118,21 @@ async function askInventoryActionImpl(question: string) {
   await requireAi(supabase, 1);
 
   const categoriesRes = await supabase.from("categories").select("name").order("name");
-  const productsRes = await supabase
+  // Catálogo inteiro (paginado): a resposta conta/soma sobre todos os
+  // produtos, e o PostgREST cortava em 1000 linhas.
+  const products = await fetchAll((from, to) => supabase
     .from("products")
     .select(`
       id, sku, brand, name, attrs, sale_price, min_stock,
       category:categories(name), supplier:suppliers(name), default_location:locations(code),
       stock_balances(qty)
     `)
-    .eq("active", true);
+    .eq("active", true)
+    .order("id")
+    .range(from, to));
   // Sem catálogo não há o que consultar — e o crédito ainda não foi debitado.
-  if (categoriesRes.error || productsRes.error) {
-    throw new Error(`catálogo: ${categoriesRes.error?.message ?? productsRes.error?.message}`);
-  }
+  if (categoriesRes.error) throw new Error(`catálogo: ${categoriesRes.error.message}`);
   const categories = categoriesRes.data;
-  const products = productsRes.data;
   const costById = await productCostMap(supabase, (products ?? []).map((p) => p.id));
 
   const rows = (products ?? []).map((p) => {

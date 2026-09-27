@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { checkImage, uploadPath } from "@/lib/image-upload";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseEnv } from "@/lib/supabase/env";
 import { limitKindFromError } from "@/lib/plan-limits";
 import { userMessage } from "@/lib/errors";
-import { formatCnpj, isCnpj, isOwnStorageUrl, textError } from "@/lib/validation";
+import { formatCnpj, isCnpj, isEmail, isOwnStorageUrl, isUuid, passwordError, textError } from "@/lib/validation";
 import type { Database } from "@/lib/supabase/database.types";
 
 type StoreRole = Database["public"]["Enums"]["store_role"];
@@ -19,10 +21,13 @@ export async function inviteTeamMemberAction(input: {
   role: string;
 }) {
   if (!isStoreRole(input.role)) return { error: "Perfil inválido." };
+  if (!isEmail(input.email)) return { error: "Email inválido." };
+  const nameError = textError(input.fullName, "o nome", 2, 120);
+  if (nameError) return { error: nameError };
   const supabase = await createClient();
   const { data: token, error } = await supabase.rpc("fn_team_invite", {
-    p_email: input.email,
-    p_full_name: input.fullName,
+    p_email: input.email.trim().toLowerCase(),
+    p_full_name: input.fullName.trim(),
     p_role: input.role,
   });
   if (error) {
@@ -37,6 +42,7 @@ export async function inviteTeamMemberAction(input: {
 
 export async function setTeamRoleAction(userId: string, role: string) {
   if (!isStoreRole(role)) return { error: "Perfil inválido." };
+  if (!isUuid(userId)) return { error: "Usuário não encontrado." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_team_set_role", { p_user_id: userId, p_role: role });
   if (error) return { error: userMessage(error, "settings/actions") };
@@ -46,6 +52,7 @@ export async function setTeamRoleAction(userId: string, role: string) {
 }
 
 export async function removeTeamMemberAction(userId: string) {
+  if (!isUuid(userId)) return { error: "Usuário não encontrado." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_team_remove", { p_user_id: userId });
   if (error) return { error: userMessage(error, "settings/actions") };
@@ -55,6 +62,7 @@ export async function removeTeamMemberAction(userId: string) {
 }
 
 export async function cancelInviteAction(inviteId: string) {
+  if (!isUuid(inviteId)) return { error: "Convite não encontrado." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_team_cancel_invite", { p_invite_id: inviteId });
   if (error) return { error: userMessage(error, "settings/actions") };
@@ -64,6 +72,7 @@ export async function cancelInviteAction(inviteId: string) {
 }
 
 export async function updateFiscalModeAction(mode: string) {
+  if (typeof mode !== "string" || !mode || mode.length > 40) return { error: "Modo fiscal inválido." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_update_fiscal_mode", { p_mode: mode });
   if (error) {
@@ -100,7 +109,8 @@ export async function updateCompanyDataAction(input: { name: string; cnpj: strin
     if (error.message.includes("not authorized")) return { error: "Seu perfil não tem permissão para mudar os dados da empresa." };
     return { error: userMessage(error, "settings/actions") };
   }
-  revalidatePath("/settings/store-data");
+  // Nome da rede aparece no cabeçalho de todas as telas.
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -151,29 +161,38 @@ export async function updateProfileAction(input: { fullName: string; phone: stri
   if (input.avatarUrl && !isOwnStorageUrl(input.avatarUrl, "avatars")) return { error: "Foto inválida — envie a imagem pelo botão de upload." };
   const nameError = textError(input.fullName, "seu nome", 2, 120);
   if (nameError) return { error: nameError };
+  if ((input.phone?.length ?? 0) > 30) return { error: "Telefone longo demais." };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada." };
 
   const { error } = await supabase
     .from("profiles")
-    .update({ full_name: input.fullName, phone: input.phone || null, avatar_url: input.avatarUrl })
+    .update({ full_name: input.fullName.trim(), phone: input.phone?.trim() || null, avatar_url: input.avatarUrl })
     .eq("id", user.id);
   if (error) return { error: userMessage(error, "settings/actions") };
 
-  revalidatePath("/profile");
-  revalidatePath("/dashboard");
+  // Nome e foto aparecem no menu do usuário em todas as telas.
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function changePasswordAction(input: { currentPassword: string; newPassword: string }) {
+  const invalid = passwordError(input.newPassword);
+  if (invalid) return { error: invalid };
+  if (typeof input.currentPassword !== "string" || !input.currentPassword) return { error: "Informe a senha atual." };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return { error: "Sessão expirada." };
-  if (input.newPassword.length < 8) return { error: "A nova senha precisa ter pelo menos 8 caracteres." };
 
-  const { error: checkError } = await supabase.auth.signInWithPassword({ email: user.email, password: input.currentPassword });
+  // Confere a senha atual num client isolado (sem cookie): logar de novo no
+  // client da sessão trocava o cookie por uma sessão nova, aal1 — quem tem
+  // 2FA perdia o segundo fator no meio do uso.
+  const { url, anonKey } = supabaseEnv();
+  const probe = createSupabaseClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { error: checkError } = await probe.auth.signInWithPassword({ email: user.email, password: input.currentPassword });
   if (checkError) return { error: "Senha atual incorreta." };
+  await probe.auth.signOut({ scope: "local" }).catch(() => undefined);
 
   const { error } = await supabase.auth.updateUser({ password: input.newPassword });
   if (error) return { error: userMessage(error, "settings/actions") };
@@ -184,9 +203,13 @@ export async function enrollMfaAction() {
   const supabase = await createClient();
   // Cadastro abandonado (QR aberto e nunca confirmado) deixa um fator
   // "unverified" que bloqueia o próximo enroll — limpa antes.
-  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
+  if (listError) return { error: userMessage(listError, "settings/enrollMfa.list") };
   for (const f of factors?.all ?? []) {
-    if (f.factor_type === "totp" && f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+    if (f.factor_type === "totp" && f.status === "unverified") {
+      const { error: cleanError } = await supabase.auth.mfa.unenroll({ factorId: f.id });
+      if (cleanError) return { error: userMessage(cleanError, "settings/enrollMfa.cleanup") };
+    }
   }
   const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
   if (error) return { error: userMessage(error, "settings/actions") };
@@ -194,16 +217,19 @@ export async function enrollMfaAction() {
 }
 
 export async function verifyMfaAction(input: { factorId: string; code: string }) {
+  if (!isUuid(input.factorId)) return { error: "Cadastro do 2FA expirado. Comece de novo." };
+  if (typeof input.code !== "string" || !/^\d{6}$/.test(input.code.trim())) return { error: "Digite os 6 números do aplicativo." };
   const supabase = await createClient();
   const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: input.factorId });
   if (challengeError) return { error: userMessage(challengeError, "settings/actions") };
-  const { error } = await supabase.auth.mfa.verify({ factorId: input.factorId, challengeId: challenge.id, code: input.code });
+  const { error } = await supabase.auth.mfa.verify({ factorId: input.factorId, challengeId: challenge.id, code: input.code.trim() });
   if (error) return { error: "Código inválido." };
   revalidatePath("/profile");
   return { ok: true };
 }
 
 export async function unenrollMfaAction(factorId: string) {
+  if (!isUuid(factorId)) return { error: "Fator de 2FA não encontrado." };
   const supabase = await createClient();
   const { error } = await supabase.auth.mfa.unenroll({ factorId });
   if (error) return { error: userMessage(error, "settings/actions") };

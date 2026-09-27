@@ -2549,6 +2549,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_platform_ai_spend: { Args: { p_since: string | null }; Returns: number }
       fn_platform_cohort_retention: {
         Args: never
         Returns: {
@@ -2614,6 +2615,15 @@ export type Database = {
           p_trial_days: number | null
         }
         Returns: undefined
+      }
+      fn_platform_tenant_usage: {
+        Args: never
+        Returns: {
+          movements_30d: number
+          skus: number
+          tenant_id: string
+          users: number
+        }[]
       }
       fn_platform_trial_days: { Args: never; Returns: number }
       fn_platform_update_tenant: {

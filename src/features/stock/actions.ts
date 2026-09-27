@@ -5,7 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
 import { scheduleNotificationEmails } from "@/features/network-admin/notification-emails";
 import { paymentFriendlyError, sanitizePayments, type PaymentInput } from "@/lib/payment-errors";
-import { isUuid } from "@/lib/validation";
+import { allUuids, isUuid } from "@/lib/validation";
+
+// O banco refaz as regras (saldo, tenant, permissão); aqui barra o lixo
+// antes: id que não é uuid, quantidade quebrada, lista gigante.
+const isQty = (n: unknown): n is number => Number.isInteger(n) && (n as number) > 0 && (n as number) <= 1_000_000;
+const isCount = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 1_000_000;
+const MAX_ITEMS = 500;
+const tooLong = (v: unknown, max: number) => typeof v === "string" && v.length > max;
 
 function friendlyError(error: DbErrorLike) {
   const message = error?.message ?? "";
@@ -20,6 +27,7 @@ function friendlyError(error: DbErrorLike) {
     "transferência já conferida": "Esta transferência já foi conferida.",
     "informe ao menos um item contado": "Conte pelo menos um item antes de fechar.",
     "itens devolvido e entregue precisam ser diferentes": "Escolha um item diferente do que foi devolvido.",
+    "item repetido na conferência": "O mesmo item apareceu duas vezes na conferência. Recarregue a tela e confira de novo.",
   };
   for (const [key, friendly] of Object.entries(known)) {
     if (message.includes(key)) return friendly;
@@ -35,6 +43,11 @@ function friendlyError(error: DbErrorLike) {
 export async function stockEntryAction(input: {
   storeId: string; productId: string; qty: number; unitCost: number; notes: string; locationId: string;
 }) {
+  if (!isUuid(input.storeId) || !isUuid(input.productId)) return { error: "Selecione a unidade e o produto." };
+  if (input.locationId && !isUuid(input.locationId)) return { error: "Local inválido." };
+  if (!isQty(input.qty)) return { error: "A quantidade precisa ser um número inteiro maior que zero." };
+  if (typeof input.unitCost !== "number" || !Number.isFinite(input.unitCost) || input.unitCost < 0) return { error: "Custo unitário inválido." };
+  if (tooLong(input.notes, 1000)) return { error: "Observações longas demais (máximo 1.000 caracteres)." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_stock_entry", {
     p_store_id: input.storeId, p_product_id: input.productId, p_qty: input.qty,
@@ -43,17 +56,21 @@ export async function stockEntryAction(input: {
   if (error) return { error: friendlyError(error) };
   scheduleNotificationEmails();
   if (input.locationId) {
-    const { error: locError } = await supabase.from("products").update({ default_location_id: input.locationId }).eq("id", input.productId);
-    if (locError) return { id: data as string, warning: "Entrada gravada, mas o local padrão do produto não foi atualizado." };
+    const { data: moved, error: locError } = await supabase.from("products").update({ default_location_id: input.locationId }).eq("id", input.productId).select("id");
+    if (locError || !moved?.length) return { id: data as string, warning: "Entrada gravada, mas o local padrão do produto não foi atualizado." };
   }
   revalidatePath("/stock/history");
   revalidatePath("/products");
+  revalidatePath("/products/detail");
   return { id: data as string };
 }
 
 export async function stockAdjustmentAction(input: {
   storeId: string; productId: string; countedQty: number; reason: string; justification: string;
 }) {
+  if (!isUuid(input.storeId) || !isUuid(input.productId)) return { error: "Selecione a unidade e o produto." };
+  if (!isCount(input.countedQty)) return { error: "Quantidade contada inválida." };
+  if (tooLong(input.reason, 120) || tooLong(input.justification, 1000)) return { error: "Texto longo demais." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_stock_adjustment", {
     p_store_id: input.storeId, p_product_id: input.productId, p_counted_qty: input.countedQty,
@@ -71,6 +88,12 @@ export async function transferDispatchAction(input: {
   items: { productId: string; qty: number }[];
   reason: string; carrier: string; notes: string;
 }) {
+  if (!isUuid(input.originStoreId) || !isUuid(input.destinationStoreId)) return { error: "Selecione a origem e o destino." };
+  if (!Array.isArray(input.items) || !input.items.length || input.items.length > MAX_ITEMS
+    || !allUuids(input.items.map((i) => i?.productId)) || !input.items.every((i) => isQty(i.qty))) {
+    return { error: "Itens da transferência inválidos." };
+  }
+  if (tooLong(input.reason, 120) || tooLong(input.carrier, 120) || tooLong(input.notes, 1000)) return { error: "Texto longo demais." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_transfer_dispatch", {
     p_origin_store_id: input.originStoreId, p_destination_store_id: input.destinationStoreId,
@@ -80,6 +103,8 @@ export async function transferDispatchAction(input: {
   if (error) return { error: friendlyError(error) };
   scheduleNotificationEmails();
   revalidatePath("/stock/history");
+  revalidatePath("/stock/transfer");
+  revalidatePath("/stock/transfer/receive");
   revalidatePath("/products");
   return { id: data as string };
 }
@@ -90,6 +115,12 @@ export async function transferReceiveAction(input: {
   discrepancyReason: string;
   discrepancyDetail: string;
 }) {
+  if (!isUuid(input.transferId)) return { error: "Transferência não encontrada." };
+  if (!Array.isArray(input.items) || input.items.length > MAX_ITEMS
+    || !allUuids(input.items.map((i) => i?.transferItemId)) || !input.items.every((i) => isCount(i.qtyReceived))) {
+    return { error: "Itens da conferência inválidos." };
+  }
+  if (tooLong(input.discrepancyReason, 120) || tooLong(input.discrepancyDetail, 1000)) return { error: "Texto longo demais." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_transfer_receive", {
     p_transfer_id: input.transferId,
@@ -101,6 +132,7 @@ export async function transferReceiveAction(input: {
   scheduleNotificationEmails();
   revalidatePath("/stock/history");
   revalidatePath("/stock/transfer");
+  revalidatePath("/stock/transfer/receive");
   revalidatePath("/products");
   return { ok: true };
 }
@@ -113,7 +145,10 @@ export async function stockExchangeAction(input: {
   qty: number; reason: string; notes: string;
   customerId?: string | null; payments?: PaymentInput[];
 }) {
+  if (!isUuid(input.storeId) || !isUuid(input.returnedProductId) || !isUuid(input.deliveredProductId)) return { error: "Selecione a unidade e os dois itens." };
+  if (!isQty(input.qty)) return { error: "A quantidade precisa ser um número inteiro maior que zero." };
   if (input.customerId && !isUuid(input.customerId)) return { error: "Cliente inválido." };
+  if (tooLong(input.reason, 120) || tooLong(input.notes, 1000)) return { error: "Texto longo demais." };
   const payments = sanitizePayments(input.payments);
   if (!payments) return { error: "Formas de pagamento inválidas." };
   const supabase = await createClient();
@@ -128,6 +163,8 @@ export async function stockExchangeAction(input: {
   revalidatePath("/stock/history");
   revalidatePath("/products");
   revalidatePath("/cash");
+  revalidatePath("/customers");
+  revalidatePath("/customers/detail");
   return { id: data as string };
 }
 
@@ -137,7 +174,10 @@ export async function stockReturnAction(input: {
   storeId: string; productId: string; qty: number; reason: string; restock: boolean; notes: string;
   customerId?: string | null; payments?: PaymentInput[];
 }) {
+  if (!isUuid(input.storeId) || !isUuid(input.productId)) return { error: "Selecione a unidade e o produto." };
+  if (!isQty(input.qty) || typeof input.restock !== "boolean") return { error: "A quantidade precisa ser um número inteiro maior que zero." };
   if (input.customerId && !isUuid(input.customerId)) return { error: "Cliente inválido." };
+  if (tooLong(input.reason, 120) || tooLong(input.notes, 1000)) return { error: "Texto longo demais." };
   const payments = sanitizePayments(input.payments);
   if (!payments) return { error: "Formas de devolução inválidas." };
   const supabase = await createClient();
@@ -151,6 +191,8 @@ export async function stockReturnAction(input: {
   revalidatePath("/stock/history");
   revalidatePath("/products");
   revalidatePath("/cash");
+  revalidatePath("/customers");
+  revalidatePath("/customers/detail");
   return { id: data as string };
 }
 
@@ -159,6 +201,13 @@ export async function stockCountSubmitAction(input: {
   items: { productId: string; countedQty: number }[];
   reason: string; justification: string;
 }) {
+  if (!isUuid(input.storeId)) return { error: "Selecione a unidade." };
+  if ((input.locationId && !isUuid(input.locationId)) || (input.categoryId && !isUuid(input.categoryId))) return { error: "Filtro da contagem inválido." };
+  if (!Array.isArray(input.items) || input.items.length > 5000
+    || !allUuids(input.items.map((i) => i?.productId)) || !input.items.every((i) => isCount(i.countedQty))) {
+    return { error: "Itens da contagem inválidos." };
+  }
+  if (tooLong(input.reason, 120) || tooLong(input.justification, 1000)) return { error: "Texto longo demais." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_stock_count_submit", {
     p_store_id: input.storeId, p_location_id: input.locationId, p_category_id: input.categoryId,

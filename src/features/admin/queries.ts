@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import { must } from "@/lib/supabase/must";
 import { PLANS as PLAN_ASSUMPTIONS } from "@/lib/plans";
 import { type RawSearchParams, PAGE_SIZE, containsPattern, pageParam, pageRange, param } from "@/lib/list-params";
@@ -140,12 +141,12 @@ export async function loadSubscriptionsOverview(sp: RawSearchParams = {}) {
   if (filters.q) pageQuery = pageQuery.ilike("name", containsPattern(filters.q));
 
   const [tenantsResult, invoicesResult, pageResult] = await Promise.all([
-    admin.from("tenants").select(SUBSCRIPTION_TENANT_SELECT).order("created_at", { ascending: false }),
-    admin.from("invoices").select("tenant_id, amount_paid, status, created_at").eq("status", "paid"),
+    fetchAll((from, to) => admin.from("tenants").select(SUBSCRIPTION_TENANT_SELECT).order("created_at", { ascending: false }).order("id").range(from, to)),
+    fetchAll((from, to) => admin.from("invoices").select("tenant_id, amount_paid, status, created_at").eq("status", "paid").order("id").range(from, to)),
     pageQuery,
   ]);
-  const tenants = must(tenantsResult, "loadSubscriptionsOverview.tenants") ?? [];
-  const invoices = must(invoicesResult, "loadSubscriptionsOverview.invoices") ?? [];
+  const tenants = tenantsResult;
+  const invoices = invoicesResult;
   const pageTenants = must(pageResult, "loadSubscriptionsOverview.page") ?? [];
 
   const ltvByTenant = new Map<string, number>();
@@ -281,39 +282,35 @@ export async function loadAiMonitoring() {
 export async function loadPlatformReports() {
   const supabase = await requireStaff();
   const admin = createServiceRoleClient();
-  const [cohortsRes, growthRes, tenantsRes, plansRes, productsRes, movementsRes, storeUsersRes] = await Promise.all([
+  // Contagens por rede vêm agregadas do banco: baixar as linhas cortava
+  // em 1000 (max_rows do PostgREST).
+  const [cohortsRes, growthRes, tenants, plansRes, usageRes] = await Promise.all([
     supabase.rpc("fn_platform_cohort_retention"),
     supabase.rpc("fn_platform_growth_by_month", { p_months: 12 }),
-    admin.from("tenants").select("id, plan_id"),
+    fetchAll((from, to) => admin.from("tenants").select("id, plan_id").order("id").range(from, to)),
     admin.from("plans").select("id, name, limits"),
-    admin.from("products").select("id, tenant_id"),
-    admin.from("stock_movements").select("id, tenant_id").gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-    admin.from("store_users").select("user_id, tenant_id"),
+    supabase.rpc("fn_platform_tenant_usage"),
   ]);
   const cohorts = must(cohortsRes, "admin/queries.loadPlatformReports.cohorts");
   const growth = must(growthRes, "admin/queries.loadPlatformReports.growth");
-  const tenants = must(tenantsRes, "admin/queries.loadPlatformReports.tenants");
   const plans = must(plansRes, "admin/queries.loadPlatformReports.plans");
-  const products = must(productsRes, "admin/queries.loadPlatformReports.products");
-  const movements = must(movementsRes, "admin/queries.loadPlatformReports.movements");
-  const storeUsers = must(storeUsersRes, "admin/queries.loadPlatformReports.storeUsers");
+  const usage = must(usageRes, "admin/queries.loadPlatformReports.usage") ?? [];
 
   const planIdByTenant = Object.fromEntries((tenants ?? []).map((t) => [t.id, t.plan_id]));
-  const countByPlan = (rows: { tenant_id: string }[]) => {
+  const sumByPlan = (field: "skus" | "movements_30d" | "users") => {
     const out: Record<string, number> = {};
-    for (const r of rows) {
+    for (const r of usage) {
       const planId = planIdByTenant[r.tenant_id];
-      if (planId) out[planId] = (out[planId] ?? 0) + 1;
+      if (planId) out[planId] = (out[planId] ?? 0) + Number(r[field]);
     }
     return out;
   };
-  const skusByPlan = countByPlan(products ?? []);
-  const movesByPlan = countByPlan(movements ?? []);
-  const usersByPlan = countByPlan(storeUsers ?? []);
+  const skusByPlan = sumByPlan("skus");
+  const movesByPlan = sumByPlan("movements_30d");
+  const usersByPlan = sumByPlan("users");
   const tenantCountByPlan = (tenants ?? []).reduce<Record<string, number>>((acc, t) => ({ ...acc, [t.plan_id]: (acc[t.plan_id] ?? 0) + 1 }), {});
 
-  const skusByTenant: Record<string, number> = {};
-  for (const row of products ?? []) skusByTenant[row.tenant_id] = (skusByTenant[row.tenant_id] ?? 0) + 1;
+  const skusByTenant: Record<string, number> = Object.fromEntries(usage.map((r) => [r.tenant_id, Number(r.skus)]));
 
   const usageByPlan = (plans ?? []).map((p) => {
     const tenantCount = tenantCountByPlan[p.id] ?? 0;
@@ -371,17 +368,14 @@ export async function loadAdminOverview() {
 
 export async function loadPlatformSettings() {
   const supabase = await requireStaff();
-  const admin = createServiceRoleClient();
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const [settingsRes, usageRes] = await Promise.all([
+  const [settingsRes, spendRes] = await Promise.all([
     supabase.from("platform_settings").select("trial_days, ai_spend_ceiling_usd, ai_alert_pct, updated_at").maybeSingle(),
-    admin.from("ai_usage_log").select("cost_usd").gte("created_at", monthStart.toISOString()),
+    supabase.rpc("fn_platform_ai_spend", { p_since: monthStart.toISOString() }),
   ]);
   const settings = must(settingsRes, "admin/queries.loadPlatformSettings.settings");
-  const usage = must(usageRes, "admin/queries.loadPlatformSettings.usage");
-
-  const monthSpend = (usage ?? []).reduce((s, u) => s + Number(u.cost_usd ?? 0), 0);
+  const monthSpend = Number(must(spendRes, "admin/queries.loadPlatformSettings.spend") ?? 0);
   const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
   const projection = (monthSpend / now.getUTCDate()) * daysInMonth;
 

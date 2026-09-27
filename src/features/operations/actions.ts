@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, getTenantId } from "@/lib/supabase/server";
-import { userMessage } from "@/lib/errors";
+import { NOT_FOUND_ERROR, userMessage } from "@/lib/errors";
 import { allUuids, formatCnpj, isCnpj, isEmail, isUuid, textError } from "@/lib/validation";
 
 export async function createSupplierAction(input: {
@@ -92,14 +92,15 @@ export async function updateSupplierAction(input: {
   paymentTerms?: string;
   notes: string;
 }) {
-  if (!isUuid(input.id) || !allUuids(input.categoryIds)) return { error: "Categoria inválida." };
+  if (!isUuid(input.id)) return { error: "Fornecedor inválido." };
+  if (!allUuids(input.categoryIds)) return { error: "Categoria inválida." };
   const updateNameError = textError(input.name, "o nome do fornecedor", 2, 120);
   if (updateNameError) return { error: updateNameError };
   if (input.cnpj?.trim() && !isCnpj(input.cnpj)) return { error: "CNPJ inválido — confira os 14 dígitos." };
   if (input.email?.trim() && !isEmail(input.email)) return { error: "Email de pedidos inválido." };
   const supabase = await createClient();
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("suppliers")
     .update({
       name: input.name,
@@ -115,8 +116,10 @@ export async function updateSupplierAction(input: {
       payment_terms: input.paymentTerms || null,
       notes: input.notes || null,
     })
-    .eq("id", input.id);
+    .eq("id", input.id)
+    .select("id");
   if (error) return { error: userMessage(error, "operations/actions") };
+  if (!updated?.length) return { error: NOT_FOUND_ERROR };
 
   const linkError = await syncCategoryLinks(supabase, "supplier", input.id, input.categoryIds);
   if (linkError) return { error: linkError };
@@ -129,10 +132,13 @@ export async function updateSupplierAction(input: {
 // Inativo some dos seletores de entrada e pedido de compra novos, mas o
 // histórico e os produtos que já apontam pra ele seguem intactos.
 export async function setSupplierActiveAction(input: { id: string; active: boolean }) {
+  if (!isUuid(input.id) || typeof input.active !== "boolean") return { error: "Fornecedor inválido." };
   const supabase = await createClient();
-  const { error } = await supabase.from("suppliers").update({ active: input.active }).eq("id", input.id);
+  const { data: updated, error } = await supabase.from("suppliers").update({ active: input.active }).eq("id", input.id).select("id");
   if (error) return { error: userMessage(error, "operations/actions") };
+  if (!updated?.length) return { error: NOT_FOUND_ERROR };
   revalidatePath("/suppliers");
+  revalidatePath("/suppliers/detail");
   revalidatePath("/stock/entry");
   revalidatePath("/purchase-orders/new");
   return { ok: true };
@@ -143,17 +149,21 @@ export async function createLocationAction(input: {
   code: string;
   description: string;
 }) {
+  if (!isUuid(input.storeId)) return { error: "Unidade inválida." };
+  const locationError = textError(input.code, "o código do local", 1, 30) ?? (input.description?.length > 200 ? "A descrição pode ter no máximo 200 caracteres." : null);
+  if (locationError) return { error: locationError };
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
+  const tenantId = await getTenantId(supabase).catch(() => null);
+  if (!tenantId) return { error: "Sessão expirada. Entre de novo." };
 
   const { data: location, error } = await supabase
     .from("locations")
-    .insert({ tenant_id: tenantId, store_id: input.storeId, code: input.code.toUpperCase(), description: input.description || null })
+    .insert({ tenant_id: tenantId, store_id: input.storeId, code: input.code.trim().toUpperCase(), description: input.description?.trim() || null })
     .select("id")
     .single();
   if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : userMessage(error, "operations/actions") };
 
-  revalidatePath("/shelves");
+  revalidateLocations();
   return { id: location.id as string };
 }
 
@@ -163,26 +173,41 @@ export async function updateLocationAction(input: {
   description: string;
   categoryIds: string[];
 }) {
-  if (!isUuid(input.id) || !allUuids(input.categoryIds)) return { error: "Categoria inválida." };
+  if (!isUuid(input.id)) return { error: "Local inválido." };
+  if (!allUuids(input.categoryIds)) return { error: "Categoria inválida." };
+  const locationError = textError(input.code, "o código do local", 1, 30) ?? (input.description?.length > 200 ? "A descrição pode ter no máximo 200 caracteres." : null);
+  if (locationError) return { error: locationError };
   const supabase = await createClient();
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("locations")
-    .update({ code: input.code.toUpperCase(), description: input.description || null })
-    .eq("id", input.id);
+    .update({ code: input.code.trim().toUpperCase(), description: input.description?.trim() || null })
+    .eq("id", input.id)
+    .select("id");
   if (error) return { error: error.code === "23505" ? "Já existe um local com esse código nesta unidade." : userMessage(error, "operations/actions") };
+  if (!updated?.length) return { error: NOT_FOUND_ERROR };
 
   const linkError = await syncCategoryLinks(supabase, "location", input.id, input.categoryIds);
   if (linkError) return { error: linkError };
 
-  revalidatePath("/shelves");
+  revalidateLocations();
   return { id: input.id };
 }
 
 export async function deleteLocationAction(id: string) {
+  if (!isUuid(id)) return { error: "Local inválido." };
   const supabase = await createClient();
-  const { error } = await supabase.from("locations").delete().eq("id", id);
+  const { data: deleted, error } = await supabase.from("locations").delete().eq("id", id).select("id");
   if (error) return { error: userMessage(error, "operations/actions") };
-  revalidatePath("/shelves");
+  if (!deleted?.length) return { error: NOT_FOUND_ERROR };
+  revalidateLocations();
   return { ok: true };
+}
+
+// Local aparece na lista, na entrada de estoque e no formulário de produto.
+function revalidateLocations() {
+  revalidatePath("/shelves");
+  revalidatePath("/stock/entry");
+  revalidatePath("/products/new");
+  revalidatePath("/products/edit");
 }

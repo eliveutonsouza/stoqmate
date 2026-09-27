@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { checkImage, uploadPath } from "@/lib/image-upload";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { limitKindFromError } from "@/lib/plan-limits";
-import { userMessage } from "@/lib/errors";
+import { NOT_FOUND_ERROR, userMessage } from "@/lib/errors";
 import { isOwnStorageUrl, isUuid, textError } from "@/lib/validation";
 import { productCostMap } from "@/lib/supabase/costs";
 
@@ -38,6 +38,40 @@ export async function createCategoryAction(input: {
   return { id: category.id as string };
 }
 
+type ProductInput = {
+  categoryId: string;
+  brand: string;
+  name: string;
+  sku: string;
+  barcode: string;
+  attrs: Record<string, string>;
+  costPrice: number;
+  salePrice: number;
+  minStock: number;
+  supplierId: string | null;
+  defaultLocationId: string | null;
+  notes: string;
+  photoUrl: string | null;
+};
+
+// Mesma regra do formulário, refeita aqui: a action é endpoint público.
+function productInputError(input: ProductInput): string | null {
+  if (!isUuid(input.categoryId)) return "Selecione a categoria.";
+  if (input.supplierId != null && !isUuid(input.supplierId)) return "Fornecedor inválido.";
+  if (input.defaultLocationId != null && !isUuid(input.defaultLocationId)) return "Local inválido.";
+  const text = textError(input.brand, "a marca", 1, 80) ?? textError(input.name, "o nome do produto", 2, 160) ?? textError(input.sku, "o SKU", 1, 60);
+  if (text) return text;
+  if (typeof input.barcode === "string" && input.barcode.length > 50) return "Código de barras longo demais.";
+  if (typeof input.notes === "string" && input.notes.length > 2000) return "Observações longas demais (máximo 2.000 caracteres).";
+  const money = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 10_000_000;
+  if (!money(input.costPrice) || !money(input.salePrice)) return "Preço inválido.";
+  if (!Number.isInteger(input.minStock) || input.minStock < 0 || input.minStock > 1_000_000) return "Estoque mínimo inválido.";
+  if (!input.attrs || typeof input.attrs !== "object" || Array.isArray(input.attrs)
+    || Object.entries(input.attrs).some(([k, v]) => typeof v !== "string" || k.length > 40 || v.length > 60)) return "Atributos inválidos.";
+  if (input.photoUrl && !isOwnStorageUrl(input.photoUrl, "product-photos")) return "Foto inválida — envie a imagem pelo botão de upload.";
+  return null;
+}
+
 export async function createProductAction(input: {
   categoryId: string;
   brand: string;
@@ -53,26 +87,28 @@ export async function createProductAction(input: {
   notes: string;
   photoUrl: string | null;
 }) {
-  if (input.photoUrl && !isOwnStorageUrl(input.photoUrl, "product-photos")) return { error: "Foto inválida — envie a imagem pelo botão de upload." };
+  const invalid = productInputError(input);
+  if (invalid) return { error: invalid };
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
+  const tenantId = await getTenantId(supabase).catch(() => null);
+  if (!tenantId) return { error: "Sessão expirada. Entre de novo." };
 
   const { data: product, error } = await supabase
     .from("products")
     .insert({
       tenant_id: tenantId,
       category_id: input.categoryId,
-      sku: input.sku,
-      barcode: input.barcode || null,
-      brand: input.brand,
-      name: input.name,
+      sku: input.sku.trim(),
+      barcode: input.barcode?.trim() || null,
+      brand: input.brand.trim(),
+      name: input.name.trim(),
       attrs: input.attrs,
       cost_price: input.costPrice,
       sale_price: input.salePrice,
       min_stock: input.minStock,
       supplier_id: input.supplierId,
       default_location_id: input.defaultLocationId,
-      notes: input.notes || null,
+      notes: input.notes?.trim() || null,
       photo_url: input.photoUrl,
     })
     .select("id")
@@ -103,36 +139,41 @@ export async function updateProductAction(input: {
   notes: string;
   photoUrl: string | null;
 }) {
-  if (input.photoUrl && !isOwnStorageUrl(input.photoUrl, "product-photos")) return { error: "Foto inválida — envie a imagem pelo botão de upload." };
+  if (!isUuid(input.id)) return { error: "Produto inválido." };
+  const invalid = productInputError(input);
+  if (invalid) return { error: invalid };
   const supabase = await createClient();
 
   const { data: before, error: beforeError } = await supabase.from("products").select("sale_price, name").eq("id", input.id).maybeSingle();
   if (beforeError) return { error: userMessage(beforeError, "products/update.before") };
+  if (!before) return { error: NOT_FOUND_ERROR };
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("products")
     .update({
       category_id: input.categoryId,
-      sku: input.sku,
-      barcode: input.barcode || null,
-      brand: input.brand,
-      name: input.name,
+      sku: input.sku.trim(),
+      barcode: input.barcode?.trim() || null,
+      brand: input.brand.trim(),
+      name: input.name.trim(),
       attrs: input.attrs,
       cost_price: input.costPrice,
       sale_price: input.salePrice,
       min_stock: input.minStock,
       supplier_id: input.supplierId,
       default_location_id: input.defaultLocationId,
-      notes: input.notes || null,
+      notes: input.notes?.trim() || null,
       ...(input.photoUrl ? { photo_url: input.photoUrl } : {}),
     })
-    .eq("id", input.id);
+    .eq("id", input.id)
+    .select("id");
   if (error) {
     return { error: error.code === "23505" ? "Já existe um produto com esse SKU ou código de barras." : userMessage(error, "products/actions") };
   }
+  if (!updated?.length) return { error: NOT_FOUND_ERROR };
 
-  const previousSalePrice = before ? Number(before.sale_price) : null;
-  if (before && previousSalePrice !== null && previousSalePrice !== input.salePrice) {
+  const previousSalePrice = Number(before.sale_price);
+  if (previousSalePrice !== input.salePrice) {
     const { error: auditError } = await supabase.rpc("fn_write_audit", {
       p_kind: "price",
       p_message: `Alterou preço de venda de ${before.name} de R$ ${previousSalePrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} para R$ ${input.salePrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
@@ -150,20 +191,24 @@ export async function updateProductAction(input: {
 }
 
 export async function setProductActiveAction(input: { id: string; active: boolean }) {
+  if (!isUuid(input.id) || typeof input.active !== "boolean") return { error: "Produto inválido." };
   const supabase = await createClient();
-  const { error } = await supabase.from("products").update({ active: input.active }).eq("id", input.id);
+  const { data: updated, error } = await supabase.from("products").update({ active: input.active }).eq("id", input.id).select("id");
   if (error) {
     const limit = limitKindFromError(error.message);
     if (limit) redirect(`/limit-reached?kind=${limit}`);
     return { error: userMessage(error, "products/actions") };
   }
+  if (!updated?.length) return { error: NOT_FOUND_ERROR };
   revalidatePath("/products");
+  revalidatePath("/products/detail");
   return { ok: true };
 }
 
 // Cópia sem código de barras (é único) e com SKU novo — abre direto na
 // edição pra ajustar a variação.
 export async function duplicateProductAction(id: string) {
+  if (!isUuid(id)) return { error: "Produto não encontrado." };
   const supabase = await createClient();
   const { data: src, error: readError } = await supabase
     .from("products")
@@ -200,7 +245,8 @@ export async function uploadProductPhotoAction(formData: FormData) {
   if ("error" in checked) return checked;
 
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
+  const tenantId = await getTenantId(supabase).catch(() => null);
+  if (!tenantId) return { error: "Sessão expirada. Entre de novo." };
   const path = uploadPath(tenantId, checked.ext);
 
   const { error } = await supabase.storage.from("product-photos").upload(path, file as File);

@@ -23,10 +23,13 @@ export function MobileCount({ stores, locations }) {
   const [active, setActive] = React.useState(null);
   const [count, setCount] = React.useState(0);
   const [error, setError] = React.useState('');
+  // Justificativa de quem contou: o banco exige 20+ caracteres se houver
+  // divergência. A contagem é cega, então só se sabe depois de enviar.
+  const [note, setNote] = React.useState('');
   const [pending, startTransition] = React.useTransition();
 
   const systemQty = (r) => (r.stock_balances || []).find((b) => b.store_id === storeId)?.qty ?? 0;
-  const restart = () => { setRows([]); setActive(null); setCount(0); setError(''); setStep('scan'); };
+  const restart = () => { setRows([]); setActive(null); setCount(0); setError(''); setNote(''); setStep('scan'); };
 
   const bump = (d) => setCount((c) => Math.max(0, c + d));
   const commit = () => {
@@ -44,7 +47,7 @@ export function MobileCount({ stores, locations }) {
       const result = await stockCountSubmitAction({
         storeId, locationId: locationId || null, categoryId: null,
         items: rows.map((r) => ({ productId: r.id, countedQty: r.real })),
-        reason: 'Contagem via mobile', justification: 'Contagem cega registrada pelo app mobile de conferência.',
+        reason: 'Contagem via mobile', justification: note.trim(),
       });
       if (result?.error) { setError(result.error); return; }
       setStep('done');
@@ -142,7 +145,11 @@ export function MobileCount({ stores, locations }) {
                       </div>
                     ))}
                   </div>
-                  {error && <div style={{ fontSize: 11, color: '#FF8A8A', marginTop: 10 }}>{error}</div>}
+                  <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} rows={2}
+                    aria-label="Observação da contagem"
+                    placeholder="Observação (obrigatória se houver diferença): ex. caixa aberta no fundo da prateleira."
+                    style={{ marginTop: 10, borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', color: '#F6F3EC', fontSize: 12, fontFamily: 'inherit', padding: '8px 10px', resize: 'none' }} />
+                  {error && <div role="alert" style={{ fontSize: 11, color: '#FF8A8A', marginTop: 10 }}>{error}</div>}
                   <button onClick={finish} disabled={pending} style={{ height: 52, borderRadius: 12, border: 'none', background: '#C43F14', color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', marginTop: 14, marginBottom: 8, opacity: pending ? 0.6 : 1 }}>
                     {pending ? 'Enviando…' : 'Fechar contagem'}
                   </button>

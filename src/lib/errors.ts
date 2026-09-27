@@ -12,6 +12,9 @@ export type DbErrorLike = { message?: string; code?: string } | null | undefined
 
 export const GENERIC_ERROR = "Não foi possível concluir agora. Tente de novo em instantes.";
 export const PERMISSION_ERROR = "Seu perfil não tem permissão para essa operação.";
+// Update/delete que não pegou linha: id de outra rede, apagado ou RLS negou.
+// O PostgREST responde sucesso com zero linhas — sem isto a tela dizia "salvo".
+export const NOT_FOUND_ERROR = "Registro não encontrado ou sem permissão para alterá-lo.";
 
 const BY_CODE: Record<string, string> = {
   "42501": PERMISSION_ERROR,
@@ -22,6 +25,8 @@ const BY_CODE: Record<string, string> = {
   "22P02": "Algum valor informado é inválido.",
   "22003": "Algum valor informado está fora do limite permitido.",
   "22001": "Algum texto informado é longo demais.",
+  "22007": "Data inválida.",
+  "22008": "Data fora do intervalo permitido.",
   // Supabase Auth (AuthError.code)
   weak_password: "Senha fraca: use pelo menos 8 caracteres, misturando letras e números.",
   same_password: "A nova senha precisa ser diferente da atual.",

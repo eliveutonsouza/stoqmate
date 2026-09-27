@@ -161,11 +161,12 @@ export async function signInAction(input: { email: string; password: string; nex
 }
 
 export async function resendConfirmationAction(input: { email: string }) {
+  if (!isEmail(input.email)) return { error: "Informe um email válido." };
   const supabase = await createClient();
   const origin = await authEmailOrigin();
   const { error } = await supabase.auth.resend({
     type: "signup",
-    email: input.email,
+    email: input.email.trim(),
     options: { emailRedirectTo: `${origin}/auth/callback?next=/onboarding` },
   });
   if (error) {

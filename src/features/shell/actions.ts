@@ -4,8 +4,10 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_STORE_COOKIE } from "@/features/shell/queries";
+import { isUuid } from "@/lib/validation";
 
 export async function setActiveStoreAction(storeId: string) {
+  if (!isUuid(storeId)) return { error: "Unidade não encontrada." };
   const supabase = await createClient();
   // RLS só devolve loja da própria empresa: id de outra rede não passa.
   const { data, error } = await supabase.from("stores").select("id").eq("id", storeId).maybeSingle();

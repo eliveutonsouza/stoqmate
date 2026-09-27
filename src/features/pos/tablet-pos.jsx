@@ -9,6 +9,7 @@ import { ProductThumb } from '@/components/ui/product-thumb';
 import { variantLabel } from '@/lib/attr-colors';
 import { brl } from '@/lib/format';
 import { confirmSaleAction } from '@/features/pos/actions';
+import { createClient } from '@/lib/supabase/client';
 
 const DISCOUNT_STEPS = [0, 5, 10, 15, 20];
 
@@ -32,12 +33,25 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
   const [pending, startTransition] = React.useTransition();
   const cartRef = React.useRef(null);
 
-  const term = query.trim().toLowerCase();
-  const shown = products.filter((p) => {
-    if (cat !== 'all' && p.category?.id !== cat) return false;
-    if (term && !`${p.sku} ${p.brand} ${p.name}`.toLowerCase().includes(term)) return false;
-    return true;
-  });
+  // A grade inicial traz só uma amostra do catálogo; com 2+ letras a busca
+  // vai ao banco (nome, SKU, marca ou código de barras — mesmo fn_search_products
+  // do seletor de produto), então acha qualquer item da rede.
+  const term = query.trim();
+  const [search, setSearch] = React.useState({ term: '', rows: [], error: false });
+  React.useEffect(() => {
+    if (term.length < 2) return;
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      const { data, error } = await createClient().rpc('fn_search_products', { p_term: term.replace(/[%_]/g, ''), p_limit: 50 });
+      if (!cancelled) setSearch({ term, rows: error ? [] : data ?? [], error: Boolean(error) });
+    }, 200);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [term]);
+  const searchingMode = term.length >= 2;
+  const searching = searchingMode && search.term !== term;
+  const searchError = searchingMode && !searching && search.error;
+  const found = searchingMode && !searching ? search.rows : null;
+  const shown = (searchingMode ? (found ?? []) : products).filter((p) => cat === 'all' || p.category?.id === cat);
 
   const stockFor = (p) => p.stock_balances?.find((b) => b.store_id === storeId)?.qty ?? 0;
   const add = (p) => setCart((c) => {
@@ -113,6 +127,15 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
                   </span>
                   <input className="input" placeholder="Bipe o produto ou busque por nome/SKU"
                     value={query} onChange={(e) => setQuery(e.target.value)}
+                    // Leitor de código de barras "digita" o código e manda Enter:
+                    // código ou SKU exato entra direto no carrinho.
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' || !found) return;
+                      const code = term.toLowerCase();
+                      const hit = found.find((p) => p.barcode?.toLowerCase() === code || p.sku.toLowerCase() === code)
+                        ?? (found.length === 1 ? found[0] : null);
+                      if (hit) { add(hit); setQuery(''); }
+                    }}
                     style={{ paddingLeft: 42, height: 52, fontSize: 15 }} />
                 </div>
                 <div className="no-bars" style={{ display: 'flex', gap: 6, marginTop: 10, overflowX: 'auto', paddingBottom: 2 }}>
@@ -136,8 +159,10 @@ export function TabletPOS({ stores, categories, products, cashSessionByStore, op
               </div>
 
               <div className="no-bars" data-pos-scroll style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-                {shown.length === 0 ? (
-                  <div style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>Nenhum produto encontrado.</div>
+                {searching || searchError || shown.length === 0 ? (
+                  <div role={searchError ? 'alert' : undefined} style={{ padding: '48px 16px', textAlign: 'center', color: searchError ? 'var(--danger)' : 'var(--fg-muted)', fontSize: 13 }}>
+                    {searching ? 'Buscando…' : searchError ? 'Não foi possível buscar agora. Tente de novo.' : 'Nenhum produto encontrado.'}
+                  </div>
                 ) : (
                   <div className="pos-products">
                     {shown.map(p => (

@@ -4,10 +4,7 @@ import { type RawSearchParams, PAGE_SIZE, pageParam, pageRange, param } from "@/
 
 export async function loadFirstRunStatus() {
   const supabase = await createClient();
-  const [
-    { count: categoryCount }, { count: productCount }, { count: supplierCount },
-    { count: locationCount }, { count: teamCount }, { count: cashSessionCount },
-  ] = await Promise.all([
+  const results = await Promise.all([
     supabase.from("categories").select("id", { count: "exact", head: true }),
     supabase.from("products").select("id", { count: "exact", head: true }),
     supabase.from("suppliers").select("id", { count: "exact", head: true }),
@@ -15,6 +12,14 @@ export async function loadFirstRunStatus() {
     supabase.from("store_users").select("id", { count: "exact", head: true }),
     supabase.from("cash_sessions").select("id", { count: "exact", head: true }),
   ]);
+  // Erro de leitura não pode virar "passo pendente" (o checklist mandaria
+  // cadastrar o que já existe) — sobe pro error boundary.
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw new Error(`[customers/queries.loadFirstRunStatus] ${failed.error.message}`);
+  const [
+    { count: categoryCount }, { count: productCount }, { count: supplierCount },
+    { count: locationCount }, { count: teamCount }, { count: cashSessionCount },
+  ] = results;
   return {
     hasCategories: (categoryCount ?? 0) > 0,
     hasProducts: (productCount ?? 0) > 0,

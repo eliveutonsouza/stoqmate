@@ -48,7 +48,10 @@ export function BulkPricing({ suppliers, categories, brands }) {
     setLoading(true);
     setLoadError('');
     previewPricingAction(scope, v)
-      .then((rows) => { setProducts(rows); })
+      .then((res) => {
+        if (res.error) { setProducts([]); setLoadError(res.error); return; }
+        setProducts(res.rows);
+      })
       .catch((e) => {
         setProducts([]);
         try { unstable_rethrow(e); } catch { return; } // redirect do Next: o router já navega
@@ -93,7 +96,9 @@ export function BulkPricing({ suppliers, categories, brands }) {
       if (res?.error) { setError(res.error); return; }
       setResult({ ...res, key: paramsKey });
       try {
-        setProducts(await previewPricingAction(scope, scopeValue));
+        const fresh = await previewPricingAction(scope, scopeValue);
+        if (fresh.error) setError('Reajuste aplicado, mas não foi possível recarregar a lista. Atualize a página.');
+        else setProducts(fresh.rows);
       } catch (e) {
         unstable_rethrow(e);
         setError('Reajuste aplicado, mas não foi possível recarregar a lista. Atualize a página.');

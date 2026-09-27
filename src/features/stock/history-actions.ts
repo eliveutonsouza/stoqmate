@@ -3,13 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { toCsv } from "@/lib/csv";
 import { MOVEMENT_KINDS, movementListArgs } from "@/features/stock/queries";
+import { movementLabel } from "@/lib/movement-labels";
+import { isUuid } from "@/lib/validation";
 
 const EXPORT_LIMIT = 10000;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const KIND_LABEL: Record<string, string> = {
-  sale: "Venda", entry: "Entrada", return: "Devolução", exchange: "Troca",
-  transfer: "Transferência", adjustment: "Ajuste", count: "Contagem",
-};
 
 type MovementRow = {
   created_at: string; kind: string; qty: number; unit_cost: number | null; unit_price: number | null; reason: string | null;
@@ -27,7 +24,7 @@ export async function exportStockHistoryCsvAction(input: { q?: string | null; ki
   const filters = {
     q: typeof input.q === "string" && input.q.trim() ? input.q.trim().slice(0, 200) : null,
     kind: (MOVEMENT_KINDS as readonly string[]).includes(input.kind ?? "") ? (input.kind as string) : null,
-    store: typeof input.store === "string" && UUID_RE.test(input.store) ? input.store : null,
+    store: isUuid(input.store) ? input.store : null,
   };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fn_stock_movements_list", movementListArgs(filters, EXPORT_LIMIT, 0));
@@ -42,7 +39,7 @@ export async function exportStockHistoryCsvAction(input: { q?: string | null; ki
     csv: toCsv(
       ["Data/hora", "Tipo", "SKU", "Produto", "Categoria", "Unidade", "Qtd", "Custo un.", "Preço un.", "Motivo"],
       rows.map((m) => [
-        fmtDateTime.format(new Date(m.created_at)), KIND_LABEL[m.kind] ?? m.kind,
+        fmtDateTime.format(new Date(m.created_at)), movementLabel(m.kind),
         m.product?.sku, m.product?.name, m.product?.category?.name, m.store?.name,
         m.qty, m.unit_cost, m.unit_price, m.reason,
       ]),

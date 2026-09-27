@@ -2,6 +2,8 @@
 // O page.tsx recebe `searchParams` (Promise no Next 16), resolve e passa
 // o objeto pra cá; o loader filtra e pagina no servidor.
 
+import { isUuid } from "@/lib/validation";
+
 export const PAGE_SIZE = 50;
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -20,11 +22,10 @@ export function oneOf<T extends string>(sp: RawSearchParams, key: string, allowe
   return v && (allowed as readonly string[]).includes(v) ? (v as T) : null;
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function uuidParam(sp: RawSearchParams, key: string): string | null {
   const v = param(sp, key);
-  return v && UUID_RE.test(v) ? v : null;
+  return v && isUuid(v) ? v : null;
 }
 
 export function pageParam(sp: RawSearchParams): number {

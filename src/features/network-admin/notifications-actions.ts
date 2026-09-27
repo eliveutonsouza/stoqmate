@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient, getTenantId } from "@/lib/supabase/server";
 import { userMessage } from "@/lib/errors";
+import { allUuids } from "@/lib/validation";
 import { PREFERENCE_RULES } from "@/features/network-admin/notifications-queries";
 
 export async function markNotificationsReadAction(ids?: string[]) {
+  if (ids != null && (!allUuids(ids) || ids.length > 500)) return { error: "Aviso inválido." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("fn_mark_notifications_read", { p_ids: ids ?? null });
   if (error) return { error: userMessage(error, "network-admin/notifications-actions") };
@@ -21,7 +23,8 @@ export async function saveNotificationPreferencesAction(preferences: { key: stri
     return { error: "Regra de aviso inválida." };
   }
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
+  const tenantId = await getTenantId(supabase).catch(() => null);
+  if (!tenantId) return { error: "Sessão expirada. Entre de novo." };
 
   const { error } = await supabase
     .from("notification_preferences")
