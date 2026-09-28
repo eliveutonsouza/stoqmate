@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Stoqmate — vídeo da central de ajuda</title>
+<style>
+  @font-face { font-family: 'Geist'; src: url(fonts/Geist-Variable.woff2) format('woff2'); font-weight: 100 900; }
+  @font-face { font-family: 'Geist Mono'; src: url(fonts/GeistMono-Variable.woff2) format('woff2'); font-weight: 100 900; }
+  :root { --acc: #E94B1C; --acc-strong: #C43F14; --acc-soft: #FF8A5C; --bg: #0E0D0B; --fg: #F6F3EC; --muted: #A6A092; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  body { font-family: 'Geist', system-ui, sans-serif; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  .abs { position: absolute; }
+  em { font-style: normal; color: var(--acc); }
+  #glow { inset: -300px; background: radial-gradient(1100px 700px at 15% 10%, rgba(233,75,28,.22), transparent 60%), radial-gradient(900px 800px at 90% 95%, rgba(196,63,20,.16), transparent 60%); }
+  #top { left: 64px; right: 64px; top: 28px; height: 48px; display: flex; align-items: center; gap: 18px; }
+  #top .brand { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 600; letter-spacing: -0.015em; }
+  #top .sep { color: var(--muted); font-weight: 400; }
+  #top .title { margin-left: auto; font-size: 20px; color: var(--muted); }
+  #step { left: 50%; top: 32px; transform: translateX(-50%); padding: 8px 18px; border-radius: 999px; background: rgba(246,243,236,.08); border: 1.5px solid rgba(246,243,236,.16); font-size: 20px; font-weight: 550; white-space: nowrap; }
+  #step b { font-family: 'Geist Mono', monospace; color: var(--acc-soft); font-weight: 600; margin-right: 8px; }
+  .frame { left: 224px; top: 104px; width: 1472px; height: 920px; border-radius: 22px; overflow: hidden; background: #FBFAF8; box-shadow: 0 40px 120px rgba(0,0,0,.55), 0 0 0 1.5px rgba(255,255,255,.1); }
+  .frame.phone { left: 752px; width: 425px; height: 920px; border-radius: 44px; box-shadow: 0 40px 120px rgba(0,0,0,.55), 0 0 0 10px #1c1a17, 0 0 0 11.5px rgba(255,255,255,.12); }
+  .frame img { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .spot { border: 5px solid var(--acc); border-radius: 14px; box-shadow: 0 0 0 4000px rgba(14,13,11,.30), 0 0 36px rgba(233,75,28,.55); }
+  #cap { left: 50%; bottom: 44px; transform: translateX(-50%); max-width: 1480px; text-align: center; }
+  #cap span { display: inline; padding: 8px 18px; line-height: 1.55; font-size: 38px; font-weight: 550; letter-spacing: -0.01em; background: rgba(10,9,8,.84); border-radius: 10px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .card { inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .card .kicker { font-family: 'Geist Mono', monospace; font-size: 26px; letter-spacing: .12em; text-transform: uppercase; color: var(--acc-soft); }
+  .card h1 { margin-top: 26px; font-size: 96px; font-weight: 700; letter-spacing: -0.045em; line-height: 1.02; max-width: 1500px; }
+  .card p { margin-top: 22px; font-size: 40px; color: var(--muted); letter-spacing: -0.01em; }
+  .card .logo { display: flex; align-items: center; gap: 22px; font-size: 58px; font-weight: 650; letter-spacing: -0.03em; }
+  .card .check { width: 120px; height: 120px; border-radius: 60px; background: var(--acc-strong); display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 60px rgba(233,75,28,.45); }
+  .card .where { margin-top: 30px; font-size: 30px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow" class="abs"></div>
+  <div id="scenes"></div>
+  <div id="intro" class="abs card"></div>
+  <div id="outro" class="abs card"></div>
+  <div id="top" class="abs"></div>
+  <div id="step" class="abs"></div>
+  <div id="cap" class="abs"><span></span></div>
+</div>
+<script>
+const mark = (size, fill = '#C43F14', box = '#fff') => `
+<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block;flex-shrink:0">
+  <rect x="2" y="2" width="20" height="20" rx="5.5" fill="${fill}"/>
+  <path d="M6.4 8.6 11 6.1l4.6 2.5-4.6 2.5z" fill="${box}" fill-opacity=".95"/>
+  <path d="M6.4 8.6v5l4.6 2.5v-5z" fill="${box}" fill-opacity=".62"/>
+  <path d="M11 11.1v5l4.6-2.5v-5z" fill="${box}" fill-opacity=".82"/>
+  <circle cx="17.4" cy="16.4" r="2.4" fill="${box}" fill-opacity=".95"/>
+  <path d="m16.3 16.4.8.8 1.5-1.6" stroke="${fill}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>`;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eOut = (k) => 1 - Math.pow(1 - k, 3);
+const eInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+const eBack = (k) => { const c = 1.5; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const $ = (id) => document.getElementById(id);
+
+const TL = window.TIMELINE;          // timeline.json do audio.py
+const META = window.SHOT_META;       // shots/meta.json (foco + tamanho de cada captura)
+const XF = 0.4;                      // crossfade entre cenas
+
+$('top').innerHTML = `<div class="brand">${mark(40)}<span>Stoqmate</span><span class="sep">· Central de ajuda</span></div><div class="title">${TL.title}</div>`;
+$('intro').innerHTML = `<div class="logo">${mark(88)}<span>Stoqmate</span></div><div class="kicker" style="margin-top:44px">Tutorial</div><h1>${TL.title}</h1><p>${TL.subtitle}</p>`;
+$('outro').innerHTML = `<div class="check"><svg width="64" height="64" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 style="margin-top:40px">Pronto!</h1><p>${TL.title}</p><div class="where">Veja o passo a passo escrito em Ajuda › Central de ajuda</div>`;
+
+// Uma camada por cena, com a captura posicionada pela câmera.
+const scenes = TL.segments.filter((s) => s.type === 'scene').map((s) => {
+  const m = META[s.shot]; const phone = m.vw < 800;
+  const el = document.createElement('div'); el.className = 'abs frame' + (phone ? ' phone' : '');
+  const img = document.createElement('img'); img.src = `shots/${s.shot}.png`;
+  const spot = document.createElement('div'); spot.className = 'abs spot';
+  el.append(img, spot); $('scenes').append(el);
+  return { s, m, phone, el, img, spot };
+});
+
+function camera(sc, t) {
+  const FW = sc.phone ? 425 : 1472, FH = 920;
+  const base = FW / sc.m.vw;                      // captura inteira cabe na largura
+  const f = sc.m.focus;
+  let z = 1, cx = 50, cy = 50;                    // em % da captura
+  if (f && !sc.phone) {
+    const want = Math.min(0.78 * 100 / f.w, 0.62 * 100 / f.h);
+    z = clamp(want, 1, 2.1);
+    cx = f.x + f.w / 2; cy = f.y + f.h / 2;
+  }
+  const k = eInOut(prog(t, sc.s.start + 0.5, sc.s.start + 1.9));
+  const drift = 1 + 0.025 * prog(t, sc.s.start, sc.s.end);
+  const zz = (1 + (z - 1) * k) * drift;
+  const scale = base * zz;
+  const W = sc.m.vw * scale, H = sc.m.vh * scale;
+  let x = FW / 2 - (cx / 100) * W, y = FH / 2 - (cy / 100) * H;
+  const x0 = FW / 2 - 0.5 * W, y0 = (FH - H) / 2;  // enquadramento inicial centralizado
+  x = x0 + (x - x0) * k; y = y0 + (y - y0) * k;
+  x = clamp(x, FW - W, 0); if (H > FH) y = clamp(y, FH - H, 0); else y = (FH - H) / 2;
+  return { scale, x, y };
+}
+
+window.seek = function (t) {
+  $('glow').style.transform = `translate(${Math.sin(t * .2) * 40}px, ${Math.cos(t * .17) * 50}px)`;
+  const intro = TL.segments[0], outro = TL.segments[TL.segments.length - 1];
+  const inV = 1 - eInOut(prog(t, intro.end - XF, intro.end));
+  const outV = eOut(prog(t, outro.start - 0.1, outro.start + XF));
+  const ic = $('intro'); ic.style.opacity = inV; ic.style.transform = `scale(${1 + (1 - inV) * 0.04})`;
+  [...ic.children].forEach((el, i) => { const k = eOut(prog(t, 0.1 + i * 0.18, 0.7 + i * 0.18)); el.style.opacity = k; el.style.transform = `translateY(${(1 - k) * 30}px)`; });
+  const oc = $('outro'); oc.style.opacity = outV;
+  const ck = oc.querySelector('.check'); const kb = eBack(prog(t, outro.start, outro.start + 0.6)); ck.style.transform = `scale(${0.4 + 0.6 * kb})`;
+  $('top').style.opacity = 1 - Math.max(inV, outV) * 0.85;
+
+  let active = null;
+  scenes.forEach((sc) => {
+    const a = sc.s.start, b = sc.s.end;
+    const v = Math.min(eOut(prog(t, a - XF / 2, a + XF / 2)), 1 - eInOut(prog(t, b - XF / 2, b + XF / 2)));
+    sc.el.style.opacity = v;
+    sc.el.style.transform = `translateY(${(1 - v) * 24}px)`;
+    if (v <= 0) return;
+    if (t >= a - XF / 2 && t < b + XF / 2) active = sc;
+    const c = camera(sc, t);
+    sc.img.style.width = sc.m.vw + 'px'; sc.img.style.height = sc.m.vh + 'px';
+    sc.img.style.transform = `translate(${c.x}px, ${c.y}px) scale(${c.scale})`;
+    const f = sc.m.focus;
+    if (f && !sc.phone) {
+      const pad = 10, s = c.scale;
+      Object.assign(sc.spot.style, {
+        left: `${c.x + (f.x / 100) * sc.m.vw * s - pad}px`, top: `${c.y + (f.y / 100) * sc.m.vh * s - pad}px`,
+        width: `${(f.w / 100) * sc.m.vw * s + pad * 2}px`, height: `${(f.h / 100) * sc.m.vh * s + pad * 2}px`,
+      });
+      const k = eOut(prog(t, a + 1.7, a + 2.2));
+      sc.spot.style.opacity = k; sc.spot.style.transform = `scale(${1.05 - 0.05 * k})`;
+    } else sc.spot.style.opacity = 0;
+  });
+
+  const st = $('step');
+  if (active) { st.style.opacity = 1; st.innerHTML = `<b>Passo ${active.s.step} de ${TL.steps}</b>`; } else st.style.opacity = 0;
+
+  const cue = TL.cues.find((c) => t >= c.start && t < c.end + 0.15);
+  const cap = $('cap'); cap.firstChild.textContent = cue ? cue.text : '';
+  cap.style.opacity = cue ? 1 : 0;
+};
+
+window.READY = Promise.all([document.fonts.ready, ...[...document.images].map((im) => im.decode().catch(() => {}))]);
+</script>
+</body>
+</html>

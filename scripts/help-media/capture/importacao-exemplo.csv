@@ -1,0 +1,5 @@
+sku,barcode,category_code,brand,name,cost_price,sale_price,min_stock,initial_qty
+VES-BERMUD-AZ-M,7891000300084,VES,Flanel,Bermuda Sarja,59.00,139.90,5,20
+VES-BERMUD-BE-G,7891000300091,VES,Flanel,Bermuda Sarja,59.00,139.90,5,18
+ALI-CAFEGR-IN-250,7891000400067,ALI,Grão Nobre,Café em Grãos 250 g,15.00,29.90,10,40
+ELE-CABOUS-PR-2M,,ELX,Anker,Cabo USB-C 2m,18.90,39.90,10,30

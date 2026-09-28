@@ -1,0 +1,17 @@
+{
+  "name": "stoqmate-help-media",
+  "private": true,
+  "type": "module",
+  "description": "Gera capturas, vídeos narrados e legendas da central de ajuda (/help) e publica no bucket help-media. Fora do build do app.",
+  "scripts": {
+    "audio": "python3 audio.py out",
+    "render": "node render.mjs out shots out",
+    "upload": "node upload.mjs out"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "ffmpeg-static": "^5.2.0",
+    "geist": "^1.5.1",
+    "playwright": "1.56.1"
+  }
+}
