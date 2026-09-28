@@ -29,6 +29,10 @@ jobs:
       - run: npm ci
       - name: ESLint (zero erros, zero warnings)
         run: npx eslint . --max-warnings=0
+      # PageProps/LayoutProps são globais gerados pelo Next em .next/types —
+      # sem build no job, o typegen gera só os tipos (sem banco).
+      - name: Tipos de rota do Next
+        run: npx next typegen
       - name: TypeScript
         run: npx tsc --noEmit -p .
       - name: Vitest
