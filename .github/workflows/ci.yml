@@ -1,0 +1,86 @@
+name: CI
+
+# Portões de .spec/quality-gates.md (1–5).
+# - Lint, Vitest e Storybook não dependem de banco: rodam sempre.
+# - `next build` pré-renderiza páginas que leem os planos no Supabase e o e2e
+#   precisa de um projeto de teste: os dois rodam quando os secrets
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY e
+#   SUPABASE_SERVICE_ROLE_KEY estão configurados no repositório.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, testes unitários e Storybook
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: ESLint (zero erros, zero warnings)
+        run: npx eslint . --max-warnings=0
+      # PageProps/LayoutProps são globais gerados pelo Next em .next/types —
+      # sem build no job, o typegen gera só os tipos (sem banco).
+      - name: Tipos de rota do Next
+        run: npx next typegen
+      - name: TypeScript
+        run: npx tsc --noEmit -p .
+      - name: Vitest
+        run: npx vitest run
+      - name: Storybook
+        run: npx storybook build --quiet
+
+  build-e2e:
+    name: Build de produção e Playwright (desktop, mobile, tablet)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: checks
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_STAFF_EMAIL: ${{ secrets.E2E_STAFF_EMAIL }}
+      E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
+      E2E_STAFF_TOTP_SECRET: ${{ secrets.E2E_STAFF_TOTP_SECRET }}
+    steps:
+      - name: Secrets do Supabase de teste configurados?
+        id: gate
+        run: |
+          if [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Build e e2e pulados: configure NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY (projeto de teste) nos secrets do repositório."
+          fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.gate.outputs.run == 'true'
+        run: npm ci
+      - name: Build de produção
+        if: steps.gate.outputs.run == 'true'
+        run: npx next build
+      - if: steps.gate.outputs.run == 'true'
+        run: npx playwright install --with-deps chromium
+      - name: Playwright
+        if: steps.gate.outputs.run == 'true'
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure() && steps.gate.outputs.run == 'true'
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -1,0 +1,230 @@
+import type { HelpArticle } from "../types";
+import { shot } from "../shots";
+
+const UPDATED = "2026-09-28";
+
+export const CATALOGO: HelpArticle[] = [
+  {
+    slug: "categorias-e-atributos",
+    title: "Categorias e atributos: a base do SKU",
+    summary: "Crie categorias com prefixo, unidade de medida e atributos (cor, tamanho, especificação) — e amplie os valores depois.",
+    module: "catalogo",
+    level: "essencial",
+    requires: [{ route: "/categories", level: "edit" }],
+    openRoute: "/categories",
+    video: { key: "categorias", seconds: 34 },
+    intro: "Cada categoria define quais atributos um produto tem e como o SKU é montado. Exemplo: Vestuário (prefixo VES) com Cor e Tamanho gera SKUs como VES-CAMISE-BR-M.",
+    steps: [
+      {
+        title: "Abra Catálogo › Categorias e atributos",
+        body: "À esquerda ficam as categorias ativas; à direita, os atributos da categoria selecionada, o formato do SKU e quantas combinações são possíveis.",
+        shot: shot("categorias-lista", "Tela de categorias e atributos"),
+      },
+      {
+        title: "Crie uma categoria",
+        body: "Clique em \"Nova categoria\" e preencha Nome, Prefixo do SKU (2 a 4 letras, único na conta), Unidade de medida (unidade, par, peça, caixa, kg, litro ou metro) e Ícone. Em Atributos, dê o nome, o tipo (Especificação, Cor ou Tamanho) e os valores separados por vírgula. \"Adicionar atributo\" cria mais linhas.",
+        shot: shot("categorias-nova", "Janela de nova categoria"),
+      },
+      {
+        title: "Amplie os valores de um atributo",
+        body: "Na categoria, use \"Adicionar valor\" em um atributo para incluir, por exemplo, um novo tamanho. Cada atributo aceita até 200 valores de até 40 caracteres.",
+        shot: shot("categorias-atributos", "Atributos da categoria com seus valores"),
+        warn: "Valores só podem ser adicionados. Não dá para apagar nem renomear, porque produtos já cadastrados dependem deles.",
+      },
+    ],
+    related: ["cadastrar-produto", "importar-catalogo", "enriquecimento-de-catalogo"],
+    keywords: ["categoria", "atributo", "sku", "prefixo", "tamanho", "cor", "variacao"],
+    updatedAt: UPDATED,
+  },
+  {
+    slug: "cadastrar-produto",
+    title: "Cadastrar um produto",
+    summary: "Categoria, marca, atributos, preços, estoque mínimo, fornecedor, local e foto — com margem calculada na hora.",
+    module: "catalogo",
+    level: "essencial",
+    requires: [{ route: "/products/new", level: "edit" }],
+    openRoute: "/products/new",
+    video: { key: "produto", seconds: 40 },
+    steps: [
+      {
+        title: "Escolha a categoria",
+        body: "Em Catálogo › Cadastrar produto, selecione a categoria. Ela decide quais atributos o formulário pede e o prefixo do SKU. O painel da direita mostra o SKU sendo montado.",
+        shot: shot("produto-categoria", "Escolha da categoria no cadastro de produto"),
+      },
+      {
+        title: "Identifique o produto",
+        body: "Preencha Marca, Nome do produto e cada atributo da categoria (todos obrigatórios). O Código de barras (EAN-13) é opcional, mas permite vender bipando no balcão.",
+        shot: shot("produto-identificacao", "Campos de identificação preenchidos"),
+        tip: "Com \"Classificar com IA\", você descreve o produto em uma frase e a IA propõe categoria e atributos (1 crédito). Revise e clique em \"Preencher formulário\".",
+      },
+      {
+        title: "Informe preços e estoque mínimo",
+        body: "Preço de compra e Preço de venda (maior que zero). O resumo mostra lucro por unidade e margem: verde a partir de 30%, amarelo acima de 0% e vermelho no prejuízo. O Estoque mínimo dispara os alertas de reposição.",
+        shot: shot("produto-precos", "Preços e estoque mínimo"),
+      },
+      {
+        title: "Diga de onde vem e onde fica",
+        body: "Escolha o Fornecedor e o Local de estoque (onde o item fica na unidade). Observações são livres. A foto aceita JPG, PNG ou WEBP de até 4 MB.",
+        shot: shot("produto-local", "Fornecedor, local de estoque e observações"),
+      },
+      {
+        title: "Salve",
+        body: "\"Salvar produto\" grava e volta para o catálogo. \"Salvar e criar outro\" mantém a categoria para cadastrar a próxima variação mais rápido.",
+        shot: shot("produto-salvar", "Botão Salvar produto"),
+        warn: "O SKU é gerado na criação e nunca muda na edição. Por isso, confira categoria e atributos antes de salvar.",
+      },
+    ],
+    faq: [
+      { q: "O produto nasce com estoque?", a: "Não. O saldo entra por Entrada de estoque, por recebimento de pedido ou pela importação com a coluna initial_qty." },
+      { q: "Como crio outra cor do mesmo produto?", a: "Na lista do catálogo, use o menu da linha › Duplicar (gera SKU com -COPIA) ou \"Salvar e criar outro\"." },
+    ],
+    related: ["categorias-e-atributos", "entrada-de-estoque", "etiquetas", "importar-catalogo"],
+    keywords: ["produto", "cadastro", "novo produto", "sku", "preco", "margem", "ean", "codigo de barras"],
+    updatedAt: UPDATED,
+  },
+  {
+    slug: "importar-catalogo",
+    title: "Importar o catálogo de uma planilha (CSV)",
+    summary: "Baixe o modelo, preencha as colunas fixas, revise os erros e confirme — com saldo inicial por unidade.",
+    module: "catalogo",
+    level: "essencial",
+    requires: [{ route: "/products/import", level: "edit" }],
+    openRoute: "/products/import",
+    video: { key: "importar", seconds: 33 },
+    steps: [
+      {
+        title: "Baixe o modelo",
+        body: "Em Catálogo › Importar planilha, clique em \"Baixar modelo CSV\". As colunas são fixas, nesta ordem: sku, barcode, category_code, brand, name, cost_price, sale_price, min_stock, initial_qty.",
+        shot: shot("importar-arquivo", "Passo Arquivo da importação"),
+        tip: "Obrigatórias: sku, category_code (o prefixo da categoria, ex.: VES), brand, name, cost_price e sale_price. Use ponto como separador decimal (59.90).",
+      },
+      {
+        title: "Envie o arquivo e escolha a unidade",
+        body: "Escolha a Unidade de destino (onde entra o initial_qty) e envie o CSV. O app não usa mapeamento de colunas — o arquivo precisa seguir o modelo.",
+      },
+      {
+        title: "Revise antes de gravar",
+        body: "A tela Revisar mostra linhas válidas, produtos novos, SKUs que já existem e linhas com erro. Erros comuns: SKU vazio ou repetido no arquivo, código de categoria desconhecido, nome vazio e preço de venda inválido. Em \"Quando o SKU já existir\", escolha Atualizar preços e dados ou Ignorar a linha.",
+        shot: shot("importar-revisar", "Revisão da importação com linhas com erro"),
+      },
+      {
+        title: "Confirme",
+        body: "Nada é gravado até você clicar em \"Confirmar importação\". O passo Resultado mostra o que entrou.",
+      },
+    ],
+    related: ["categorias-e-atributos", "cadastrar-produto", "checklist-inicial"],
+    keywords: ["planilha", "excel", "csv", "importar", "migrar", "carga inicial"],
+    updatedAt: UPDATED,
+  },
+  {
+    slug: "reajuste-de-precos",
+    title: "Reajuste de preços em lote",
+    summary: "Repasse aumento de custo, mude preço de venda ou fixe margem por fornecedor, categoria ou marca — com simulação antes.",
+    module: "catalogo",
+    level: "avancado",
+    requires: [{ route: "/products/pricing", level: "edit" }],
+    openRoute: "/products/pricing",
+    steps: [
+      {
+        title: "Escolha a quais produtos aplicar",
+        body: "Em Catálogo › Reajuste de preços, escolha Por fornecedor, Por categoria ou Por marca e selecione qual.",
+        shot: shot("reajuste-escopo", "Escolha do escopo do reajuste"),
+      },
+      {
+        title: "Escolha como reajustar",
+        body: "Base: \"Custo subiu — repassar\", \"Só o preço de venda\" ou \"Fixar margem alvo\" (abaixo de 100%). Informe o Percentual (negativo reduz) e o Arredondamento: sem arredondar, final ,90, ,99 ou múltiplo de R$ 5.",
+      },
+      {
+        title: "Confira a simulação e aplique",
+        body: "A simulação lista cada SKU com preço e margem antes e depois — nada é salvo ainda. Clique em \"Aplicar a N SKUs\" para gravar. A mudança fica registrada no Log de alterações.",
+        shot: shot("reajuste-simulacao", "Simulação do reajuste"),
+        warn: "O mesmo reajuste não pode ser aplicado duas vezes seguidas, para evitar aplicar em dobro por engano.",
+      },
+    ],
+    related: ["cadastrar-produto", "promocoes", "auditoria"],
+    keywords: ["preco", "reajuste", "aumento", "margem", "lote", "remarcar"],
+    updatedAt: UPDATED,
+  },
+  {
+    slug: "etiquetas",
+    title: "Imprimir etiquetas e cartazes de preço",
+    summary: "Etiqueta de prateleira, de produto, cartaz de preço ou só código de barras — em folha A4.",
+    module: "catalogo",
+    level: "essencial",
+    requires: [{ route: "/labels" }],
+    openRoute: "/labels",
+    steps: [
+      {
+        title: "Escolha o modelo",
+        body: "Em Catálogo › Etiquetas: Etiqueta de prateleira (70×40), Etiqueta de produto (50×25), Cartaz de preço (100×70) ou Só código de barras (38×20). Marque o que imprimir: nome, SKU, preço, atributos, código de barras.",
+        shot: shot("etiquetas-modelo", "Modelos de etiqueta"),
+      },
+      {
+        title: "Monte a fila",
+        body: "Busque os produtos e ajuste as cópias de cada um. Pelo catálogo, selecione vários e use \"Imprimir etiquetas\" para já chegar com a fila pronta.",
+        shot: shot("etiquetas-fila", "Fila de impressão com produtos"),
+        tip: "Sem EAN cadastrado, o código de barras usa o SKU no padrão Code 128.",
+      },
+      {
+        title: "Imprima",
+        body: "\"Imprimir etiquetas\" abre a impressão do navegador em A4. Para gerar PDF, escolha \"Salvar como PDF\" como impressora.",
+      },
+    ],
+    related: ["cadastrar-produto", "locais-de-estoque"],
+    keywords: ["etiqueta", "codigo de barras", "cartaz", "imprimir", "preco"],
+    updatedAt: UPDATED,
+  },
+  {
+    slug: "consultar-produto",
+    title: "Encontrar um produto e ver saldo em cada loja",
+    summary: "Busca e filtros do catálogo, ficha do produto, variações e saldo na rede.",
+    module: "catalogo",
+    level: "essencial",
+    requires: [{ route: "/products" }, { route: "/products/detail" }],
+    openRoute: "/products",
+    steps: [
+      {
+        title: "Busque e filtre",
+        body: "Em Catálogo, a busca procura por SKU, código de barras, marca ou nome. Filtre por Marca, Local e Estoque (Em estoque, Abaixo do mínimo, Zerado); as abas separam por categoria. O saldo fica vermelho abaixo do mínimo e amarelo abaixo do dobro dele.",
+        shot: shot("catalogo-filtros", "Busca e filtros do catálogo"),
+      },
+      {
+        title: "Abra a ficha",
+        body: "Clique no produto para ver especificações, estoque nesta unidade, preços, outras variações e as últimas movimentações. Os botões Entrada, Editar e Vender aparecem conforme o seu perfil.",
+        shot: shot("produto-ficha", "Ficha do produto"),
+      },
+      {
+        title: "Veja o saldo na rede",
+        body: "O card \"Saldo deste SKU na rede\" mostra quanto tem em cada unidade. Se faltar numa loja e sobrar em outra, \"Transferir\" já abre a transferência preenchida.",
+        shot: shot("produto-rede", "Saldo do SKU em cada unidade da rede"),
+      },
+    ],
+    related: ["transferir-entre-lojas", "busca-e-atalhos", "historico-de-movimentacoes"],
+    keywords: ["produto", "saldo", "estoque", "procurar", "consultar", "tem na loja"],
+    updatedAt: UPDATED,
+  },
+  {
+    slug: "cadastro-pelo-celular",
+    title: "Cadastro rápido pelo celular",
+    summary: "Fotografe e cadastre produtos em sequência direto do corredor.",
+    module: "catalogo",
+    level: "avancado",
+    requires: [{ route: "/mobile/capture", level: "edit" }],
+    openRoute: "/mobile/capture",
+    steps: [
+      {
+        title: "Abra o cadastro rápido no celular",
+        body: "Tire a foto, escolha a Categoria e preencha Marca, Nome do produto, Preço de custo e Preço de venda (maior que zero).",
+        shot: shot("mobile-cadastro", "Cadastro rápido no celular"),
+      },
+      {
+        title: "Salve e siga para o próximo",
+        body: "\"Cadastrar e fotografar próximo\" grava e limpa a tela para o próximo item.",
+        warn: "O cadastro rápido não preenche os atributos (cor, tamanho…). Esses produtos aparecem depois em IA › Enriquecimento para completar.",
+      },
+    ],
+    related: ["enriquecimento-de-catalogo", "cadastrar-produto"],
+    keywords: ["celular", "mobile", "foto", "rapido"],
+    updatedAt: UPDATED,
+  },
+];

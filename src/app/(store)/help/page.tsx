@@ -1,5 +1,6 @@
-import { HelpCenter } from '@/features/customers/help-center';
+import { HelpScreen } from '@/features/help/help-screen';
 
-export default function Page() {
-  return <HelpCenter />;
+export default async function Page({ searchParams }: { searchParams: Promise<{ artigo?: string }> }) {
+  const { artigo } = await searchParams;
+  return <HelpScreen artigo={artigo} />;
 }

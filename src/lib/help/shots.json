@@ -1,0 +1,748 @@
+{
+  "acesso-negado": {
+    "focus": {
+      "x": 51.34,
+      "y": 64.8,
+      "w": 8.28,
+      "h": 5.33
+    }
+  },
+  "ajuste-form": {
+    "focus": {
+      "x": 18.06,
+      "y": 41.49,
+      "w": 57.22,
+      "h": 27.45
+    }
+  },
+  "assinatura": {
+    "focus": null
+  },
+  "auditoria": {
+    "focus": null
+  },
+  "busca-ia": {
+    "focus": {
+      "x": 53.79,
+      "y": 8.33,
+      "w": 7.6,
+      "h": 4.67
+    }
+  },
+  "busca-paleta": {
+    "focus": {
+      "x": 30.76,
+      "y": 11.22,
+      "w": 38.47,
+      "h": 7.22
+    }
+  },
+  "caixa-abrir": {
+    "focus": {
+      "x": 18.06,
+      "y": 50.3,
+      "w": 80.56,
+      "h": 6
+    }
+  },
+  "caixa-contagem": {
+    "focus": {
+      "x": 18.06,
+      "y": 29.97,
+      "w": 55.83,
+      "h": 32.84
+    }
+  },
+  "caixa-fechamento": {
+    "focus": null
+  },
+  "caixa-sangria": {
+    "focus": {
+      "x": 32.78,
+      "y": 32.89,
+      "w": 34.44,
+      "h": 34.21
+    }
+  },
+  "cargos-matriz": {
+    "focus": null
+  },
+  "cargos-simular": {
+    "focus": {
+      "x": 34.44,
+      "y": 57.89,
+      "w": 64.17,
+      "h": 37.69
+    }
+  },
+  "catalogo-filtros": {
+    "focus": {
+      "x": 18.06,
+      "y": 21.84,
+      "w": 80.56,
+      "h": 7.33
+    }
+  },
+  "categorias-atributos": {
+    "focus": {
+      "x": 18.06,
+      "y": 17.75,
+      "w": 21.11,
+      "h": 32.28
+    }
+  },
+  "categorias-lista": {
+    "focus": {
+      "x": 88.88,
+      "y": 10.53,
+      "w": 9.73,
+      "h": 4.67
+    }
+  },
+  "categorias-nova": {
+    "focus": {
+      "x": 30,
+      "y": 22.66,
+      "w": 40,
+      "h": 54.69
+    }
+  },
+  "checklist": {
+    "focus": {
+      "x": 22.92,
+      "y": 17.75,
+      "w": 70.83,
+      "h": 68.59
+    }
+  },
+  "clientes-credito": {
+    "focus": {
+      "x": 34.86,
+      "y": 33.85,
+      "w": 30.28,
+      "h": 32.31
+    }
+  },
+  "clientes-lista": {
+    "focus": {
+      "x": 88.06,
+      "y": 10.53,
+      "w": 10.55,
+      "h": 4.67
+    }
+  },
+  "clientes-novo": {
+    "focus": {
+      "x": 32.78,
+      "y": 22.13,
+      "w": 34.44,
+      "h": 55.74
+    }
+  },
+  "conferencia-nota": {
+    "focus": null
+  },
+  "contagem-escopo": {
+    "focus": {
+      "x": 18.06,
+      "y": 23.76,
+      "w": 57.22,
+      "h": 19.85
+    }
+  },
+  "contagem-fechar": {
+    "focus": {
+      "x": 75.28,
+      "y": 53.25,
+      "w": 23.33,
+      "h": 6
+    }
+  },
+  "contagem-itens": {
+    "focus": null
+  },
+  "convite-aceitar": {
+    "focus": {
+      "x": 11.94,
+      "y": 63.61,
+      "w": 26.11,
+      "h": 5.78
+    }
+  },
+  "creditos": {
+    "focus": {
+      "x": 87.98,
+      "y": 10.53,
+      "w": 10.63,
+      "h": 4.67
+    }
+  },
+  "devolucao-form": {
+    "focus": {
+      "x": 18.06,
+      "y": 41.49,
+      "w": 57.22,
+      "h": 39.05
+    }
+  },
+  "empresa-dados": {
+    "focus": {
+      "x": 34.44,
+      "y": 51.47,
+      "w": 64.17,
+      "h": 17.99
+    }
+  },
+  "empresa-excluir": {
+    "focus": {
+      "x": 34.44,
+      "y": 69.46,
+      "w": 64.17,
+      "h": 17.66
+    }
+  },
+  "entrada-confirmar": {
+    "focus": {
+      "x": 75.28,
+      "y": 53.25,
+      "w": 23.33,
+      "h": 6
+    }
+  },
+  "entrada-form": {
+    "focus": {
+      "x": 18.06,
+      "y": 43.75,
+      "w": 57.22,
+      "h": 39.05
+    }
+  },
+  "entrada-produto": {
+    "focus": {
+      "x": 19.38,
+      "y": 33.62,
+      "w": 54.58,
+      "h": 5.78
+    }
+  },
+  "equipe-convidar": {
+    "focus": {
+      "x": 33.47,
+      "y": 23.82,
+      "w": 33.06,
+      "h": 52.36
+    }
+  },
+  "equipe-lista": {
+    "focus": {
+      "x": 87.01,
+      "y": 20.23,
+      "w": 10.28,
+      "h": 4.67
+    }
+  },
+  "estoque-painel": {
+    "focus": {
+      "x": 18.06,
+      "y": 31.66,
+      "w": 80.56,
+      "h": 41.45
+    }
+  },
+  "etiquetas-fila": {
+    "focus": {
+      "x": 87.71,
+      "y": 10.53,
+      "w": 10.9,
+      "h": 4.67
+    }
+  },
+  "etiquetas-modelo": {
+    "focus": {
+      "x": 18.06,
+      "y": 17.75,
+      "w": 55.83,
+      "h": 26.04
+    }
+  },
+  "exportacoes": {
+    "focus": null
+  },
+  "fiscal": {
+    "focus": null
+  },
+  "fornecedor-form": {
+    "focus": {
+      "x": 30.49,
+      "y": 27.82,
+      "w": 55.69,
+      "h": 5.33
+    }
+  },
+  "fornecedores-lista": {
+    "focus": {
+      "x": 86.4,
+      "y": 10.53,
+      "w": 12.21,
+      "h": 4.67
+    }
+  },
+  "historico-lista": {
+    "focus": {
+      "x": 78.38,
+      "y": 10.53,
+      "w": 8.91,
+      "h": 4.67
+    }
+  },
+  "ia-anomalias": {
+    "focus": {
+      "x": 18.06,
+      "y": 29.06,
+      "w": 80.56,
+      "h": 12.96
+    }
+  },
+  "ia-enriquecimento": {
+    "focus": null
+  },
+  "ia-fila": {
+    "focus": null
+  },
+  "ia-hub": {
+    "focus": null
+  },
+  "ia-previsao": {
+    "focus": {
+      "x": 87.85,
+      "y": 10.53,
+      "w": 10.76,
+      "h": 4.67
+    }
+  },
+  "importar-arquivo": {
+    "focus": {
+      "x": 27.57,
+      "y": 74.81,
+      "w": 11.04,
+      "h": 4.67
+    }
+  },
+  "importar-revisar": {
+    "focus": {
+      "x": 26.39,
+      "y": 53.85,
+      "w": 63.89,
+      "h": 17.73
+    }
+  },
+  "locais-lista": {
+    "focus": {
+      "x": 90.81,
+      "y": 10.53,
+      "w": 7.81,
+      "h": 4.67
+    }
+  },
+  "marca": {
+    "focus": null
+  },
+  "mobile-cadastro": {
+    "focus": null
+  },
+  "mobile-contagem": {
+    "focus": null
+  },
+  "movimento-detalhe": {
+    "focus": null
+  },
+  "notificacoes-lista": {
+    "focus": {
+      "x": 18.06,
+      "y": 7.33,
+      "w": 68.5,
+      "h": 7.86
+    }
+  },
+  "notificacoes-regras": {
+    "focus": {
+      "x": 34.44,
+      "y": 24.28,
+      "w": 64.17,
+      "h": 54.73
+    }
+  },
+  "ocr-fonte": {
+    "focus": {
+      "x": 18.13,
+      "y": 31.62,
+      "w": 57.08,
+      "h": 27.27
+    }
+  },
+  "onboarding-1-nome": {
+    "focus": {
+      "x": 39.44,
+      "y": 20.91,
+      "w": 40,
+      "h": 6.22
+    }
+  },
+  "onboarding-2-logo": {
+    "focus": {
+      "x": 39.44,
+      "y": 46.46,
+      "w": 17.62,
+      "h": 4.67
+    }
+  },
+  "onboarding-3-cor": {
+    "focus": {
+      "x": 3.47,
+      "y": 22.5,
+      "w": 6.53,
+      "h": 4.09
+    }
+  },
+  "onboarding-4-categorias": {
+    "focus": {
+      "x": 59.17,
+      "y": 20.83,
+      "w": 20.28,
+      "h": 11.08
+    }
+  },
+  "onboarding-5-fiscal": {
+    "focus": null
+  },
+  "onboarding-6-revisao": {
+    "focus": {
+      "x": 85.29,
+      "y": 93.33,
+      "w": 12.49,
+      "h": 6
+    }
+  },
+  "onboarding-7-pronto": {
+    "focus": null
+  },
+  "pdv-busca": {
+    "focus": {
+      "x": 7.12,
+      "y": 5.37,
+      "w": 54.24,
+      "h": 94.63
+    }
+  },
+  "pdv-carrinho": {
+    "focus": {
+      "x": 7.12,
+      "y": 5.37,
+      "w": 85.76,
+      "h": 94.63
+    }
+  },
+  "pdv-pagamento": {
+    "focus": {
+      "x": 60,
+      "y": 53.89,
+      "w": 32.88,
+      "h": 24.31
+    }
+  },
+  "pdv-tela": {
+    "focus": {
+      "x": 8.47,
+      "y": 18.41,
+      "w": 51.44,
+      "h": 8.29
+    }
+  },
+  "pedido-form": {
+    "focus": {
+      "x": 18.06,
+      "y": 17.75,
+      "w": 57.22,
+      "h": 36.72
+    }
+  },
+  "perfil-2fa": {
+    "focus": {
+      "x": 34.44,
+      "y": 60.19,
+      "w": 64.17,
+      "h": 39.81
+    }
+  },
+  "perfil-dados": {
+    "focus": {
+      "x": 34.44,
+      "y": 29.97,
+      "w": 64.17,
+      "h": 33.78
+    }
+  },
+  "perfil-senha": {
+    "focus": {
+      "x": 34.44,
+      "y": 60.19,
+      "w": 64.17,
+      "h": 39.81
+    }
+  },
+  "produto-categoria": {
+    "focus": {
+      "x": 18.06,
+      "y": 17.75,
+      "w": 58.89,
+      "h": 26.93
+    }
+  },
+  "produto-ficha": {
+    "focus": null
+  },
+  "produto-identificacao": {
+    "focus": {
+      "x": 18.06,
+      "y": 44.68,
+      "w": 58.89,
+      "h": 51.71
+    }
+  },
+  "produto-local": {
+    "focus": {
+      "x": 18.06,
+      "y": 37.13,
+      "w": 58.89,
+      "h": 31.45
+    }
+  },
+  "produto-precos": {
+    "focus": {
+      "x": 18.06,
+      "y": 81.17,
+      "w": 58.89,
+      "h": 18.83
+    }
+  },
+  "produto-rede": {
+    "focus": {
+      "x": 69.31,
+      "y": 30.13,
+      "w": 29.31,
+      "h": 28.64
+    }
+  },
+  "produto-salvar": {
+    "focus": {
+      "x": 90.4,
+      "y": 4.86,
+      "w": 8.21,
+      "h": 4.67
+    }
+  },
+  "promocao-nova": {
+    "focus": {
+      "x": 18.06,
+      "y": 17.75,
+      "w": 57.22,
+      "h": 19.85
+    }
+  },
+  "promocoes-lista": {
+    "focus": {
+      "x": 88.74,
+      "y": 10.53,
+      "w": 9.87,
+      "h": 4.67
+    }
+  },
+  "reajuste-escopo": {
+    "focus": {
+      "x": 18.06,
+      "y": 66.87,
+      "w": 57.22,
+      "h": 33.13
+    }
+  },
+  "reajuste-simulacao": {
+    "focus": {
+      "x": 18.06,
+      "y": 53.76,
+      "w": 57.22,
+      "h": 46.24
+    }
+  },
+  "rel-abc": {
+    "focus": null
+  },
+  "rel-categorias": {
+    "focus": null
+  },
+  "rel-lucro": {
+    "focus": null
+  },
+  "rel-vendas": {
+    "focus": {
+      "x": 89.7,
+      "y": 10.3,
+      "w": 8.91,
+      "h": 4.67
+    }
+  },
+  "relatorios-visao": {
+    "focus": null
+  },
+  "reposicao-gerar": {
+    "focus": {
+      "x": 88.88,
+      "y": 9.86,
+      "w": 9.73,
+      "h": 4.67
+    }
+  },
+  "reposicao-sugeridos": {
+    "focus": {
+      "x": 16.11,
+      "y": 4.89,
+      "w": 83.89,
+      "h": 16.51
+    }
+  },
+  "tour-acoes": {
+    "focus": {
+      "x": 67.37,
+      "y": 33.1,
+      "w": 31.24,
+      "h": 48.18
+    }
+  },
+  "tour-conta": {
+    "focus": {
+      "x": 0.14,
+      "y": 93.57,
+      "w": 16.32,
+      "h": 6.21
+    }
+  },
+  "tour-kpis": {
+    "focus": {
+      "x": 18.06,
+      "y": 17.75,
+      "w": 80.56,
+      "h": 14.91
+    }
+  },
+  "tour-menu": {
+    "focus": {
+      "x": 0,
+      "y": 0,
+      "w": 17.78,
+      "h": 100
+    }
+  },
+  "tour-unidade": {
+    "focus": {
+      "x": 0,
+      "y": 0,
+      "w": 17.71,
+      "h": 8.09
+    }
+  },
+  "transf-form": {
+    "focus": {
+      "x": 18.06,
+      "y": 46.71,
+      "w": 57.22,
+      "h": 53.29
+    }
+  },
+  "transf-pendente": {
+    "focus": {
+      "x": 18.06,
+      "y": 86.73,
+      "w": 57.22,
+      "h": 8.8
+    }
+  },
+  "transf-receber": {
+    "focus": {
+      "x": 75.28,
+      "y": 53.71,
+      "w": 23.33,
+      "h": 6
+    }
+  },
+  "troca-form": {
+    "focus": {
+      "x": 18.06,
+      "y": 64.23,
+      "w": 57.22,
+      "h": 35.77
+    }
+  },
+  "unidades-lista": {
+    "focus": {
+      "x": 86.67,
+      "y": 32.61,
+      "w": 10.62,
+      "h": 4.67
+    }
+  },
+  "unidades-nova": {
+    "focus": {
+      "x": 32.78,
+      "y": 27.93,
+      "w": 34.44,
+      "h": 44.14
+    }
+  },
+  "venda-cliente": {
+    "focus": {
+      "x": 37.06,
+      "y": 65.46,
+      "w": 35.51,
+      "h": 14.01
+    }
+  },
+  "venda-confirmar": {
+    "focus": {
+      "x": 73.89,
+      "y": 74.86,
+      "w": 24.72,
+      "h": 6
+    }
+  },
+  "venda-desconto": {
+    "focus": {
+      "x": 32.78,
+      "y": 18.56,
+      "w": 34.44,
+      "h": 62.89
+    }
+  },
+  "venda-pagamento": {
+    "focus": {
+      "x": 73.89,
+      "y": 45.08,
+      "w": 24.72,
+      "h": 32.8
+    }
+  },
+  "venda-produtos": {
+    "focus": {
+      "x": 18.06,
+      "y": 34.21,
+      "w": 55.83,
+      "h": 23.66
+    }
+  },
+  "venda-recibo": {
+    "focus": {
+      "x": 64.8,
+      "y": 3.71,
+      "w": 10.76,
+      "h": 4.67
+    }
+  }
+}

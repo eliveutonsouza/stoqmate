@@ -1,0 +1,161 @@
+{
+  "tour": {
+    "title": "Tour pelo Stoqmate",
+    "subtitle": "Onde fica cada coisa, em dois minutos",
+    "intro": "E aí! Bora conhecer o Stoqmate? Em dois minutinhos você vai saber onde fica cada coisa.",
+    "scenes": [
+      { "shot": "tour-menu", "text": "Tudo começa pelo menu aqui do lado. Ele mostra só o que o seu perfil usa, então se um item não aparece, é porque você não precisa dele." },
+      { "shot": "tour-kpis", "text": "No dashboard, logo no topo, ficam a receita dos últimos trinta dias, as unidades vendidas, os itens em estoque e o giro." },
+      { "shot": "tour-acoes", "text": "As ações rápidas levam direto para vender, dar entrada, transferir e cadastrar. E tem atalho de teclado: V, E, T, N, A e P." },
+      { "shot": "tour-unidade", "text": "Tem mais de uma loja? Troque a unidade ativa aqui em cima. Venda, caixa e entrada acontecem sempre nela." },
+      { "shot": "tour-conta", "text": "E no rodapé fica a sua conta, com Meu perfil, Ajuda e Sair." }
+    ],
+    "outro": "Pronto, agora você já se localiza. Qualquer dúvida, a central de ajuda está sempre no menu."
+  },
+  "onboarding": {
+    "title": "Configuração inicial da loja",
+    "subtitle": "Os seis passos do onboarding",
+    "intro": "Acabou de criar a conta? Então vamos deixar a loja do seu jeito em seis passos rapidinhos.",
+    "scenes": [
+      { "shot": "onboarding-1-nome", "text": "Primeiro, o nome da loja. É ele que aparece no painel, no recibo e nos relatórios." },
+      { "shot": "onboarding-2-logo", "text": "Depois o logo. Se ainda não tiver um, sem problema: dá pra usar as iniciais." },
+      { "shot": "onboarding-3-cor", "text": "Escolha a cor da sua marca. Ela pinta os botões e destaques do app pra equipe toda." },
+      { "shot": "onboarding-4-categorias", "text": "Agora o mais importante: marque o que você vende. Cada categoria já vem com atributos, tipo cor e tamanho, que montam o SKU." },
+      { "shot": "onboarding-5-fiscal", "text": "Na parte fiscal, diga como a loja emite nota hoje. Dá pra decidir depois, sem pressa." },
+      { "shot": "onboarding-6-revisao", "text": "Confira o resumo e clique em Concluir e entrar." },
+      { "shot": "onboarding-7-pronto", "text": "E pronto! A loja está no ar, com o período de teste ativo e os próximos passos sugeridos." }
+    ],
+    "outro": "Tudo isso pode ser ajustado depois em Configurações. Agora é cadastrar os produtos!"
+  },
+  "equipe": {
+    "title": "Convidar a equipe",
+    "subtitle": "Link de convite e perfil de acesso",
+    "intro": "Hora de chamar o time! Vou te mostrar como convidar alguém e escolher o que cada um pode acessar.",
+    "scenes": [
+      { "shot": "equipe-lista", "text": "Em Configurações, Usuários, você vê quem já está na equipe. Clique em Convidar usuário." },
+      { "shot": "equipe-convidar", "text": "Preencha nome, email e o perfil de acesso: vendedor, gestor de estoque ou gestor financeiro. O quadro explica o que cada um faz." },
+      { "shot": "equipe-lista", "text": "Aí é só copiar o link do convite e mandar pelo WhatsApp ou email. Ele vale por sete dias." },
+      { "shot": "convite-aceitar", "text": "A pessoa abre o link, confirma o nome, cria uma senha e já entra com o perfil certinho." }
+    ],
+    "outro": "Precisou mudar o perfil de alguém? É só trocar direto na lista. Fácil assim."
+  },
+  "categorias": {
+    "title": "Categorias e atributos",
+    "subtitle": "A base do SKU",
+    "intro": "Categoria bem montada é meio caminho andado. Vamos ver como criar uma do zero.",
+    "scenes": [
+      { "shot": "categorias-lista", "text": "Em Catálogo, Categorias e atributos, você vê cada categoria com os atributos e o formato do SKU." },
+      { "shot": "categorias-nova", "text": "Em Nova categoria, dê um nome, um prefixo de duas a quatro letras, a unidade de medida e os atributos, com os valores separados por vírgula." },
+      { "shot": "categorias-atributos", "text": "Precisa de um tamanho novo? Use Adicionar valor. Só lembrando: valores só entram, não saem, porque os produtos dependem deles." }
+    ],
+    "outro": "Com as categorias prontas, cadastrar produto fica rapidinho."
+  },
+  "produto": {
+    "title": "Cadastrar um produto",
+    "subtitle": "Do SKU à margem, em um formulário",
+    "intro": "Bora cadastrar um produto? Olha como é simples.",
+    "scenes": [
+      { "shot": "produto-categoria", "text": "Primeiro escolha a categoria. Ela define os atributos e o prefixo do SKU, que vai se montando ali do lado." },
+      { "shot": "produto-identificacao", "text": "Preencha marca, nome e os atributos. O código de barras é opcional, mas deixa a venda no balcão bem mais rápida." },
+      { "shot": "produto-precos", "text": "Coloque o preço de compra e o de venda. A margem aparece na hora, e o estoque mínimo dispara o alerta de reposição." },
+      { "shot": "produto-local", "text": "Diga quem é o fornecedor e onde o produto fica na loja." },
+      { "shot": "produto-salvar", "text": "E salve. Confere bem antes, porque o SKU não muda depois de criado." }
+    ],
+    "outro": "Produto cadastrado! Agora é só dar entrada no estoque."
+  },
+  "importar": {
+    "title": "Importar o catálogo por planilha",
+    "subtitle": "CSV com revisão antes de gravar",
+    "intro": "Tem o catálogo numa planilha? Então não precisa cadastrar um por um. Olha só.",
+    "scenes": [
+      { "shot": "importar-arquivo", "text": "Em Importar planilha, baixe o modelo CSV. As colunas são fixas: SKU, código de barras, categoria, marca, nome, custo, preço, mínimo e quantidade inicial." },
+      { "shot": "importar-revisar", "text": "Envie o arquivo e o app revisa tudo: mostra o que é produto novo, o que já existe e as linhas com erro, com o motivo." },
+      { "shot": "importar-revisar", "text": "Nada é gravado até você clicar em Confirmar importação. Tranquilo, né?" }
+    ],
+    "outro": "Catálogo dentro, estoque inicial lançado. Bora vender!"
+  },
+  "pdv": {
+    "title": "Vender no balcão",
+    "subtitle": "O PDV para tablet",
+    "intro": "Fila no caixa? O PDV foi feito pra vender rapidinho, no toque.",
+    "scenes": [
+      { "shot": "pdv-tela", "text": "Bipe o código de barras ou digite o nome do produto aqui na busca." },
+      { "shot": "pdv-busca", "text": "Toque no produto pra colocar no carrinho. As categorias ajudam a filtrar." },
+      { "shot": "pdv-carrinho", "text": "Ajuste as quantidades no mais e no menos e confira o total." },
+      { "shot": "pdv-pagamento", "text": "Escolha a forma de pagamento e toque em Cobrar e finalizar. Pronto, venda registrada!" }
+    ],
+    "outro": "Precisa de cliente, parcelamento ou pagamento dividido? Aí é a venda completa, que tem vídeo próprio."
+  },
+  "venda": {
+    "title": "Venda completa",
+    "subtitle": "Cliente, desconto e pagamento dividido",
+    "intro": "Agora a venda completa, com cliente, desconto e pagamento dividido.",
+    "scenes": [
+      { "shot": "venda-produtos", "text": "Busque os produtos. O preço já vem com a promoção, e dá pra dar desconto por item." },
+      { "shot": "venda-cliente", "text": "Se quiser, identifique o cliente pelo nome, CPF ou telefone. O crédito em loja dele aparece na hora." },
+      { "shot": "venda-desconto", "text": "Desconto no total, em porcentagem ou em reais. Acima de vinte por cento, um gestor precisa aprovar com email e senha." },
+      { "shot": "venda-pagamento", "text": "No pagamento, dá pra dividir em até seis formas, e o crédito parcela em até doze vezes." },
+      { "shot": "venda-confirmar", "text": "Confirme a venda e o recibo já aparece." }
+    ],
+    "outro": "Estoque baixado, venda no histórico e cliente atualizado. Tudo junto."
+  },
+  "caixa": {
+    "title": "Abrir e fechar o caixa",
+    "subtitle": "Gaveta, sangria e fechamento",
+    "intro": "Vamos cuidar do caixa do turno, do começo ao fim.",
+    "scenes": [
+      { "shot": "caixa-abrir", "text": "No começo do turno, informe quanto tem na gaveta e clique em Abrir caixa." },
+      { "shot": "caixa-sangria", "text": "Durante o dia, registre suprimento quando entrar troco e sangria quando tirar dinheiro da gaveta." },
+      { "shot": "caixa-contagem", "text": "No fechamento, conte a gaveta cédula por cédula. O app compara com o esperado e mostra se faltou ou sobrou." },
+      { "shot": "caixa-fechamento", "text": "Deu diferença? Explique o motivo e feche o turno. O gestor é avisado automaticamente." }
+    ],
+    "outro": "Turno fechado não aceita lançamento pra trás. Qualquer correção vai no próximo."
+  },
+  "entrada": {
+    "title": "Dar entrada de mercadoria",
+    "subtitle": "Compra recebida, estoque atualizado",
+    "intro": "Chegou mercadoria? Vamos dar entrada no estoque.",
+    "scenes": [
+      { "shot": "estoque-painel", "text": "No painel de Estoque, escolha Entrada. Daqui você chega em todas as movimentações." },
+      { "shot": "entrada-produto", "text": "Busque o produto pelo nome, SKU ou código de barras." },
+      { "shot": "entrada-form", "text": "Informe a quantidade, o custo unitário, o fornecedor e o número da nota. O resumo mostra o estoque antes e depois." },
+      { "shot": "entrada-confirmar", "text": "Clique em Confirmar entrada e o saldo já está atualizado." }
+    ],
+    "outro": "Veio um pedido inteiro? Use Receber lá em Compras e entra tudo de uma vez."
+  },
+  "transferencia": {
+    "title": "Transferir entre lojas",
+    "subtitle": "Enviar, acompanhar e receber",
+    "intro": "Faltou numa loja e sobrou na outra? Transfere! Olha como.",
+    "scenes": [
+      { "shot": "transf-form", "text": "Escolha o produto, a unidade de origem, a de destino, a quantidade e o motivo." },
+      { "shot": "transf-pendente", "text": "Ao confirmar, sai da origem na hora. No destino, fica em trânsito até alguém conferir." },
+      { "shot": "transf-receber", "text": "Na loja que recebe, confira item por item e clique em Confirmar recebimento. Se vier diferente, é só justificar." }
+    ],
+    "outro": "Transferir quase sempre sai mais barato e mais rápido do que comprar."
+  },
+  "contagem": {
+    "title": "Contagem de inventário",
+    "subtitle": "No computador e no celular",
+    "intro": "Dia de contagem? Vamos fazer isso sem dor de cabeça.",
+    "scenes": [
+      { "shot": "contagem-escopo", "text": "Escolha a unidade e, se quiser, o local e a categoria que vai contar." },
+      { "shot": "contagem-itens", "text": "Adicione os produtos e digite o que contou. O que ficar em branco não é ajustado." },
+      { "shot": "contagem-fechar", "text": "Com diferença, escolha o motivo, explique e clique em Fechar contagem e ajustar." },
+      { "shot": "mobile-contagem", "text": "E pelo celular dá pra fazer a contagem cega: você bipa e conta, e o saldo do sistema só aparece no final." }
+    ],
+    "outro": "Só não saia da página antes de fechar, senão a contagem se perde."
+  },
+  "reposicao": {
+    "title": "Reposição e pedido de compra",
+    "subtitle": "Da sugestão ao recebimento",
+    "intro": "Chega de adivinhar o que comprar. O Stoqmate sugere pra você.",
+    "scenes": [
+      { "shot": "reposicao-sugeridos", "text": "Em Compras, a sugestão usa as vendas dos últimos trinta dias, o estoque mínimo e o prazo do fornecedor." },
+      { "shot": "reposicao-gerar", "text": "Marque os itens e clique em Gerar pedido. Sai um pedido por fornecedor." },
+      { "shot": "pedido-form", "text": "Revise quantidades, frete e observações e registre. O pedido mínimo do fornecedor é respeitado." },
+      { "shot": "reposicao-sugeridos", "text": "Quando a mercadoria chegar, clique em Receber no pedido e tudo entra no estoque." }
+    ],
+    "outro": "Lembrando que o app não envia o pedido pro fornecedor. Isso fica com você."
+  }
+}
