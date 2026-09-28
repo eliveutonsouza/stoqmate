@@ -10,7 +10,8 @@
 //
 // style-src leva 'unsafe-inline' nas duas: a UI inteira usa style={{…}}
 // (atributo style), que nonce não cobre. Origens externas reais do app:
-// Supabase (API, auth, storage) e Google Fonts (design-system.css).
+// Supabase (API, auth, storage — inclusive os vídeos da central de ajuda)
+// e Google Fonts (design-system.css).
 
 export function buildCsp(opts: { nonce?: string; supabaseUrl: string; dev: boolean; https: boolean }) {
   const supabase = opts.supabaseUrl.replace(/\/+$/, "");
@@ -24,6 +25,8 @@ export function buildCsp(opts: { nonce?: string; supabaseUrl: string; dev: boole
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' data: https://fonts.gstatic.com`,
     `img-src 'self' data: blob: ${supabase}`,
+    // Vídeos e legendas da central de ajuda (bucket público help-media).
+    `media-src 'self' blob: ${supabase}`,
     `connect-src 'self' ${supabase} ${supabaseWs}`,
     `frame-src 'none'`,
     `object-src 'none'`,

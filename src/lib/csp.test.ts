@@ -10,6 +10,7 @@ describe("buildCsp", () => {
     expect(script).toBe("script-src 'self' 'nonce-n0nc3' 'strict-dynamic'");
     expect(csp).toContain("connect-src 'self' https://abc.supabase.co wss://abc.supabase.co");
     expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("media-src 'self' blob: https://abc.supabase.co");
     expect(csp).toContain("upgrade-insecure-requests");
   });
 
