@@ -34,17 +34,35 @@ export function ShellProvider({ value, children }) {
     return () => { cancelled = true; unsubscribe?.(); };
   }, [hasSession, router]);
 
+  // `counts` chega do layout como promise (não bloqueia a navegação); até
+  // resolver, o chrome renderiza sem badges. Storybook passa o objeto pronto.
+  const countsSource = value?.counts;
+  const [resolved, setResolved] = React.useState(null);
+  React.useEffect(() => {
+    if (!countsSource || typeof countsSource.then !== 'function') return;
+    let cancelled = false;
+    countsSource.then(
+      (c) => { if (!cancelled) setResolved({ source: countsSource, counts: c }); },
+      () => {},
+    );
+    return () => { cancelled = true; };
+  }, [countsSource]);
+  const counts = countsSource && typeof countsSource.then === 'function'
+    ? (resolved?.source === countsSource ? resolved.counts : null)
+    : countsSource ?? null;
+
   const signOut = value?.actions?.signOut;
   const wrapped = React.useMemo(() => {
-    if (!value || !signOut) return value;
+    if (!value) return value;
     return {
       ...value,
-      actions: {
+      counts,
+      actions: signOut ? {
         ...value.actions,
         signOut: (...args) => { leavingRef.current = true; return signOut(...args); },
-      },
+      } : value.actions,
     };
-  }, [value, signOut]);
+  }, [value, signOut, counts]);
 
   return <ShellContext.Provider value={wrapped}>{children}</ShellContext.Provider>;
 }

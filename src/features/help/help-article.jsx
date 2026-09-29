@@ -1,14 +1,57 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useNavigate } from "@/hooks/use-navigate";
 import { StoreShell } from "@/components/ui/store-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Page } from "@/components/ui/page-container";
 import { Modal } from "@/components/ui/modal";
 import { I } from "@/components/icons";
-import { helpMediaUrl } from "@/lib/help/media";
-import { ArticleRow, LEVEL_LABEL, ShotFigure, formatDuration, markArticleRead, useReadArticles } from "./help-parts";
+import { helpMediaUrl, helpYoutubeId } from "@/lib/help/media";
+import { ArticleRow, LEVEL_LABEL, PlayIcon, ShotFigure, formatDuration, markArticleRead, useReadArticles } from "./help-parts";
+
+// Vídeo do artigo. Com id do YouTube: só o poster (otimizado) até o clique —
+// o player do YouTube (~500 KB+ de JS) só carrega quando alguém vai assistir.
+// Sem id: <video> do bucket, com preload só de metadados.
+function ArticleVideo({ video, title }) {
+  const [playing, setPlaying] = React.useState(false);
+  const youtubeId = helpYoutubeId(video.key);
+  const poster = helpMediaUrl(`videos/${video.key}.jpg`);
+  const frame = { display: "block", width: "100%", aspectRatio: "16 / 9", background: "#0E0D0B" };
+
+  if (!youtubeId) {
+    return (
+      <video controls preload="metadata" playsInline poster={poster} style={frame} aria-label={`Vídeo: ${title}`}>
+        <source src={helpMediaUrl(`videos/${video.key}.mp4`)} type="video/mp4" />
+        <track kind="captions" srcLang="pt-BR" label="Português" src={helpMediaUrl(`videos/${video.key}.vtt`)} default />
+        Seu navegador não reproduz vídeo. Siga o passo a passo abaixo.
+      </video>
+    );
+  }
+  if (playing) {
+    return (
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=pt`}
+        title={`Vídeo: ${title}`}
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+        style={{ ...frame, border: 0 }}
+      />
+    );
+  }
+  return (
+    <button type="button" onClick={() => setPlaying(true)} aria-label={`Assistir vídeo: ${title}`}
+      style={{ ...frame, position: "relative", padding: 0, border: 0, cursor: "pointer" }}>
+      <Image src={poster} alt="" fill priority sizes="(max-width: 960px) 100vw, 900px" style={{ objectFit: "cover" }} />
+      <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ width: 64, height: 64, borderRadius: 32, background: "rgba(20,18,13,.72)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 4 }}>
+          <PlayIcon size={26} />
+        </span>
+      </span>
+    </button>
+  );
+}
 
 const DATE = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
 
@@ -58,18 +101,7 @@ export function HelpArticleView({ article, module: helpModule, related }) {
           <article style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
             {video && (
               <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-                <video
-                  controls
-                  preload="metadata"
-                  playsInline
-                  poster={helpMediaUrl(`videos/${video.key}.jpg`)}
-                  style={{ display: "block", width: "100%", aspectRatio: "16 / 9", background: "#0E0D0B" }}
-                  aria-label={`Vídeo: ${article.title}`}
-                >
-                  <source src={helpMediaUrl(`videos/${video.key}.mp4`)} type="video/mp4" />
-                  <track kind="captions" srcLang="pt-BR" label="Português" src={helpMediaUrl(`videos/${video.key}.vtt`)} default />
-                  Seu navegador não reproduz vídeo. Siga o passo a passo abaixo.
-                </video>
+                <ArticleVideo key={video.key} video={video} title={article.title} />
                 <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 14px", fontSize: 12, color: "var(--fg-muted)", borderTop: "1px solid var(--line-soft)", flexWrap: "wrap" }}>
                   <span className="badge badge-accent">Vídeo{video.seconds ? ` · ${formatDuration(video.seconds)}` : ""}</span>
                   <span>Com narração e legenda. O mesmo conteúdo está escrito abaixo, passo a passo.</span>

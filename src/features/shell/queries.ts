@@ -32,12 +32,17 @@ export const loadStoreShell = cache(async () => {
   const user = await getSessionUser(supabase);
   if (!user) return null;
 
-  const [profile, tenant, stores, role, counts] = await Promise.all([
+  // Contadores da sidebar (8 count(*) sob RLS) não seguram a navegação: a
+  // promise vai pro cliente pelo mesmo stream e os badges aparecem quando
+  // resolver.
+  const counts: Promise<ShellCounts> = Promise.resolve(supabase.rpc("fn_shell_counts"))
+    .then((res) => must(res, "shell.counts") as ShellCounts);
+
+  const [profile, tenant, stores, role] = await Promise.all([
     supabase.from("profiles").select("full_name, initials").eq("id", user.id).maybeSingle(),
     supabase.from("tenants").select("id, name, logo_url, brand_color, cash_control").maybeSingle(),
     supabase.from("stores").select("id, name, type").order("created_at"),
     supabase.rpc("auth_role"),
-    supabase.rpc("fn_shell_counts"),
   ]);
 
   const storeList = must(stores, "shell.stores") ?? [];
@@ -58,7 +63,7 @@ export const loadStoreShell = cache(async () => {
       roleId,
       role: ROLES.find((r) => r.id === roleId)?.name ?? "",
     },
-    counts: must(counts, "shell.counts") as ShellCounts,
+    counts,
   };
 });
 

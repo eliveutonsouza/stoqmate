@@ -28,7 +28,8 @@ export function buildCsp(opts: { nonce?: string; supabaseUrl: string; dev: boole
     // Vídeos e legendas da central de ajuda (bucket público help-media).
     `media-src 'self' blob: ${supabase}`,
     `connect-src 'self' ${supabase} ${supabaseWs}`,
-    `frame-src 'none'`,
+    // Player dos vídeos da central de ajuda (domínio sem cookies do YouTube).
+    `frame-src https://www.youtube-nocookie.com`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
