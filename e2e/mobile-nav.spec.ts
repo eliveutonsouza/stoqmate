@@ -5,8 +5,14 @@ import { test, expect } from "@playwright/test";
 const drawerIsOpen = (page: import("@playwright/test").Page) =>
   page.locator(".app-shell").getAttribute("data-drawer").then((v) => v === "open");
 
+// loading.tsx do grupo mostra um shell com esqueleto enquanto a página faz
+// streaming; por um instante os dois shells coexistem no DOM.
+const pageSettled = (page: import("@playwright/test").Page) =>
+  expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
 test("drawer do app abre pelo hamburger, fecha com Esc e ao navegar", async ({ page }) => {
   await page.goto("/dashboard");
+  await pageSettled(page);
   expect(await drawerIsOpen(page)).toBe(false);
 
   await page.getByRole("button", { name: "Abrir menu" }).click();
@@ -17,6 +23,7 @@ test("drawer do app abre pelo hamburger, fecha com Esc e ao navegar", async ({ p
   await page.getByRole("button", { name: "Abrir menu" }).click();
   await page.locator(".app-sidebar").getByText("Notificações", { exact: true }).click();
   await expect(page).toHaveURL(/\/notifications$/);
+  await pageSettled(page);
   expect(await drawerIsOpen(page)).toBe(false);
 });
 

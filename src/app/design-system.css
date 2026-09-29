@@ -551,3 +551,17 @@ body { container: app / inline-size; }
   .settings-nav > * { flex-shrink: 0; }
   .settings-nav [data-group-label] { display: none; }
 }
+
+/* Esqueleto de carregamento (loading.tsx dos grupos de rota). */
+.skel {
+  background: var(--bg-sunken);
+  border-radius: 6px;
+  animation: skelPulse 1.4s ease-in-out infinite;
+}
+@keyframes skelPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}
