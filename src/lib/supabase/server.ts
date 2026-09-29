@@ -41,3 +41,14 @@ export async function getTenantId(supabase: SupabaseClient) {
   if (error || !data) throw new Error("Sem tenant associado a esta sessão.");
   return data as string;
 }
+
+// Usuário da sessão para LEITURA em Server Component: getClaims() valida o
+// JWT localmente (projeto usa chave assimétrica), sem o round trip ao Auth
+// server que getUser() faz. Actions que mutam dado sensível seguem com
+// getUser() (confere revogação no servidor).
+export async function getSessionUser(supabase: SupabaseClient) {
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
+  return { id: claims.sub, email: (claims.email as string | undefined) ?? "" };
+}

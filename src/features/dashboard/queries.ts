@@ -37,14 +37,16 @@ export async function loadDashboardData() {
   const overview = must(overviewRes, "dashboard.overview") as StockOverviewJson | null;
   const stores = must(storesRes, "dashboard.stores");
   const movementRows = must(movementsRes, "dashboard.movements") ?? [];
-  const movementCost = await movementCostMap(supabase, movementRows.map((m) => m.id));
-  const movements = movementRows.map((m) => ({ ...m, unit_cost: movementCost.get(m.id) ?? null }));
   const balanceRows = must(balanceRes, "dashboard.balances") as { store_id: string; sku_count: number; qty: number }[] | null;
 
-  const userIds = [...new Set((movements ?? []).map((m) => m.created_by).filter((id): id is string => Boolean(id)))];
-  const profiles = userIds.length
-    ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "dashboard/queries.profiles")
-    : [];
+  // Custo e autores das movimentações só dependem das linhas — em paralelo.
+  const userIds = [...new Set(movementRows.map((m) => m.created_by).filter((id): id is string => Boolean(id)))];
+  const [movementCost, profilesRes] = await Promise.all([
+    movementCostMap(supabase, movementRows.map((m) => m.id)),
+    userIds.length ? supabase.from("profiles").select("id, full_name").in("id", userIds) : null,
+  ]);
+  const movements = movementRows.map((m) => ({ ...m, unit_cost: movementCost.get(m.id) ?? null }));
+  const profiles = profilesRes ? must(profilesRes, "dashboard/queries.profiles") : [];
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
 
   const pctDelta = (curr: number, prev: number) => (prev > 0 ? ((curr - prev) / prev) * 100 : null);

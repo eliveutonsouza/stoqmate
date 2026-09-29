@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import Link from 'next/link';
 import { I } from '@/components/icons';
 import { isModifiedClick } from '@/components/layout/sidebar-item';
 
@@ -33,7 +34,7 @@ export function SidebarGroup({ icon, label, items, route, navigate, badge }) {
           {items.map(it => {
             const active = route === it.r;
             return (
-              <a key={it.r} href={it.r} aria-current={active ? 'page' : undefined} onClick={(e) => {
+              <Link key={it.r} href={it.r} aria-current={active ? 'page' : undefined} onClick={(e) => {
                 if (isModifiedClick(e)) return;
                 e.preventDefault();
                 navigate(it.r);
@@ -50,7 +51,7 @@ export function SidebarGroup({ icon, label, items, route, navigate, badge }) {
               >
                 <span style={{ flex: 1 }}>{it.l}</span>
                 {it.b && <span style={{ fontSize: 10, color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)' }}>{it.b}</span>}
-              </a>
+              </Link>
             );
           })}
         </div>

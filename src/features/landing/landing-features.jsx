@@ -5,9 +5,14 @@ import { Eyebrow } from '@/features/landing/eyebrow';
 import { H2 } from '@/features/landing/h2';
 import { FeatureRow } from '@/features/landing/feature-row';
 import { ShowcaseFrame } from '@/components/ui/showcase-frame';
-import { NetworkDashboard } from '@/features/analysis/network-dashboard';
-import { TabletPOS } from '@/features/pos/tablet-pos';
-import { ReportABC } from '@/features/analysis/report-abc';
+import dynamic from 'next/dynamic';
+
+// Telas reais usadas como vitrine: o ShowcaseFrame só as monta depois do
+// primeiro paint, então o código delas também sai do bundle inicial da landing
+// (arrastavam StoreShell + client do Supabase).
+const NetworkDashboard = dynamic(() => import('@/features/analysis/network-dashboard').then((m) => m.NetworkDashboard), { ssr: false });
+const TabletPOS = dynamic(() => import('@/features/pos/tablet-pos').then((m) => m.TabletPOS), { ssr: false });
+const ReportABC = dynamic(() => import('@/features/analysis/report-abc').then((m) => m.ReportABC), { ssr: false });
 import { resolveReportRange, todayInSaoPaulo } from '@/lib/report-range';
 
 // Vitrine da curva ABC: o relatório real exige filtros (período + loja)

@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
 import { ROLES } from "@/lib/permissions";
 
@@ -29,7 +29,7 @@ function initialsOf(name: string) {
 
 export const loadStoreShell = cache(async () => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return null;
 
   const [profile, tenant, stores, role, counts] = await Promise.all([
@@ -66,7 +66,7 @@ export type StoreShellData = NonNullable<Awaited<ReturnType<typeof loadStoreShel
 
 export const loadAdminShell = cache(async () => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return null;
 
   const [profile, staff] = await Promise.all([

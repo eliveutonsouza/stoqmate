@@ -137,7 +137,7 @@ export function HelpArticleView({ article, module: helpModule, related }) {
       </Page>
 
       <Modal open={!!zoom} onClose={() => setZoom(null)} title={zoom?.alt ?? ""} width={1200}>
-        {zoom && <ShotFigure shot={zoom} />}
+        {zoom && <ShotFigure shot={zoom} sizes="(max-width: 1240px) 100vw, 1200px" />}
       </Modal>
     </StoreShell>
   );

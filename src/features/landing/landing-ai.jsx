@@ -6,7 +6,10 @@ import { H2 } from '@/features/landing/h2';
 import { Lead } from '@/features/landing/lead';
 import { I } from '@/components/icons';
 import { ShowcaseFrame } from '@/components/ui/showcase-frame';
-import { AIQueue } from '@/features/ai-flows/ai-queue';
+import dynamic from 'next/dynamic';
+
+// Vitrine montada pelo ShowcaseFrame após o paint — fora do bundle inicial.
+const AIQueue = dynamic(() => import('@/features/ai-flows/ai-queue').then((m) => m.AIQueue), { ssr: false });
 
 export function LandingAI({ navigate }) {
   // `save` mostra o custo em créditos (tabela de planos) — sem estimativa de

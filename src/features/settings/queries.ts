@@ -1,4 +1,4 @@
-import { createClient, getTenantId } from "@/lib/supabase/server";
+import { createClient, getTenantId, getSessionUser } from "@/lib/supabase/server";
 import { must } from "@/lib/supabase/must";
 
 export async function loadFiscalMode() {
@@ -21,7 +21,7 @@ export async function loadBranding() {
 
 export async function loadProfile() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return null;
 
   const [profileRes, factorsRes] = await Promise.all([
@@ -44,8 +44,7 @@ export async function loadProfile() {
 
 export async function loadTeam() {
   const supabase = await createClient();
-  const tenantId = await getTenantId(supabase);
-  const { data: { user } } = await supabase.auth.getUser();
+  const [tenantId, user] = await Promise.all([getTenantId(supabase), getSessionUser(supabase)]);
 
   const [membersRes, invitesRes, tenantRes] = await Promise.all([
     supabase.rpc("fn_team_members"),

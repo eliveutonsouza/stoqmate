@@ -2,7 +2,9 @@
    Stoqmate — Design System
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+/* Geist/Geist Mono vêm do next/font (src/app/layout.tsx): self-hosted e
+   pré-carregadas, sem o @import do Google que bloqueava o primeiro paint.
+   O nome 'Geist' logo depois cobre o Storybook (.storybook/preview-head.html). */
 
 :root {
   /* Brand accent (overridable by tweaks) */
@@ -49,8 +51,8 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-sans: var(--font-geist), 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --shadow-xs: 0 1px 0 rgba(20, 18, 13, 0.04);
   --shadow-sm: 0 1px 2px rgba(20, 18, 13, 0.06), 0 0 0 1px rgba(20, 18, 13, 0.04);
