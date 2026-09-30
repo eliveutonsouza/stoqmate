@@ -103,33 +103,42 @@ export async function loadProduct(id: string) {
 // chamador buscar isto em paralelo com a loja atual em vez de encadear.
 export async function loadProductDetail(id: string) {
   const supabase = await createClient();
+  // Saldos e movimentações só dependem do id: saem junto com o produto, e os
+  // autores das movimentações já em seguida — sem esperar os irmãos.
+  // (builder do PostgREST é preguiçoso: só dispara no then — por isso o .then.)
+  const balancesP = supabase.from("stock_balances").select("store_id, qty, store:stores(id, name)").eq("product_id", id).then((res) => res);
+  const movementsP = Promise.resolve(supabase
+    .from("stock_movements")
+    .select("id, kind, qty, unit_price, reference_type, reference_id, created_by, created_at")
+    .eq("product_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20)
+    .then(async (res) => {
+      const movements = must(res, "products/queries.loadProductDetail.movements") ?? [];
+      const userIds = [...new Set(movements.map((m) => m.created_by).filter((uid): uid is string => Boolean(uid)))];
+      const profiles = userIds.length ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "products.profiles") : [];
+      return { movements, profiles: profiles ?? [] };
+    }));
+  // Produto inexistente descarta os dois — sem rejeição órfã.
+  movementsP.catch(() => {});
   const product = await loadProduct(id);
   if (!product) return null;
   const categoryId = (product.category as unknown as { id: string }).id;
 
-  const [balancesRes, siblingsRes, movementsRes, categoryAttributesRes] = await Promise.all([
-    supabase.from("stock_balances").select("store_id, qty, store:stores(id, name)").eq("product_id", id),
+  const [balancesRes, siblingsRes, { movements, profiles }, categoryAttributesRes] = await Promise.all([
+    balancesP,
     // brand pode ser null: `.eq(col, null)` vira `= null` e nunca casa.
     (product.brand == null
       ? supabase.from("products").select("id, sku, attrs, stock_balances(store_id, qty)").eq("category_id", categoryId).is("brand", null)
       : supabase.from("products").select("id, sku, attrs, stock_balances(store_id, qty)").eq("category_id", categoryId).eq("brand", product.brand))
       .eq("name", product.name)
       .order("sku"),
-    supabase
-      .from("stock_movements")
-      .select("id, kind, qty, unit_price, reference_type, reference_id, created_by, created_at")
-      .eq("product_id", id)
-      .order("created_at", { ascending: false })
-      .limit(20),
+    movementsP,
     supabase.from("category_attributes").select("id, key, label, type, values, position").eq("category_id", categoryId).order("position"),
   ]);
   const balances = must(balancesRes, "products/queries.loadProductDetail.balances");
   const siblings = must(siblingsRes, "products/queries.loadProductDetail.siblings");
-  const movements = must(movementsRes, "products/queries.loadProductDetail.movements");
   const categoryAttributes = must(categoryAttributesRes, "products/queries.loadProductDetail.categoryAttributes");
-
-  const userIds = [...new Set((movements ?? []).map((m) => m.created_by).filter((id): id is string => Boolean(id)))];
-  const profiles = userIds.length ? must(await supabase.from("profiles").select("id, full_name").in("id", userIds), "products.profiles") : [];
   const nameById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || "Usuário"]));
 
   return {

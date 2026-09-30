@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { loadStores } from "@/features/stock/queries";
 import { resolveStoreId } from "@/features/shell/queries";
 import { must } from "@/lib/supabase/must";
@@ -87,7 +87,7 @@ export async function loadSaleReceipt(saleId: string) {
 
 export async function loadPosData() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
 
   const [storesRes, categoriesRes, productsRes, openSessionsRes, profileRes] = await Promise.all([
     supabase.from("stores").select("id, name").order("name"),

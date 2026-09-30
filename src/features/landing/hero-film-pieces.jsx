@@ -17,10 +17,10 @@ export const C = {
 
 // Capturados via claude-in-chrome em 1347×893 contra o app rodando local.
 export const SHOTS = {
-  dashboard: '/hero-film/dashboard.jpg',
-  match: '/hero-film/match.jpg',
-  network: '/hero-film/network.jpg',
-  anomalies: '/hero-film/anomalies.jpg',
+  dashboard: '/hero-film/dashboard.webp',
+  match: '/hero-film/match.webp',
+  network: '/hero-film/network.webp',
+  anomalies: '/hero-film/anomalies.webp',
 };
 export const SHOT_W = 1347, SHOT_H = 893;
 export const SLAB_W = 1600, SLAB_H = Math.round((SLAB_W * SHOT_H) / SHOT_W);

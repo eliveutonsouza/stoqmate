@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 import { must } from "@/lib/supabase/must";
@@ -31,7 +31,7 @@ export async function loadTenantsOverview() {
 export async function loadTenantDetail(tenantId: string) {
   const supabase = await requireStaff();
   const admin = createServiceRoleClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   const [tenantRes, storesRes, storeUsersRes, auditLogRes, skuCountRes, openSessionRes, liveSubRes] = await Promise.all([
     admin.from("tenants").select("id, name, cnpj, plan_id, status, legal_name, segment, city, state, trial_ends_at, created_at").eq("id", tenantId).maybeSingle(),
     admin.from("stores").select("id, name, type").eq("tenant_id", tenantId).order("name"),

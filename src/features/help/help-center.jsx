@@ -129,7 +129,7 @@ export function HelpCenter({ roleName, modules, articles, trail, missing }) {
                   {videos.map((a) => (
                     <button key={a.slug} onClick={() => open(a.slug)} data-help-article={a.slug} className="card" style={{ padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer" }}>
                       <span style={{ display: "block", position: "relative", aspectRatio: "16 / 9", background: "var(--bg-sunken)" }}>
-                        <Image src={helpMediaUrl(`videos/${a.video.key}.jpg`)} alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 340px" style={{ objectFit: "cover" }} />
+                        <Image src={helpMediaUrl(`videos/${a.video.key}.jpg`)} alt="" fill sizes="(max-width: 640px) 100vw, 340px" style={{ objectFit: "cover" }} />
                         <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <span style={{ width: 42, height: 42, borderRadius: 21, background: "rgba(20,18,13,.72)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 3 }}>
                             <PlayIcon size={18} />

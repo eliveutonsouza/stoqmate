@@ -65,9 +65,13 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims valida o JWT localmente (chave assimétrica ES256, JWKS em
+  // cache) e só vai ao Auth server pra renovar sessão vencida — getUser()
+  // custava um round trip por request, em toda navegação.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ?? null;
 
-  // Redirect leva junto os cookies que o getUser() acabou de renovar.
+  // Redirect leva junto os cookies que o getClaims() acabou de renovar.
   const redirectTo = (path: string) => {
     const res = NextResponse.redirect(new URL(path, request.url));
     response.cookies.getAll().forEach((c) => res.cookies.set(c));
@@ -117,6 +121,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|gif)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|avif|gif|ico|woff2?|ttf|mp4|webm|vtt|txt|xml|webmanifest)$).*)",
   ],
 };

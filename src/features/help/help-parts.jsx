@@ -85,7 +85,9 @@ export function ArticleRow({ article, onOpen, read = false, last = false }) {
 export { LEVEL_LABEL };
 
 // Captura com o retângulo de destaque desenhado por cima (em % da imagem).
-export function ShotFigure({ shot, onZoom = undefined }) {
+// sizes: largura exibida — o otimizador entrega só essa resolução. A coluna
+// do artigo tem ~900px; o zoom (modal de 1200px) passa o próprio valor.
+export function ShotFigure({ shot, onZoom = undefined, sizes = "(max-width: 960px) 100vw, 900px" }) {
   const f = shot.focus;
   return (
     <figure style={{ margin: 0 }}>
@@ -95,8 +97,7 @@ export function ShotFigure({ shot, onZoom = undefined }) {
         aria-label={`Ampliar: ${shot.alt}`}
         style={{ display: "block", width: "100%", padding: 0, border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "var(--bg-sunken)", cursor: onZoom ? "zoom-in" : "default", position: "relative" }}
       >
-        {/* unoptimized: a mídia já sai do Storage em WebP no tamanho certo. */}
-        <Image src={helpMediaUrl(shot.src)} alt={shot.alt} width={1920} height={1200} unoptimized loading="lazy" style={{ display: "block", width: "100%", height: "auto" }} />
+        <Image src={helpMediaUrl(shot.src)} alt={shot.alt} width={1920} height={1200} sizes={sizes} loading="lazy" style={{ display: "block", width: "100%", height: "auto" }} />
         {f && (
           <span aria-hidden="true" style={{
             position: "absolute", left: `${f.x}%`, top: `${f.y}%`, width: `${f.w}%`, height: `${f.h}%`,

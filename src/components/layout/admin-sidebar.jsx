@@ -40,7 +40,7 @@ export function AdminSidebar({ navigate }) {
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 12 }}>
         <SidebarSection>
-          <SidebarItem icon={<I.Home size={15} />} label="Overview" active={is('/admin')} onClick={() => navigate('/admin')} />
+          <SidebarItem icon={<I.Home size={15} />} label="Overview" active={is('/admin')} href="/admin" onClick={() => navigate('/admin')} />
           <SidebarGroup icon={<I.Store size={15} />} label="Clientes" route={pathname} navigate={navigate} items={[
             { r: '/admin/stores', l: 'Todas as redes' },
             { r: '/admin/stores/new', l: 'Nova rede' },
@@ -50,14 +50,14 @@ export function AdminSidebar({ navigate }) {
             { r: '/admin/economics', l: 'Economia dos planos' },
             { r: '/admin/plans/new', l: 'Novo plano' },
           ]} />
-          <SidebarItem icon={<I.Credit size={15} />} label="Assinaturas" active={is('/admin/subscriptions')} onClick={() => navigate('/admin/subscriptions')} />
+          <SidebarItem icon={<I.Credit size={15} />} label="Assinaturas" active={is('/admin/subscriptions')} href="/admin/subscriptions" onClick={() => navigate('/admin/subscriptions')} />
         </SidebarSection>
 
         <SidebarSection label="Plataforma">
-          <SidebarItem icon={<I.Users size={15} />} label="Usuários" active={is('/admin/users')} onClick={() => navigate('/admin/users')} />
-          <SidebarItem icon={<I.Chart size={15} />} label="Relatórios" active={is('/admin/reports')} onClick={() => navigate('/admin/reports')} />
-          <SidebarItem icon={<I.Cpu size={15} />} label="Monitor de IA" active={is('/admin/ai-monitoring')} onClick={() => navigate('/admin/ai-monitoring')} badge="live" />
-          <SidebarItem icon={<I.Settings size={15} />} label="Configurações" active={is('/admin/settings')} onClick={() => navigate('/admin/settings')} />
+          <SidebarItem icon={<I.Users size={15} />} label="Usuários" active={is('/admin/users')} href="/admin/users" onClick={() => navigate('/admin/users')} />
+          <SidebarItem icon={<I.Chart size={15} />} label="Relatórios" active={is('/admin/reports')} href="/admin/reports" onClick={() => navigate('/admin/reports')} />
+          <SidebarItem icon={<I.Cpu size={15} />} label="Monitor de IA" active={is('/admin/ai-monitoring')} href="/admin/ai-monitoring" onClick={() => navigate('/admin/ai-monitoring')} badge="live" />
+          <SidebarItem icon={<I.Settings size={15} />} label="Configurações" active={is('/admin/settings')} href="/admin/settings" onClick={() => navigate('/admin/settings')} />
         </SidebarSection>
       </div>
 

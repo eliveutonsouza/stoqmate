@@ -1,5 +1,7 @@
 "use client";
 
+import Link from 'next/link';
+
 // Clique com modificador (nova aba/janela) segue o href nativo; clique simples
 // passa pelo navigate() do app.
 export function isModifiedClick(e) {
@@ -8,7 +10,7 @@ export function isModifiedClick(e) {
 
 export function SidebarItem({ icon, label, active, onClick, badge, shortcut, href }) {
   return (
-    <a href={href ?? '#'} aria-current={active ? 'page' : undefined} onClick={(e) => {
+    <Link href={href ?? '#'} aria-current={active ? 'page' : undefined} onClick={(e) => {
       if (href && isModifiedClick(e)) return;
       e.preventDefault();
       if (onClick) onClick();
@@ -33,6 +35,6 @@ export function SidebarItem({ icon, label, active, onClick, badge, shortcut, hre
       <span style={{ flex: 1 }}>{label}</span>
       {badge && <span className="badge badge-accent" style={{ fontSize: 10, padding: '1px 5px' }}>{badge}</span>}
       {shortcut && <span className="kbd" style={{ fontSize: 10, minWidth: 14, height: 16 }}>{shortcut}</span>}
-    </a>
+    </Link>
   );
 }
