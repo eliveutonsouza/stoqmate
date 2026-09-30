@@ -1,14 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { pageSettled } from "./settle";
 
 // Só no projeto "mobile": abaixo de 900px a sidebar do app vira drawer e o
 // header público vira menu hamburger.
 const drawerIsOpen = (page: import("@playwright/test").Page) =>
   page.locator(".app-shell").getAttribute("data-drawer").then((v) => v === "open");
-
-// loading.tsx do grupo mostra um shell com esqueleto enquanto a página faz
-// streaming; por um instante os dois shells coexistem no DOM.
-const pageSettled = (page: import("@playwright/test").Page) =>
-  expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
 test("drawer do app abre pelo hamburger, fecha com Esc e ao navegar", async ({ page }) => {
   await page.goto("/dashboard");
