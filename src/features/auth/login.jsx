@@ -6,7 +6,6 @@ import { AuthShell } from '@/features/auth/auth-shell';
 import { AuthTestimonial } from '@/features/auth/auth-testimonial';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
-import { I } from '@/components/icons';
 import { signInAction, startGoogleSignInAction } from '@/features/auth/actions';
 
 export function Login() {
@@ -65,12 +64,6 @@ export function Login() {
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }}></div>
         </div>
         <button type="button" onClick={google} disabled={pending} className="btn btn-outline btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: pending ? 0.7 : 1 }}>Entrar com Google</button>
-        <a href="/login/admin" onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); navigate('/login/admin'); }} style={{
-          fontSize: 12, color: 'var(--fg-muted)', textAlign: 'center', marginTop: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        }}>
-          <I.Shield size={12} /> Acesso administrativo da plataforma
-        </a>
       </form>
     </AuthShell>
   );
