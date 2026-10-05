@@ -23,7 +23,9 @@ describe("validation", () => {
     expect(textError("a", "o nome da loja", 2)).toBe("O nome da loja precisa ter pelo menos 2 caracteres.");
     expect(textError("ok", "o nome")).toBeNull();
     expect(passwordError("1234567")).not.toBeNull();
-    expect(passwordError("12345678")).toBeNull();
+    expect(passwordError("12345678")).not.toBeNull();
+    expect(passwordError("abcdefgh")).not.toBeNull();
+    expect(passwordError("abcd1234")).toBeNull();
   });
 
   it("url do storage do próprio projeto", () => {

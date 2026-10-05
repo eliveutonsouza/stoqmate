@@ -19,6 +19,7 @@ export function ResetPassword() {
 
   const checks = [
     { l: 'Mínimo 8 caracteres', ok: pwd.length >= 8 },
+    { l: 'Letras e números', ok: /[a-zA-Z]/.test(pwd) && /[0-9]/.test(pwd) },
     { l: 'As duas senhas conferem', ok: pwd.length > 0 && pwd === confirm },
   ];
   const strength = checks.filter(c => c.ok).length;

@@ -72,8 +72,10 @@ supabase/migrations/*.sql           append-only — nunca editar uma migration
                                      já aplicada, sempre `create or replace`/
                                      `alter table` numa nova
 supabase/functions/<nome>/          Edge Functions (Deno). Só usada quando
-                                     quem chama é externo ao app (hoje: só
-                                     stripe-webhook) — chamada de IA do
+                                     quem chama é externo ao app (hoje:
+                                     stripe-webhook e tenant-retention, esta
+                                     disparada pelo pg_cron — purga LGPD de
+                                     rede cancelada há 90 dias, 2026-10-05) — chamada de IA do
                                      próprio usuário logado é Server Action,
                                      não Edge Function
 src/features/<domínio>/queries.ts   leitura, chamada só de Server Component

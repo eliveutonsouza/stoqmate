@@ -241,7 +241,7 @@ export async function duplicateProductAction(id: string) {
 
 export async function uploadProductPhotoAction(formData: FormData) {
   const file = formData.get("file");
-  const checked = checkImage(file, 4);
+  const checked = await checkImage(file, 4);
   if ("error" in checked) return checked;
 
   const supabase = await createClient();

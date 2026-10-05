@@ -110,7 +110,7 @@ function AcceptInviteInner() {
         <Field label="Seu nome completo" required>
           <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Diego Castro" style={{ height: 36 }} />
         </Field>
-        <Field label="Criar senha" required hint="Mínimo 8 caracteres.">
+        <Field label="Criar senha" required hint="Mínimo 8 caracteres, com letras e números.">
           <TextInput type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="••••••••" style={{ height: 36 }} />
         </Field>
         {error && (

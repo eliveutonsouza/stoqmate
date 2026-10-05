@@ -4,9 +4,10 @@
 // nos próprios <script> ao renderizar a página):
 // - app autenticado (loja + admin): já é todo dinâmico → script-src só com
 //   nonce + 'strict-dynamic'. Script injetado por XSS não roda.
-// - rotas públicas (landing, planos, termos, login…): são estáticas/ISR,
+// - telas públicas de credencial (login, login admin, reset de senha,
+//   convite, esqueci a senha): dinâmicas, mesmo nonce do app.
+// - demais rotas públicas (landing, planos, termos, cadastro): estáticas/ISR,
 //   o HTML sai pronto sem nonce → script-src 'self' 'unsafe-inline'.
-//   Proteção menor, mas nessas telas não há dado de sessão pra roubar.
 //
 // style-src leva 'unsafe-inline' nas duas: a UI inteira usa style={{…}}
 // (atributo style), que nonce não cobre. Origens externas reais do app:

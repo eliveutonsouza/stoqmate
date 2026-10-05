@@ -4,7 +4,14 @@ import { useNavigate } from '@/hooks/use-navigate';
 import { LayoutPublic } from '@/components/layout/layout-public';
 import { SUPPORT_EMAIL } from '@/lib/support';
 
-const UPDATED_AT = '26 de setembro de 2026';
+const UPDATED_AT = '5 de outubro de 2026';
+
+// Quem responde pelo Stoqmate. Hoje é pessoa física (desenvolvedor); quando
+// houver empresa, trocar por razão social + CNPJ aqui — os dois textos leem
+// daqui.
+const CONTROLLER = 'Eliveuton Souza, desenvolvedor responsável pelo Stoqmate';
+// Mesmo prazo de fn_retention_days() no banco (purga automática diária).
+const RETENTION_DAYS = 90;
 
 function LegalLayout({ route, title, intro, sections }) {
   const navigate = useNavigate();
@@ -47,7 +54,7 @@ const TERMS = [
   ] },
   { h: '4. Seus dados', p: [
     'Os dados que você cadastra (produtos, estoque, vendas, clientes, fornecedores) são seus. Nós os tratamos apenas para prestar o serviço, conforme a Política de privacidade.',
-    'Você pode exportar seus dados em CSV a qualquer momento em Exportações. Após o cancelamento, os dados ficam disponíveis por um período de retenção e depois são excluídos.',
+    `Você pode exportar seus dados em CSV a qualquer momento em Exportações. Após o cancelamento da assinatura ou o pedido de exclusão da conta, os dados ficam guardados por ${RETENTION_DAYS} dias — dá pra reativar a conta nesse prazo sem perder nada — e depois são excluídos definitivamente, junto com os arquivos enviados e os logins da equipe.`,
   ] },
   { h: '5. Inteligência artificial', p: [
     'Recursos de IA (leitura de nota fiscal, classificação, enriquecimento, previsão e perguntas sobre o estoque) geram sugestões. Toda sugestão é revisada e confirmada por você antes de alterar o seu estoque ou cadastro.',
@@ -62,7 +69,8 @@ const TERMS = [
 
 const PRIVACY = [
   { h: '1. Quem trata os dados', p: [
-    'O Stoqmate é o controlador dos dados das contas (nome, email e telefone de quem usa o sistema) e operador dos dados que a sua loja cadastra (clientes, vendas, estoque), tratados em nome da sua empresa.',
+    `O Stoqmate é desenvolvido e operado por ${CONTROLLER}, que é o controlador dos dados das contas (nome, email e telefone de quem usa o sistema) e operador dos dados que a sua loja cadastra (clientes, vendas, estoque), tratados em nome da sua empresa — para esses, a sua loja é a controladora.`,
+    `Encarregado pelo tratamento de dados (LGPD, art. 41): Eliveuton Souza, pelo email ${SUPPORT_EMAIL}.`,
   ] },
   { h: '2. Dados que coletamos', p: [
     'Cadastro: nome, email, telefone, nome da loja e CNPJ (opcional).',
@@ -77,13 +85,15 @@ const PRIVACY = [
     'Execução de contrato (art. 7º, V) para operar a conta; cumprimento de obrigação legal (art. 7º, II) para registros fiscais e contábeis; legítimo interesse (art. 7º, IX) para segurança e prevenção a fraude; e consentimento quando solicitado.',
   ] },
   { h: '5. Com quem compartilhamos', p: [
-    'Apenas com fornecedores necessários para o serviço funcionar: Supabase (banco de dados, autenticação e arquivos), Vercel (hospedagem da aplicação), Stripe (pagamentos) e Anthropic (processamento dos recursos de IA, somente quando você usa um deles). Alguns desses fornecedores processam dados fora do Brasil, com salvaguardas contratuais.',
+    'Apenas com fornecedores necessários para o serviço funcionar: Supabase (banco de dados, autenticação e arquivos), Vercel (hospedagem da aplicação), Stripe (pagamentos), Resend (envio dos avisos por email), Google (somente se você entrar com a conta Google) e Anthropic (processamento dos recursos de IA, somente quando você usa um deles). Alguns desses fornecedores processam dados fora do Brasil, com salvaguardas contratuais.',
   ] },
   { h: '6. Por quanto tempo', p: [
-    'Enquanto a conta estiver ativa. Após o cancelamento ou pedido de exclusão, os dados são apagados após o período de retenção, exceto o que a lei exigir guardar por mais tempo.',
+    `Enquanto a conta estiver ativa. Após o cancelamento ou o pedido de exclusão (em Configurações › Dados da empresa), a conta fica suspensa por ${RETENTION_DAYS} dias e então os dados da loja, os arquivos enviados e os logins da equipe são excluídos automaticamente. Fica só um registro técnico de que a exclusão aconteceu (identificador e data), sem dado pessoal.`,
+    'Os registros fiscais e contábeis da sua loja são de responsabilidade dela: exporte o que precisar guardar antes do fim do prazo.',
   ] },
   { h: '7. Seus direitos', p: [
-    'Você pode pedir confirmação de tratamento, acesso, correção, portabilidade, anonimização ou exclusão dos seus dados, e revogar consentimentos. Parte disso está disponível direto no sistema (perfil, exportações e exclusão da conta em Configurações); o restante, pelo email abaixo.',
+    'Você pode pedir confirmação de tratamento, acesso, correção, portabilidade, anonimização ou exclusão dos seus dados, e revogar consentimentos. Parte disso está disponível direto no sistema (perfil, exportações e exclusão da conta em Configurações); o restante, pelo email abaixo, respondido em até 15 dias.',
+    'Clientes da sua loja que pedirem correção ou exclusão dos próprios dados são atendidos pela loja: na ficha do cliente há "Editar cadastro" e "Anonimizar", e a exportação de clientes fica em Exportações.',
   ] },
   { h: '8. Segurança', p: [
     'Dados trafegam criptografados (HTTPS), cada loja só enxerga os próprios dados (isolamento por empresa no banco) e acessos da nossa equipe de suporte ficam registrados.',

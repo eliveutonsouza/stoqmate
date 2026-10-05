@@ -62,7 +62,7 @@ export function Signup({ plans, trialDays, trialEndsOn }) {
                 <Field label="Seu nome" required span={1}><TextInput value={form.fullName} onChange={set('fullName')} placeholder="Seu nome completo" style={{ height: 36 }} /></Field>
                 <Field label="Telefone" span={1}><TextInput value={form.phone} onChange={set('phone')} placeholder="(11) 98888-0000" mono style={{ height: 36 }} /></Field>
                 <Field label="Email de trabalho" required span={2}><TextInput type="email" value={form.email} onChange={set('email')} placeholder="voce@sualoja.com.br" style={{ height: 36 }} /></Field>
-                <Field label="Senha" required hint="Mínimo 8 caracteres" span={2}><TextInput type="password" value={form.password} onChange={set('password')} placeholder="••••••••" style={{ height: 36 }} /></Field>
+                <Field label="Senha" required hint="Mínimo 8 caracteres, com letras e números" span={2}><TextInput type="password" value={form.password} onChange={set('password')} placeholder="••••••••" style={{ height: 36 }} /></Field>
               </FormCard>
 
               <FormCard title="Sua loja" desc="Você escolhe as categorias que vende no onboarding." cols={2}>
