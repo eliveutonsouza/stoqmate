@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { OPEN_ROUTES } from "@/lib/permissions";
 import { gateStoreRoute, type SessionAccess } from "@/lib/access-gate";
-import { supabaseEnv } from "@/lib/supabase/env";
+import { AUTH_COOKIE_OPTIONS, supabaseEnv } from "@/lib/supabase/env";
 import { buildCsp, createNonce } from "@/lib/csp";
 
 // Rotas públicas são exatamente OPEN_ROUTES do RBAC (marketing + auth +
@@ -23,7 +23,8 @@ export async function proxy(request: NextRequest) {
   const isPublic =
     (OPEN_ROUTES.includes(pathname) && !NEEDS_SESSION.includes(pathname)) ||
     pathname === "/login/admin" ||
-    pathname.startsWith("/auth/callback");
+    pathname.startsWith("/auth/callback") ||
+    pathname === "/api/health";
 
   const { url, anonKey } = supabaseEnv();
   const cspBase = { supabaseUrl: url, dev: process.env.NODE_ENV === "development", https: request.nextUrl.protocol === "https:" };
@@ -52,6 +53,7 @@ export async function proxy(request: NextRequest) {
     url,
     anonKey,
     {
+      cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -111,7 +113,7 @@ export async function proxy(request: NextRequest) {
     if (staffError) return redirectTo("/error");
     if (isStaff) return redirectTo(ADMIN_PREFIX);
   }
-  const target = gateStoreRoute(pathname, { role: ctx?.role ?? null, access });
+  const target = gateStoreRoute(pathname, { role: ctx?.role ?? null, access }, request.nextUrl.search);
   if (target) {
     return redirectTo(target);
   }

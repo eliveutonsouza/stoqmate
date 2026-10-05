@@ -20,6 +20,16 @@ setup("autentica o tenant de teste do e2e", async ({ page }) => {
     tenantId = profile?.tenant_id ?? undefined;
   }
 
+  // O tenant fixo nasce em trial: sem renovar, o suite inteiro quebra no dia
+  // em que o trial vence (proxy manda tudo pra /trial-ended e o banco recusa
+  // escrita de conta bloqueada). Fixture de teste, não regra de produto.
+  if (tenantId) {
+    const in30Days = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    const { error: trialError } = await admin.from("tenants").update({ trial_ends_at: in30Days })
+      .eq("id", tenantId).eq("status", "trial").lt("trial_ends_at", new Date(Date.now() + 7 * 86_400_000).toISOString());
+    if (trialError) throw trialError;
+  }
+
   if (tenantId) {
     await page.goto("/login");
     await page.getByPlaceholder("voce@sualoja.com.br").fill(QA_EMAIL);

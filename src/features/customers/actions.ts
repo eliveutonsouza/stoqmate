@@ -54,3 +54,41 @@ export async function adjustCustomerCreditAction(input: { customerId: string; de
   revalidatePath("/customers/detail");
   return { balance: data as number };
 }
+
+// LGPD art. 18: o titular pode pedir correção dos dados à loja.
+export async function updateCustomerAction(input: { customerId: string; name: string; doc: string; phone: string; email: string; notes: string }) {
+  if (!isUuid(input.customerId)) return { error: "Cliente não encontrado." };
+  const nameError = textError(input.name, "o nome do cliente", 2, 120);
+  if (nameError) return { error: nameError };
+  if (input.email?.trim() && !isEmail(input.email)) return { error: "Email inválido." };
+  if ((input.doc?.length ?? 0) > 20 || (input.phone?.length ?? 0) > 30) return { error: "Documento ou telefone longo demais." };
+  if ((input.notes?.length ?? 0) > 1000) return { error: "Observações longas demais (máximo 1.000 caracteres)." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fn_customer_update", {
+    p_customer_id: input.customerId,
+    p_name: input.name.trim(),
+    p_doc: input.doc?.trim() || null,
+    p_phone: input.phone?.trim() || null,
+    p_email: input.email?.trim() || null,
+    p_notes: input.notes?.trim() || null,
+  });
+  if (error) return { error: friendlyError(error) };
+  revalidatePath("/customers");
+  revalidatePath("/customers/detail");
+  return { ok: true };
+}
+
+// LGPD art. 18 (eliminação): apaga nome, documento, contato e observações;
+// vendas e extrato de crédito ficam (registro fiscal/financeiro da loja).
+export async function anonymizeCustomerAction(customerId: string) {
+  if (!isUuid(customerId)) return { error: "Cliente não encontrado." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("fn_customer_anonymize", { p_customer_id: customerId });
+  if (error) {
+    if (error.message.includes("not authorized")) return { error: "Só o proprietário ou o gestor financeiro pode anonimizar um cliente." };
+    return { error: friendlyError(error) };
+  }
+  revalidatePath("/customers");
+  revalidatePath("/customers/detail");
+  return { ok: true };
+}

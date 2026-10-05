@@ -48,7 +48,7 @@ export async function createSupplierAction(input: {
   if (error) return { error: userMessage(error, "operations/createSupplier") };
   const supplier = { id: supplierId as string };
 
-  const { error: auditError } = await supabase.rpc("fn_write_audit", {
+  const { error: auditError } = await supabase.rpc("fn_write_audit_app", {
     p_kind: "supplier",
     p_message: `Cadastrou o fornecedor "${input.name}"`,
     p_target_type: "supplier",

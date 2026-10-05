@@ -9,16 +9,21 @@ import { movementCostMap, productCostMap } from "@/lib/supabase/costs";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 import { movementLabel } from "@/lib/movement-labels";
 
-export type ExportKind = "catalog" | "sales" | "profit" | "movements" | "suppliers" | "count-sheet";
+export type ExportKind = "catalog" | "sales" | "profit" | "movements" | "suppliers" | "count-sheet" | "customers";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+// Teto por arquivo: a resposta da Server Action passa pela Vercel (4,5 MB)
+// e o CSV inteiro é montado em memória.
+const EXPORT_MAX_ROWS = 20_000;
+const exportRows: typeof fetchAll = (page, size = 1000) => fetchAll(page, size, EXPORT_MAX_ROWS);
 
 const one = <T,>(v: unknown) => (Array.isArray(v) ? v[0] : v) as T | null;
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR") : "");
 
 async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: string; headers: string[]; rows: CsvCell[][] }> {
   if (kind === "catalog") {
-    const data = await fetchAll((from, to) => supabase
+    const data = await exportRows((from, to) => supabase
       .from("products")
       .select("id, sku, barcode, brand, name, sale_price, min_stock, category:categories(name), supplier:suppliers(name), default_location:locations(code)")
       .order("sku").range(from, to));
@@ -36,13 +41,13 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
 
   if (kind === "sales") {
     const { start, end } = last30Days();
-    const data = await fetchAll((from, to) => supabase
+    const data = await exportRows((from, to) => supabase
       .from("sales")
       .select("id, created_at, total, discount_amount, payment_method, store:stores(name), customer:customers(name)")
       .gte("created_at", start.toISOString()).lt("created_at", end.toISOString())
       .order("created_at").range(from, to));
     // Formas registradas por venda (dividida vira "PIX 30,00 + Dinheiro 20,00").
-    const pays = await fetchAll((from, to) => supabase
+    const pays = await exportRows((from, to) => supabase
       .from("payments")
       .select("document_id, method, amount")
       .eq("document_type", "sale").eq("direction", "in")
@@ -81,7 +86,7 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
   if (kind === "movements") {
     const since = new Date();
     since.setDate(since.getDate() - 90);
-    const data = await fetchAll((from, to) => supabase
+    const data = await exportRows((from, to) => supabase
       .from("stock_movements")
       .select("id, created_at, kind, qty, before_qty, after_qty, unit_price, reason, justification, product:products(sku, name), store:stores(name)")
       .gte("created_at", since.toISOString())
@@ -102,11 +107,11 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
 
   if (kind === "suppliers") {
     const [suppliers, orders] = await Promise.all([
-      fetchAll((from, to) => supabase
+      exportRows((from, to) => supabase
         .from("suppliers")
         .select("id, name, cnpj, phone, order_email, lead_time_days, min_order_value, payment_terms, active")
         .order("name").range(from, to)),
-      fetchAll((from, to) => supabase
+      exportRows((from, to) => supabase
         .from("purchase_orders")
         .select("supplier_id, status, created_at, received_at")
         .order("created_at").range(from, to)),
@@ -132,9 +137,24 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
     };
   }
 
+  // Clientes (LGPD: acesso/portabilidade a pedido do titular). Dado pessoal:
+  // exportCsvAction só deixa chegar aqui quem gere pessoas ou dinheiro.
+  if (kind === "customers") {
+    const data = await exportRows((from, to) => supabase
+      .from("customers")
+      .select("id, name, doc, phone, email, notes, credit_balance, created_at")
+      .is("anonymized_at", null)
+      .order("id").range(from, to));
+    return {
+      base: "clientes",
+      headers: ["Nome", "CPF/CNPJ", "Telefone", "Email", "Observações", "Crédito em loja", "Cliente desde"],
+      rows: data.map((c) => [c.name, c.doc, c.phone, c.email, c.notes, c.credit_balance, date(c.created_at)]),
+    };
+  }
+
   // Folha de contagem: o saldo do sistema fica de fora de propósito, pra
   // quem conta não "acertar" pelo número esperado.
-  const data = await fetchAll((from, to) => supabase
+  const data = await exportRows((from, to) => supabase
     .from("products")
     .select("sku, barcode, brand, name, attrs, category:categories(name), default_location:locations(code)")
     .eq("active", true)
@@ -152,7 +172,7 @@ async function build(supabase: Supabase, kind: ExportKind): Promise<{ base: stri
   };
 }
 
-const EXPORT_KINDS: readonly ExportKind[] = ["catalog", "sales", "profit", "movements", "suppliers", "count-sheet"];
+const EXPORT_KINDS: readonly ExportKind[] = ["catalog", "sales", "profit", "movements", "suppliers", "count-sheet", "customers"];
 
 export async function exportCsvAction(kind: ExportKind) {
   if (!EXPORT_KINDS.includes(kind)) return { error: "Tipo de exportação inválido." };
@@ -165,6 +185,17 @@ export async function exportCsvAction(kind: ExportKind) {
     return { error: "Não foi possível gerar o arquivo agora. Tente de novo em instantes." };
   }
   if (!allowed) return { error: "Seu perfil não tem permissão para exportar dados." };
+  if (kind === "customers") {
+    const [people, money] = await Promise.all([
+      supabase.rpc("has_access", { p_area: "people", p_min_level: 3 }),
+      supabase.rpc("has_access", { p_area: "money", p_min_level: 2 }),
+    ]);
+    if (people.error || money.error) {
+      console.error("[exports] has_access customers", people.error?.message ?? money.error?.message);
+      return { error: "Não foi possível gerar o arquivo agora. Tente de novo em instantes." };
+    }
+    if (!people.data && !money.data) return { error: "Só o proprietário ou o gestor financeiro exporta dados de clientes." };
+  }
   // Lucratividade é custo × venda: só pra quem vê custo (área "money").
   if (kind === "profit") {
     const { data: canSeeCost, error: costError } = await supabase.rpc("fn_can_see_cost");

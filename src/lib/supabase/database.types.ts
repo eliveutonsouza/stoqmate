@@ -517,6 +517,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          anonymized_at: string | null
           created_at: string
           credit_balance: number
           credit_limit: number
@@ -529,6 +530,7 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          anonymized_at?: string | null
           created_at?: string
           credit_balance?: number
           credit_limit?: number
@@ -541,6 +543,7 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          anonymized_at?: string | null
           created_at?: string
           credit_balance?: number
           credit_limit?: number
@@ -2997,6 +3000,36 @@ export type Database = {
         }
         Returns: undefined
       }
+      fn_customer_update: {
+        Args: {
+          p_customer_id: string | null
+          p_doc?: string | null
+          p_email?: string | null
+          p_name: string | null
+          p_notes?: string | null
+          p_phone?: string | null
+        }
+        Returns: undefined
+      }
+      fn_customer_anonymize: { Args: { p_customer_id: string | null }; Returns: undefined }
+      fn_write_audit_app: {
+        Args: {
+          p_kind: string | null
+          p_message: string | null
+          p_target_id?: string | null
+          p_target_type?: string | null
+        }
+        Returns: undefined
+      }
+      fn_rate_limit_hit: {
+        Args: {
+          p_key: string | null
+          p_max: number | null
+          p_window_seconds: number | null
+        }
+        Returns: boolean
+      }
+      mfa_satisfied: { Args: never; Returns: boolean }
       has_access: {
         Args: { p_area: string | null; p_min_level?: number | null }
         Returns: boolean

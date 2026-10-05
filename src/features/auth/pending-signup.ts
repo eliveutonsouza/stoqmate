@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { mfaLoginPath } from "@/lib/access-gate";
 
 // "É staff?" pra decidir se a conta sem tenant precisa terminar cadastro.
 // Não usa is_platform_staff(): ela exige 2FA (aal2), e logo após o login por
@@ -10,10 +11,21 @@ export async function hasStaffRow(supabase: SupabaseClient): Promise<boolean> {
   return Boolean(data);
 }
 
+// Usuário com fator TOTP verificado numa sessão que ainda é aal1 (só senha
+// ou Google). Lê a sessão local, sem ida ao Auth server.
+export async function needsMfa(supabase: SupabaseClient): Promise<boolean> {
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error) throw new Error(`[auth.needsMfa] ${error.message}`);
+  return data.nextLevel === "aal2" && data.currentLevel !== "aal2";
+}
+
 // Pra onde vai quem acabou de autenticar (senha ou link de email). Falha de
 // leitura lança: antes o erro virava "sem tenant" e um lojista com loja
 // configurada caía em /complete-signup por causa de uma queda de rede.
 export async function postLoginDestination(supabase: SupabaseClient, user: User, next = "/dashboard"): Promise<string> {
+  // Com 2FA pendente auth_tenant_id() é null por design — sem esse desvio a
+  // conta configurada cairia em /complete-signup.
+  if (await needsMfa(supabase)) return mfaLoginPath(next);
   const [tenantRes, isStaff] = await Promise.all([supabase.rpc("auth_tenant_id"), hasStaffRow(supabase)]);
   if (tenantRes.error) throw new Error(`[auth.postLoginDestination] ${tenantRes.error.message}`);
   if (tenantRes.data || isStaff) return next;

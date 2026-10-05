@@ -3,7 +3,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { authEmailOrigin } from "@/lib/site-origin";
-import { hasStaffRow, postLoginDestination, saveSignupPhone, slugify } from "@/features/auth/pending-signup";
+import { hasStaffRow, needsMfa, postLoginDestination, saveSignupPhone, slugify } from "@/features/auth/pending-signup";
+import { safeNext } from "@/lib/safe-next";
+import { LIMIT_MESSAGE, allowAuthAttempt } from "@/lib/rate-limit";
 import { isInvalidCredentials, signInErrorMessage } from "@/lib/auth-errors";
 import { GENERIC_ERROR, userMessage } from "@/lib/errors";
 import { formatCnpj, isCnpj, isEmail, passwordError, textError } from "@/lib/validation";
@@ -14,6 +16,9 @@ function logAuthFailure(where: string, error: { name?: string; status?: number; 
   if (isInvalidCredentials(error)) return;
   console.error(`[auth] ${where}`, { name: error.name, status: error.status, code: error.code, message: error.message });
 }
+
+// Janela pra definir a senha nova depois de abrir o link de recuperação.
+const RECOVERY_WINDOW_S = 60 * 60;
 
 function verifyEmailPath(email: string) {
   return `/verify-email?email=${encodeURIComponent(email)}`;
@@ -40,6 +45,7 @@ export async function signUpAction(input: {
   const email = input.email.trim();
   const phone = typeof input.phone === "string" ? input.phone.trim().slice(0, 30) : "";
 
+  if (!(await allowAuthAttempt("signup", email, { ip: 10, email: 3, windowSeconds: 3600 }))) return { error: LIMIT_MESSAGE };
   const supabase = await createClient();
   const origin = await authEmailOrigin();
 
@@ -107,7 +113,10 @@ export async function completeGoogleSignupAction(input: {
   cnpj: string;
   planId: string;
 }) {
-  if (input.cnpj?.trim() && !isCnpj(input.cnpj)) return { error: "CNPJ inválido — confira os 14 dígitos." };
+  const invalid = textError(input.storeName, "o nome da loja", 2, 80)
+    ?? (input.cnpj?.trim() && !isCnpj(input.cnpj) ? "CNPJ inválido — confira os 14 dígitos." : null)
+    ?? (typeof input.planId === "string" && input.planId ? null : "Escolha um plano.");
+  if (invalid) return { error: invalid };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre de novo." };
@@ -130,16 +139,12 @@ export async function completeGoogleSignupAction(input: {
   redirect("/onboarding");
 }
 
-// Destino pós-login vindo da URL: só caminho interno (evita open redirect).
-function safeNext(next: unknown) {
-  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/dashboard";
-  return next.slice(0, 500);
-}
 
 export async function signInAction(input: { email: string; password: string; next?: string }) {
   if (!isEmail(input.email) || typeof input.password !== "string" || !input.password) {
     return { error: "Informe email e senha." };
   }
+  if (!(await allowAuthAttempt("signin", input.email, { ip: 60, email: 20, windowSeconds: 300 }))) return { error: LIMIT_MESSAGE };
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email: input.email.trim(), password: input.password });
   if (error?.code === "email_not_confirmed") redirect(verifyEmailPath(input.email));
@@ -152,6 +157,9 @@ export async function signInAction(input: { email: string; password: string; nex
   // e o cadastro pendente não fecha no callback — fecha aqui no 1º login.
   let destination: string;
   try {
+    // 2FA ligado: a sessão só com senha (aal1) não lê nada no banco; a tela
+    // pede o código e chama verifyLoginMfaAction.
+    if (await needsMfa(supabase)) return { mfaRequired: true as const };
     destination = await postLoginDestination(supabase, data.user, safeNext(input.next));
   } catch (err) {
     console.error("[auth] signIn destino", err);
@@ -160,8 +168,43 @@ export async function signInAction(input: { email: string; password: string; nex
   redirect(destination);
 }
 
+// Segundo passo do login de quem tem 2FA: a sessão aal1 (senha ou Google)
+// já existe; o código TOTP a eleva pra aal2.
+export async function verifyLoginMfaAction(input: { code: string; next?: string }) {
+  const code = typeof input.code === "string" ? input.code.replace(/\s/g, "") : "";
+  if (!/^\d{6}$/.test(code)) return { error: "Informe os 6 dígitos do app autenticador." };
+  if (!(await allowAuthAttempt("mfa", null, { ip: 20, windowSeconds: 300 }))) return { error: LIMIT_MESSAGE };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Sua sessão expirou. Entre de novo com email e senha.", restart: true as const };
+
+  const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+  if (factorsError) {
+    console.error("[auth] verifyLoginMfa listFactors", factorsError.message);
+    return { error: GENERIC_ERROR };
+  }
+  const totp = factors?.totp?.[0];
+  if (!totp) return { error: "Nenhum fator de 2FA ativo nesta conta. Entre de novo.", restart: true as const };
+
+  const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({ factorId: totp.id, code });
+  if (verifyError) {
+    if (verifyError.status === 429) return { error: "Muitas tentativas. Espere um minuto e tente de novo." };
+    return { error: "Código inválido. Confira o app autenticador e tente de novo." };
+  }
+
+  let destination: string;
+  try {
+    destination = await postLoginDestination(supabase, user, safeNext(input.next));
+  } catch (err) {
+    console.error("[auth] verifyLoginMfa destino", err);
+    return { error: GENERIC_ERROR };
+  }
+  redirect(destination);
+}
+
 export async function resendConfirmationAction(input: { email: string }) {
   if (!isEmail(input.email)) return { error: "Informe um email válido." };
+  if (!(await allowAuthAttempt("resend", input.email, { ip: 10, email: 3, windowSeconds: 900 }))) return { error: LIMIT_MESSAGE };
   const supabase = await createClient();
   const origin = await authEmailOrigin();
   const { error } = await supabase.auth.resend({
@@ -177,6 +220,7 @@ export async function resendConfirmationAction(input: { email: string }) {
 }
 
 export async function signInAdminAction(input: { email: string; password: string; code: string }) {
+  if (!(await allowAuthAttempt("signin-admin", input.email, { ip: 20, email: 10, windowSeconds: 300 }))) return { error: LIMIT_MESSAGE };
   const supabase = await createClient();
 
   const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -243,6 +287,7 @@ export async function signOutAction(to: "/login" | "/login/admin" = "/login") {
 
 export async function forgotPasswordAction(input: { email: string }) {
   if (!isEmail(input.email)) return { error: "Informe um email válido." };
+  if (!(await allowAuthAttempt("forgot", input.email, { ip: 10, email: 3, windowSeconds: 900 }))) return { error: LIMIT_MESSAGE };
   const supabase = await createClient();
   const origin = await authEmailOrigin();
   const { error } = await supabase.auth.resetPasswordForEmail(input.email.trim(), {
@@ -262,6 +307,16 @@ export async function resetPasswordAction(input: { password: string }) {
   const invalid = passwordError(input.password);
   if (invalid) return { error: invalid };
   const supabase = await createClient();
+  // Só troca sem a senha atual quem chegou pelo link de recuperação: o
+  // claim `amr` do JWT (assinado) registra o método "recovery". Sem isso
+  // qualquer sessão viva (tablet do caixa, cookie roubado) chamaria esta
+  // action direto e pularia a senha atual exigida em changePasswordAction.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const amr = (claimsData?.claims?.amr ?? []) as { method?: string; timestamp?: number }[];
+  const recoveredAt = amr.find((m) => m.method === "recovery")?.timestamp ?? 0;
+  if (Date.now() / 1000 - recoveredAt > RECOVERY_WINDOW_S) {
+    return { error: "Link de recuperação expirado. Peça um novo em \"Esqueci minha senha\"." };
+  }
   const { error } = await supabase.auth.updateUser({ password: input.password });
   if (error) return { error: userMessage(error, "auth/actions") };
   await supabase.auth.signOut();
@@ -278,6 +333,7 @@ export async function acceptInviteAction(input: {
     ?? (isEmail(input.email) ? null : "Informe um email válido.")
     ?? passwordError(input.password);
   if (invalid) return { error: invalid };
+  if (!(await allowAuthAttempt("invite", input.email, { ip: 20, email: 5, windowSeconds: 900 }))) return { error: LIMIT_MESSAGE };
   const supabase = await createClient();
   const origin = await authEmailOrigin();
 

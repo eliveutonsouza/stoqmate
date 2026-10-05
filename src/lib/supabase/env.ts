@@ -27,6 +27,11 @@ export function parseSupabaseEnv(rawUrl: string | undefined, rawKey: string | un
   return { url, anonKey };
 }
 
+// Cookie de sessão do Supabase com Secure em produção (o padrão do
+// @supabase/ssr não marca). httpOnly fica false: o client do navegador lê a
+// sessão do cookie.
+export const AUTH_COOKIE_OPTIONS = { secure: process.env.NODE_ENV === "production" };
+
 // Acesso literal a process.env.NEXT_PUBLIC_*: é o que o Next substitui no
 // build, inclusive no bundle do cliente. Não trocar por process.env[nome].
 export function supabaseEnv(): SupabaseEnv {

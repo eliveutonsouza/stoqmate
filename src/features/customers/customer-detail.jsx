@@ -13,7 +13,7 @@ import { Modal } from '@/components/ui/modal';
 import { Field } from '@/components/ui/field';
 import { TextInput } from '@/components/ui/text-input';
 import { SelectInput } from '@/components/ui/select-input';
-import { adjustCustomerCreditAction } from '@/features/customers/actions';
+import { adjustCustomerCreditAction, anonymizeCustomerAction, updateCustomerAction } from '@/features/customers/actions';
 
 export function CustomerDetail({ detail }) {
   const navigate = useNavigate();
@@ -23,6 +23,10 @@ export function CustomerDetail({ detail }) {
   const [amount, setAmount] = React.useState(0);
   const [error, setError] = React.useState('');
   const [pending, startTransition] = React.useTransition();
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [form, setForm] = React.useState(null);
+  const [anonOpen, setAnonOpen] = React.useState(false);
+  const [dialogError, setDialogError] = React.useState('');
 
   if (!detail) {
     return (
@@ -39,6 +43,33 @@ export function CustomerDetail({ detail }) {
   const { customer: c, sales, ledger, topProducts } = detail;
   const spent = sales.reduce((s, sale) => s + sale.total, 0);
   const ticket = sales.length ? spent / sales.length : 0;
+
+  const openEdit = () => {
+    setDialogError('');
+    setForm({ name: c.name ?? '', doc: c.doc ?? '', phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' });
+    setEditOpen(true);
+  };
+  const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submitEdit = () => {
+    setDialogError('');
+    startTransition(async () => {
+      const result = await updateCustomerAction({ customerId: c.id, ...form });
+      if (result?.error) { setDialogError(result.error); return; }
+      setEditOpen(false);
+      router.refresh();
+    });
+  };
+
+  const submitAnonymize = () => {
+    setDialogError('');
+    startTransition(async () => {
+      const result = await anonymizeCustomerAction(c.id);
+      if (result?.error) { setDialogError(result.error); return; }
+      setAnonOpen(false);
+      router.refresh();
+    });
+  };
 
   const submitCredit = () => {
     setError('');
@@ -60,6 +91,12 @@ export function CustomerDetail({ detail }) {
         sub={`${c.doc || 'sem documento'} · cliente desde ${new Date(c.created_at).toLocaleDateString('pt-BR')} · ${sales.length} compras`}
         actions={(
           <>
+            {!c.anonymized_at && (
+              <>
+                <button onClick={() => { setDialogError(''); setAnonOpen(true); }} className="btn btn-ghost btn-sm">Anonimizar</button>
+                <button onClick={openEdit} className="btn btn-outline btn-sm">Editar cadastro</button>
+              </>
+            )}
             <button onClick={() => setCreditOpen(true)} className="btn btn-outline btn-sm"><I.Credit size={13} /> Ajustar crédito</button>
             <button onClick={() => navigate(`/stock/sale?customer=${c.id}`)} className="btn btn-primary btn-sm"><I.Plus size={13} /> Nova venda</button>
           </>
@@ -202,6 +239,29 @@ export function CustomerDetail({ detail }) {
         <Field label="Valor" required>
           <TextInput mono prefix="R$" type="number" value={amount} onChange={(e) => setAmount(+e.target.value || 0)} />
         </Field>
+      </Modal>
+
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Editar cadastro do cliente" width={460}
+        footer={<><button onClick={() => setEditOpen(false)} className="btn btn-ghost">Cancelar</button><button onClick={submitEdit} disabled={pending} className="btn btn-primary">{pending ? 'Salvando…' : 'Salvar'}</button></>}>
+        {dialogError && <div role="alert" style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{dialogError}</div>}
+        {form && (
+          <>
+            <Field label="Nome" required><TextInput value={form.name} maxLength={120} onChange={setField('name')} /></Field>
+            <Field label="CPF/CNPJ"><TextInput mono value={form.doc} maxLength={20} onChange={setField('doc')} /></Field>
+            <Field label="Telefone"><TextInput mono value={form.phone} maxLength={30} onChange={setField('phone')} /></Field>
+            <Field label="Email"><TextInput type="email" value={form.email} maxLength={254} onChange={setField('email')} /></Field>
+            <Field label="Observações"><TextInput value={form.notes} maxLength={1000} onChange={setField('notes')} /></Field>
+          </>
+        )}
+      </Modal>
+
+      <Modal open={anonOpen} onClose={() => setAnonOpen(false)} title="Anonimizar cliente" width={440}
+        footer={<><button onClick={() => setAnonOpen(false)} className="btn btn-ghost">Cancelar</button><button onClick={submitAnonymize} disabled={pending} className="btn btn-danger">{pending ? 'Anonimizando…' : 'Anonimizar definitivamente'}</button></>}>
+        {dialogError && <div role="alert" style={{ padding: '10px 12px', background: 'var(--danger-soft)', border: '1px solid var(--danger)', borderRadius: 7, fontSize: 12 }}>{dialogError}</div>}
+        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55 }}>
+          Atende ao pedido de eliminação do titular (LGPD). Nome, documento, telefone, email e observações são apagados
+          e <strong>não podem ser recuperados</strong>. As vendas e o extrato de crédito continuam, sem identificar a pessoa.
+        </p>
       </Modal>
     </StoreShell>
   );

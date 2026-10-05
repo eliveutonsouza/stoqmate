@@ -10,7 +10,7 @@ import { ROUTE_AREA, can } from "@/lib/permissions";
 // permissions.js é JS; tipa só o que o gate lê.
 const AREA_BY_ROUTE = ROUTE_AREA as Record<string, { id: string; staff?: boolean } | undefined>;
 
-export type SessionAccess = "ok" | "past_due" | "unpaid" | "trial_ended" | "canceled" | "no_tenant";
+export type SessionAccess = "ok" | "past_due" | "unpaid" | "trial_ended" | "canceled" | "no_tenant" | "mfa_required";
 
 export const BLOCKED_LANDING: Partial<Record<SessionAccess, string>> = {
   trial_ended: "/trial-ended",
@@ -20,7 +20,18 @@ export const BLOCKED_LANDING: Partial<Record<SessionAccess, string>> = {
 
 const ALWAYS_REACHABLE_WHEN_BLOCKED = new Set(["/profile", ...Object.values(BLOCKED_LANDING)]);
 
-export function gateStoreRoute(pathname: string, ctx: { role: string | null; access: SessionAccess }): string | null {
+// Sessão só com senha de quem tem 2FA ligado: o banco já nega tudo
+// (auth_tenant_id() é null em aal1), aqui só manda pro passo do código.
+export function mfaLoginPath(next: string) {
+  return next === "/dashboard" ? "/login?mfa=1" : `/login?mfa=1&next=${encodeURIComponent(next)}`;
+}
+
+export function gateStoreRoute(
+  pathname: string,
+  ctx: { role: string | null; access: SessionAccess },
+  search = "",
+): string | null {
+  if (ctx.access === "mfa_required") return mfaLoginPath(pathname + search);
   if (ctx.access === "no_tenant") return "/complete-signup";
 
   const landing = BLOCKED_LANDING[ctx.access];

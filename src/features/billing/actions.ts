@@ -90,7 +90,15 @@ export async function createCheckoutSessionAction(input: { planId: string; cycle
   try {
     const customerId = await ensureStripeCustomer(supabase, tenantId);
     const origin = await siteOrigin();
-    const session = await getStripe().checkout.sessions.create({
+    const stripe = getStripe();
+    // Duplo clique ou duas abas abriam dois checkouts pagáveis: pagar os dois
+    // criava duas assinaturas cobrando em paralelo (o webhook só chega depois).
+    // Expira os checkouts de assinatura ainda abertos antes de abrir outro.
+    const open = await stripe.checkout.sessions.list({ customer: customerId, status: "open", limit: 10 });
+    await Promise.all(open.data
+      .filter((s) => s.mode === "subscription")
+      .map((s) => stripe.checkout.sessions.expire(s.id)));
+    const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       locale: "pt-BR",

@@ -17,6 +17,7 @@ const CARDS = [
   { kind: 'profit', i: <I.Credit size={15} />, t: 'Lucratividade', d: 'Compras vs. vendas por produto, com lucro bruto nos últimos 30 dias.' },
   { kind: 'movements', i: <I.Activity size={15} />, t: 'Movimentações (90 dias)', d: 'Entradas, vendas, transferências, trocas, devoluções e ajustes.' },
   { kind: 'suppliers', i: <I.Truck size={15} />, t: 'Fornecedores e compras', d: 'Cadastro, condições comerciais e resumo de pedidos por fornecedor.' },
+  { kind: 'customers', i: <I.Users size={15} />, t: 'Clientes', d: 'Cadastro com documento, contato e crédito em loja. Só proprietário e financeiro.' },
   { kind: 'count-sheet', i: <I.Grid size={15} />, t: 'Folha de contagem', d: 'Planilha para inventário físico, por local, com o saldo do sistema oculto.' },
 ];
 
