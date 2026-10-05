@@ -2,7 +2,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { supabaseEnv } from "@/lib/supabase/env";
+import { AUTH_COOKIE_OPTIONS, supabaseEnv } from "@/lib/supabase/env";
 
 // Cliente pra Server Components, Server Actions e Route Handlers — respeita
 // RLS via a sessão do cookie. Nunca importar em código "use client".
@@ -14,6 +14,7 @@ export async function createClient() {
     url,
     anonKey,
     {
+      cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return cookieStore.getAll();

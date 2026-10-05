@@ -84,7 +84,9 @@ src/features/<domínio>/actions.ts   `"use server"` — mutação, chamada só d
 **Direção de dependência** (estende a regra da seção anterior):
 `features/*/actions.ts` e `queries.ts` podem importar
 `@/lib/supabase/server` livremente. **Nunca** importar
-`@/lib/supabase/service-role` fora de `src/features/admin/**` — e mesmo lá,
+`@/lib/supabase/service-role` fora de `src/features/admin/**` (exceções autorizadas: RPCs de servidor `*_for`/`*_svc` de IA e da fila
+de email, e `src/lib/rate-limit.ts` — rate limit dos endpoints públicos,
+autorizado pelo dev em 2026-10-05; nenhuma delas lê ou grava tabela de domínio) — e mesmo lá,
 só depois de checar `is_platform_staff()` com o client normal (RLS-scoped)
 primeiro. Um Client Component (`"use client"`) nunca importa
 `@/lib/supabase/server` nem `service-role` — só chama uma `action` já

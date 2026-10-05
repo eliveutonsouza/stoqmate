@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { LIMIT_MESSAGE, allowAuthAttempt } from "@/lib/rate-limit";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { allUuids, isEmail, isUuid } from "@/lib/validation";
 import { userMessage, type DbErrorLike } from "@/lib/errors";
@@ -137,11 +138,20 @@ export async function searchCustomersAction(term: string) {
 // autorização é criada com o JWT do gestor, então fn_grant_discount_approval
 // confere o papel dele (financeiro/proprietário) e a rede. Devolve só o id
 // da autorização (uso único, 10 min), que vai junto na venda.
-export async function requestDiscountApprovalAction(input: { email: string; password: string; storeId: string; maxPct: number }) {
+// Mesma resposta pra senha errada, conta de outra rede e usuário sem papel
+// de gestor: mensagens diferentes viravam oráculo pra testar senha de
+// qualquer conta do Supabase a partir do caixa.
+const APPROVAL_DENIED = "Não foi possível aprovar: confira email, senha e código de um gestor desta rede.";
+
+export async function requestDiscountApprovalAction(input: { email: string; password: string; code?: string; storeId: string; maxPct: number }) {
   if (!isEmail(input.email) || typeof input.password !== "string" || !input.password) return { error: "Informe email e senha do gestor." };
   if (!isUuid(input.storeId)) return { error: "Unidade inválida." };
   const pct = Math.round(Number(input.maxPct) * 100) / 100;
   if (!(pct > 0 && pct <= 100)) return { error: "Percentual de desconto inválido." };
+  const code = typeof input.code === "string" ? input.code.replace(/\s/g, "") : "";
+
+  // Senha do gestor digitada no caixa: limite por IP e por email do gestor.
+  if (!(await allowAuthAttempt("discount-approval", input.email, { ip: 20, email: 10, windowSeconds: 300 }))) return { error: LIMIT_MESSAGE };
 
   // O vendedor precisa estar logado e na mesma rede que o gestor.
   const seller = await createClient();
@@ -152,15 +162,27 @@ export async function requestDiscountApprovalAction(input: { email: string; pass
   const manager = createSupabaseClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { error: signInError } = await manager.auth.signInWithPassword({ email: input.email.trim(), password: input.password });
   if (signInError) {
-    return { error: signInError.code === "invalid_credentials" ? "Email ou senha do gestor incorretos." : userMessage(signInError, "pos/approval.signIn") };
+    if (signInError.status === 429) return { error: "Muitas tentativas. Espere um minuto e tente de novo." };
+    if (signInError.code !== "invalid_credentials") console.error("[pos/approval.signIn]", { status: signInError.status, code: signInError.code });
+    return { error: APPROVAL_DENIED };
   }
   try {
+    // Gestor com 2FA: sem o código a sessão dele é aal1 e o banco não vê a
+    // rede (auth_tenant_id() é null) — mesmo critério do login.
+    const { data: aal } = await manager.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      const { data: factors } = await manager.auth.mfa.listFactors();
+      const totp = factors?.totp?.[0];
+      if (!totp || !/^\d{6}$/.test(code)) return { error: APPROVAL_DENIED };
+      const { error: mfaError } = await manager.auth.mfa.challengeAndVerify({ factorId: totp.id, code });
+      if (mfaError) return { error: APPROVAL_DENIED };
+    }
     const { data: managerTenant, error: tenantError } = await manager.rpc("auth_tenant_id");
     if (tenantError) return { error: userMessage(tenantError, "pos/approval.tenant") };
-    if (managerTenant !== sellerTenant) return { error: "Este gestor não pertence a esta rede." };
+    if (managerTenant !== sellerTenant) return { error: APPROVAL_DENIED };
     const { data, error } = await manager.rpc("fn_grant_discount_approval", { p_store_id: input.storeId, p_max_pct: pct });
     if (error) {
-      if (error.message.includes("not authorized")) return { error: "Este usuário não é gestor (financeiro ou proprietário) e não pode aprovar desconto." };
+      if (error.message.includes("not authorized")) return { error: APPROVAL_DENIED };
       return { error: userMessage(error, "pos/approval.grant") };
     }
     return { approvalId: data as string };

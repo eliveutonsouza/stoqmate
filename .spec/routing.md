@@ -18,6 +18,13 @@ regressão. Rotas que ainda não foram "backendizadas" continuam `○`
 Mudar o agrupamento (mover uma rota de grupo, criar um grupo novo) exige
 autorização do desenvolvedor (ver `CLAUDE.md`).
 
+## Route handlers técnicos (não são tela, não têm `page.tsx`)
+
+- `/auth/callback` — troca o `code` do link de email/OAuth por sessão.
+- `/api/health` — health check pra uptime monitor (200 ok / 503 degradado),
+  público, fora do proxy de sessão. Adicionado em 2026-10-05 na auditoria de
+  production readiness — autorizado pelo dev.
+
 ## `(marketing)` — público, sem chrome de app
 
 `/`, `/pricing`, `/terms`, `/privacy`

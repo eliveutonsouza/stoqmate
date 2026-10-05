@@ -39,6 +39,13 @@ describe("gateStoreRoute", () => {
     expect(gateStoreRoute("/billing/past-due", { role: "estoquista", access: "unpaid" })).toBeNull();
   });
 
+  it("2FA pendente vai pro passo do código, levando a rota de volta", () => {
+    expect(gateStoreRoute("/dashboard", { role: null, access: "mfa_required" })).toBe("/login?mfa=1");
+    expect(gateStoreRoute("/products/detail", { role: null, access: "mfa_required" }, "?id=1")).toBe(
+      "/login?mfa=1&next=%2Fproducts%2Fdetail%3Fid%3D1",
+    );
+  });
+
   it("sem empresa vai completar o cadastro", () => {
     expect(gateStoreRoute("/dashboard", { role: null, access: "no_tenant" })).toBe("/complete-signup");
   });

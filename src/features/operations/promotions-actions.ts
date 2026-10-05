@@ -56,7 +56,7 @@ export async function createPromotionAction(input: {
     p_until_stock: input.untilStock,
   });
   if (error) return { error: friendlyError(error) };
-  const { error: auditError } = await supabase.rpc("fn_write_audit", {
+  const { error: auditError } = await supabase.rpc("fn_write_audit_app", {
     p_kind: "promo",
     p_message: `Criou promoção "${input.name}" · preço R$ ${input.promoPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     p_target_type: "promotion",

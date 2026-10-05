@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { postLoginDestination } from "@/features/auth/pending-signup";
+import { safeNext } from "@/lib/safe-next";
 
 // Troca o `code` do link de email (reset de senha) ou do OAuth do Google por
 // uma sessão de verdade via cookies. Rota técnica, não uma tela — ver
@@ -8,8 +9,7 @@ import { postLoginDestination } from "@/features/auth/pending-signup";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const rawNext = searchParams.get("next") ?? "/dashboard";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\") ? rawNext : "/dashboard";
+  const next = safeNext(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();

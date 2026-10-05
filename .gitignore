@@ -54,3 +54,6 @@ next-env.d.ts
 doc/
 
 *storybook.log
+
+# mídia gerada da central de ajuda (publicada no bucket help-media, não vai pro git)
+/videos-stoqmate-central-ajuda/

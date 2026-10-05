@@ -12,7 +12,11 @@ export type AiAttachment =
 export function getAnthropic() {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY não configurada.");
-  return new Anthropic({ apiKey: key });
+  // Padrão do SDK é ~10 min por tentativa + 2 retries: a função da Vercel
+  // morreria antes do catch e o crédito debitado nunca seria estornado.
+  // 60s × 2 tentativas fica bem dentro do limite da função e da janela de
+  // estorno de fn_ai_refund_credits_for (15 min).
+  return new Anthropic({ apiKey: key, timeout: 60_000, maxRetries: 1 });
 }
 
 // Espelha o contrato de window.claude.complete() (que só existe no harness

@@ -45,7 +45,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
   const [customer, setCustomer] = React.useState(initialCustomer ?? null);
   const [approval, setApproval] = React.useState(null);
   const [approvalOpen, setApprovalOpen] = React.useState(false);
-  const [manager, setManager] = React.useState({ email: '', password: '' });
+  const [manager, setManager] = React.useState({ email: '', password: '', code: '' });
   const [approvalError, setApprovalError] = React.useState('');
   const [approving, setApproving] = React.useState(false);
   const [storeId, setStoreId] = React.useState(defaultStoreId);
@@ -101,7 +101,7 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
       .then((res) => {
         if (res?.error) { setApprovalError(res.error); return; }
         setApproval({ id: res.approvalId, maxPct: offPct, storeId });
-        setManager({ email: '', password: '' });
+        setManager({ email: '', password: '', code: '' });
         setApprovalOpen(false);
       })
       .catch(() => setApprovalError('Não foi possível validar o gestor agora. Tente de novo.'))
@@ -406,6 +406,9 @@ export function StockSale({ stores, cashSessionByStore, initialProduct, initialC
             </Field>
             <Field label="Senha do gestor">
               <TextInput type="password" autoComplete="new-password" value={manager.password} onChange={(e) => setManager((m) => ({ ...m, password: e.target.value }))} />
+            </Field>
+            <Field label="Código 2FA do gestor" hint="Só se o gestor usa verificação em duas etapas">
+              <TextInput mono inputMode="numeric" autoComplete="off" placeholder="000 000" value={manager.code} onChange={(e) => setManager((m) => ({ ...m, code: e.target.value }))} />
             </Field>
             {approvalError && <div role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{approvalError}</div>}
           </form>

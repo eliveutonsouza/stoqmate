@@ -10,6 +10,10 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!);
 const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+// Reserva de evento sem processed_at mais velha que isso é de uma execução
+// que morreu (a Edge Function tem limite de wall clock bem abaixo disso).
+const CLAIM_STALE_MS = 5 * 60 * 1000;
+
 // O client do Supabase devolve { error } em vez de lançar. Sem checar, uma
 // escrita que falha respondia 200 e o Stripe nunca reentregava o evento
 // (pagamento perdido em silêncio). Toda escrita passa por aqui: erro vira
@@ -149,16 +153,37 @@ Deno.serve(async (req) => {
   }
 
   // Idempotência: o Stripe reentrega eventos (timeout, retry manual). O
-  // primeiro insert do event.id "reserva" o evento; reentrega bate na PK e
-  // responde 200 sem reprocessar. Se o processamento falhar, a reserva é
-  // desfeita pra reentrega seguinte tentar de novo.
+  // primeiro insert do event.id "reserva" o evento; só é duplicata de
+  // verdade depois de processed_at gravado. Reserva sem processed_at é
+  // processamento em andamento — ou uma execução que morreu no meio (timeout,
+  // crash) sem chegar no catch. Essa, depois de CLAIM_STALE_MS, é retomada;
+  // antes disso responde 409 e o Stripe tenta de novo mais tarde.
   const claim = await supabase.from("stripe_events").insert({ id: event.id, type: event.type });
   if (claim.error) {
-    if (claim.error.code === "23505") {
+    if (claim.error.code !== "23505") {
+      console.error("stripe_events claim failed", claim.error);
+      return new Response("handler error", { status: 500 });
+    }
+    const existing = await supabase.from("stripe_events").select("processed_at").eq("id", event.id).maybeSingle();
+    if (existing.error) {
+      console.error("stripe_events lookup failed", existing.error);
+      return new Response("handler error", { status: 500 });
+    }
+    if (existing.data?.processed_at) {
       return new Response(JSON.stringify({ received: true, duplicate: true }), { headers: { "Content-Type": "application/json" } });
     }
-    console.error("stripe_events claim failed", claim.error);
-    return new Response("handler error", { status: 500 });
+    // Update condicional: só uma reentrega simultânea retoma a reserva velha.
+    const reclaim = await supabase.from("stripe_events")
+      .update({ received_at: new Date().toISOString() })
+      .eq("id", event.id)
+      .is("processed_at", null)
+      .lt("received_at", new Date(Date.now() - CLAIM_STALE_MS).toISOString())
+      .select("id");
+    if (reclaim.error) {
+      console.error("stripe_events reclaim failed", reclaim.error);
+      return new Response("handler error", { status: 500 });
+    }
+    if (!reclaim.data?.length) return new Response("event in progress", { status: 409 });
   }
 
   try {
@@ -186,7 +211,11 @@ Deno.serve(async (req) => {
       }
       case "customer.subscription.updated":
       case "customer.subscription.created": {
-        await syncSubscription(event.data.object as Stripe.Subscription);
+        // O Stripe não garante ordem de entrega: um "updated" antigo chegando
+        // depois de um "deleted" reativaria o tenant. O estado atual vem
+        // sempre da API, nunca do payload do evento.
+        const sub = await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id);
+        await syncSubscription(sub);
         break;
       }
       case "customer.subscription.deleted": {
@@ -205,7 +234,9 @@ Deno.serve(async (req) => {
       }
       case "invoice.paid":
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        // Mesmo motivo do subscription.updated: payment_failed atrasado não
+        // pode sobrescrever um invoice.paid mais novo.
+        const invoice = await stripe.invoices.retrieve((event.data.object as Stripe.Invoice).id as string);
         const tenantId = await tenantIdForCustomer(invoice.customer as string);
         must(await supabase.from("invoices").upsert({
           tenant_id: tenantId,
@@ -228,6 +259,11 @@ Deno.serve(async (req) => {
     if (release.error) console.error("stripe_events release failed", event.id, release.error);
     return new Response("handler error", { status: 500 });
   }
+
+  // Falha aqui não desfaz o processamento (todas as escritas acima são
+  // idempotentes): a reentrega retoma a reserva e reaplica sem efeito duplo.
+  const done = await supabase.from("stripe_events").update({ processed_at: new Date().toISOString() }).eq("id", event.id);
+  if (done.error) console.error("stripe_events mark processed failed", event.id, done.error);
 
   return new Response(JSON.stringify({ received: true }), { headers: { "Content-Type": "application/json" } });
 });

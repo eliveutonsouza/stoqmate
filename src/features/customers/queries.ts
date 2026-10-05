@@ -58,7 +58,7 @@ export async function loadCustomers(sp: RawSearchParams) {
 export async function loadCustomerDetail(customerId: string) {
   const supabase = await createClient();
   const [customerRes, salesRes, ledgerRes] = await Promise.all([
-    supabase.from("customers").select("id, name, doc, phone, email, notes, credit_balance, created_at").eq("id", customerId).maybeSingle(),
+    supabase.from("customers").select("id, name, doc, phone, email, notes, credit_balance, created_at, anonymized_at").eq("id", customerId).maybeSingle(),
     supabase
       .from("sales")
       .select("id, created_at, total, store:stores(id, name), sale_items(id, name_snapshot, qty)")
