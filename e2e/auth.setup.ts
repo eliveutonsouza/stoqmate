@@ -37,12 +37,18 @@ setup("autentica o tenant de teste do e2e", async ({ page }) => {
     await page.getByRole("button", { name: "Entrar", exact: true }).click();
     await expect(page).toHaveURL("/dashboard");
   } else {
-    await page.goto("/signup");
-    await page.getByPlaceholder("Mariana Souza").fill("E2E Tenant");
+    // Projeto novo: cria o usuário já confirmado, com o cadastro pendente no
+    // user_metadata (como o signup grava), e entra. O 1º login fecha o
+    // cadastro (finishPendingSignup) — sem mandar email pra domínio de teste.
+    const { error: createError } = await admin.auth.admin.createUser({
+      email: QA_EMAIL, password: QA_PASSWORD, email_confirm: true,
+      user_metadata: { full_name: "E2E Tenant", store_name: QA_STORE_NAME, plan_id: "controle", terms_accepted_at: new Date().toISOString() },
+    });
+    if (createError) throw createError;
+    await page.goto("/login");
     await page.getByPlaceholder("voce@sualoja.com.br").fill(QA_EMAIL);
     await page.getByPlaceholder("••••••••").fill(QA_PASSWORD);
-    await page.getByPlaceholder("Bonsucesso Varejo").fill(QA_STORE_NAME);
-    await page.getByRole("button", { name: /criar loja e configurar/i }).click();
+    await page.getByRole("button", { name: "Entrar", exact: true }).click();
     await expect(page).toHaveURL("/onboarding");
 
     const { data: newUser } = await admin.auth.admin.listUsers();
