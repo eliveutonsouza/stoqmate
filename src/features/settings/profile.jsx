@@ -165,7 +165,7 @@ export function Profile({ profile }) {
         <FormCard title="Segurança" cols={2}
           footer={<button onClick={savePassword} disabled={passwordPending} className="btn btn-primary">{passwordPending ? 'Atualizando…' : 'Atualizar senha'}</button>}>
           <Field label="Senha atual" span={2}><TextInput type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="••••••••" /></Field>
-          <Field label="Nova senha" span={1} hint="Mínimo 8 caracteres."><TextInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" /></Field>
+          <Field label="Nova senha" span={1} hint="Mínimo 8 caracteres, com letras e números."><TextInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" /></Field>
           <Field label="Confirmar nova senha" span={1}><TextInput type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" /></Field>
           {passwordError && <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--danger)' }}>{passwordError}</div>}
           {passwordSaved && <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--success)' }}>Senha atualizada.</div>}

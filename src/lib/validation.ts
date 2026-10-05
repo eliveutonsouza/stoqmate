@@ -38,6 +38,8 @@ export function textError(value: unknown, label: string, min = 1, max = 200): st
 export function passwordError(value: unknown): string | null {
   if (typeof value !== "string" || value.length < 8) return "A senha precisa ter no mínimo 8 caracteres.";
   if (value.length > 72) return "A senha pode ter no máximo 72 caracteres.";
+  // Mesma regra do Supabase Auth (password_required_characters): letra e número.
+  if (!/[a-zA-Z]/.test(value) || !/[0-9]/.test(value)) return "A senha precisa misturar letras e números.";
   return null;
 }
 

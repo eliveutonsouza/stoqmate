@@ -17,7 +17,7 @@ function friendlyError(error: DbErrorLike) {
 
 export async function uploadStoreLogoAction(formData: FormData) {
   const file = formData.get("file");
-  const checked = checkImage(file, 2);
+  const checked = await checkImage(file, 2);
   if ("error" in checked) return checked;
 
   const supabase = await createClient();

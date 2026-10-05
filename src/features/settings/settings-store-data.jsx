@@ -97,7 +97,7 @@ export function SettingsStoreData({ company }) {
         </div>
       </SettingsLayout>
 
-      <Modal open={deleteOpen} onClose={() => { setDeleteOpen(false); setConfirmName(''); setDeleteError(''); }} title={`Excluir ${company.name}?`} desc="Cancela a assinatura e agenda a remoção dos dados. Irreversível." width={460}
+      <Modal open={deleteOpen} onClose={() => { setDeleteOpen(false); setConfirmName(''); setDeleteError(''); }} title={`Excluir ${company.name}?`} desc="Cancela a assinatura agora, sem novas cobranças. Os dados ficam guardados por 90 dias (dá pra reativar nesse prazo) e depois são apagados de vez." width={460}
         footer={<>
           <button onClick={() => { setDeleteOpen(false); setConfirmName(''); setDeleteError(''); }} className="btn btn-ghost">Cancelar</button>
           <button onClick={confirmDelete} disabled={deletePending || confirmName.trim() !== company.name.trim()} className="btn btn-danger">{deletePending ? 'Excluindo…' : 'Excluir permanentemente'}</button>

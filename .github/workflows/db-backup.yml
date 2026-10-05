@@ -1,0 +1,60 @@
+name: Backup do banco
+
+# O projeto Supabase está no plano Free: sem backup diário acessível nem PITR.
+# Este job faz um dump lógico (schema + dados de public e auth) todo dia,
+# criptografa com AES-256 (senha em BACKUP_PASSPHRASE) e guarda como
+# artifact por 30 dias. O dump tem dado pessoal: nunca sai sem criptografia.
+#
+# Secrets do repositório:
+#   SUPABASE_DB_URL     connection string do pooler (Session mode, porta 5432)
+#   BACKUP_PASSPHRASE   senha longa e aleatória, guardada fora do GitHub
+#
+# Restaurar: scripts/restore-backup.md.
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Secrets configurados?
+        id: gate
+        run: |
+          if [ -n "$SUPABASE_DB_URL" ] && [ -n "$BACKUP_PASSPHRASE" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Backup pulado: configure SUPABASE_DB_URL e BACKUP_PASSPHRASE nos secrets do repositório."
+          fi
+      - name: Cliente Postgres 17
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+      - name: Dump + criptografia
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          stamp=$(date -u +%Y%m%dT%H%MZ)
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+            --format=custom --no-owner --no-privileges \
+            --schema=public --schema=auth \
+            --file=db.dump
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+            -in db.dump -out "stoqmate-$stamp.dump.enc" -pass env:BACKUP_PASSPHRASE
+          rm -f db.dump
+          ls -lh stoqmate-*.dump.enc
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          name: db-backup
+          path: stoqmate-*.dump.enc
+          retention-days: 30
+          if-no-files-found: error

@@ -2715,7 +2715,7 @@ export type Database = {
         Returns: undefined
       }
       fn_record_notification_email_result_svc: {
-        Args: { p_error: string | null; p_id: string | null }
+        Args: { p_error: string | null; p_id: string | null; p_retry?: boolean | null }
         Returns: undefined
       }
       fn_register_payments: {

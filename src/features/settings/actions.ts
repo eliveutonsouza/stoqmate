@@ -7,7 +7,8 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { limitKindFromError } from "@/lib/plan-limits";
-import { userMessage } from "@/lib/errors";
+import { GENERIC_ERROR, userMessage } from "@/lib/errors";
+import { getStripe } from "@/lib/stripe";
 import { formatCnpj, isCnpj, isEmail, isOwnStorageUrl, isUuid, passwordError, textError } from "@/lib/validation";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -116,6 +117,33 @@ export async function updateCompanyDataAction(input: { name: string; cnpj: strin
 
 export async function requestAccountDeletionAction() {
   const supabase = await createClient();
+  const { data: allowed, error: accessError } = await supabase.rpc("has_access", { p_area: "company", p_min_level: 3 });
+  if (accessError) return { error: userMessage(accessError, "settings/actions") };
+  if (!allowed) return { error: "Só o proprietário pode excluir a conta." };
+
+  // Excluir a conta encerra a cobrança na hora. Sem isso o Stripe seguia
+  // cobrando, e a renovação (customer.subscription.updated) reativava a
+  // conta "excluída" — a assinatura manda no acesso (fn_tenant_access).
+  const { data: subs, error: subsError } = await supabase
+    .from("subscriptions").select("stripe_subscription_id")
+    .in("status", ["active", "trialing", "past_due", "unpaid", "paused", "incomplete"]);
+  if (subsError) return { error: userMessage(subsError, "settings/actions.subscriptions") };
+  try {
+    const stripe = getStripe();
+    for (const s of subs ?? []) {
+      try {
+        await stripe.subscriptions.cancel(s.stripe_subscription_id, { prorate: false });
+      } catch (err) {
+        // Espelho local atrasado: já cancelada no Stripe não impede excluir.
+        const current = await stripe.subscriptions.retrieve(s.stripe_subscription_id).catch(() => null);
+        if (current?.status !== "canceled") throw err;
+      }
+    }
+  } catch (err) {
+    console.error("[settings.requestAccountDeletion] stripe cancel", err);
+    return { error: GENERIC_ERROR };
+  }
+
   const { error } = await supabase.rpc("fn_request_account_deletion");
   if (error) {
     if (error.message.includes("not authorized")) return { error: "Só o proprietário pode excluir a conta." };
@@ -141,7 +169,7 @@ export async function updateBrandingAction(input: { logoUrl: string | null; bran
 
 export async function uploadBrandingLogoAction(formData: FormData) {
   const file = formData.get("file");
-  const checked = checkImage(file, 2);
+  const checked = await checkImage(file, 2);
   if ("error" in checked) return checked;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -239,7 +267,7 @@ export async function unenrollMfaAction(factorId: string) {
 
 export async function uploadAvatarAction(formData: FormData) {
   const file = formData.get("file");
-  const checked = checkImage(file, 2);
+  const checked = await checkImage(file, 2);
   if ("error" in checked) return checked;
 
   const supabase = await createClient();

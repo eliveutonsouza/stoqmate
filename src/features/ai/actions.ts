@@ -7,6 +7,7 @@ import { loadOcrContext } from "@/features/ai-flows/queries";
 import { GENERIC_ERROR, userMessage } from "@/lib/errors";
 import { productCostMap } from "@/lib/supabase/costs";
 import { fetchAll } from "@/lib/supabase/fetch-all";
+import { matchesSignature, pdfPageCount } from "@/lib/file-sniff";
 
 // Server Action que lança tem a mensagem trocada por um texto genérico no
 // build de produção — o lojista nunca via "créditos insuficientes". Toda
@@ -289,6 +290,7 @@ async function forecastReplenishmentActionImpl(
 
 const OCR_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const OCR_MAX_BYTES = 3.5 * 1024 * 1024;
+const OCR_MAX_PDF_PAGES = 5;
 
 // Nota fiscal por texto colado, foto ou PDF (DANFE). O catálogo usado para
 // casar SKUs é lido aqui no servidor, não recebido do navegador.
@@ -299,8 +301,16 @@ async function extractInvoiceActionImpl(form: FormData) {
   let attachment: AiAttachment | undefined;
   if (file instanceof File && file.size > 0) {
     if (file.size > OCR_MAX_BYTES) throw new UserFacingError("Arquivo maior que 3,5 MB. Envie uma foto menor ou o PDF da nota.");
-    const data = Buffer.from(await file.arrayBuffer()).toString("base64");
+    const raw = new Uint8Array(await file.arrayBuffer());
+    if (!matchesSignature(raw, file.type)) throw new UserFacingError("O arquivo não é uma foto (JPG, PNG, WEBP) ou PDF válido.");
+    const data = Buffer.from(raw).toString("base64");
     if (file.type === "application/pdf") {
+      // Crédito é fixo por leitura: um PDF de 100 páginas custaria 100× mais
+      // tokens pelo mesmo preço. Nota fiscal (DANFE) cabe em poucas páginas.
+      const pages = pdfPageCount(raw);
+      if (pages !== null && pages > OCR_MAX_PDF_PAGES) {
+        throw new UserFacingError(`PDF com ${pages} páginas. Envie só a nota (até ${OCR_MAX_PDF_PAGES} páginas).`);
+      }
       attachment = { kind: "pdf", data };
     } else if ((OCR_IMAGE_TYPES as readonly string[]).includes(file.type)) {
       attachment = { kind: "image", mediaType: file.type as (typeof OCR_IMAGE_TYPES)[number], data };

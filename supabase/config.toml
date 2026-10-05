@@ -178,7 +178,8 @@ enable_manual_linking = false
 minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-password_requirements = ""
+# Espelha o projeto em nuvem e passwordError (src/lib/validation.ts).
+password_requirements = "letters_digits"
 
 # Configure passkey sign-ins.
 # [auth.passkey]
@@ -412,4 +413,8 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # Stripe chama o webhook sem JWT do Supabase; a autenticação é a assinatura
 # (stripe-signature) validada dentro da função.
 [functions.stripe-webhook]
+verify_jwt = false
+
+# Chamada pelo pg_cron com segredo próprio (RETENTION_CRON_SECRET), não JWT.
+[functions.tenant-retention]
 verify_jwt = false

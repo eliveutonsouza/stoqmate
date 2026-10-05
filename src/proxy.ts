@@ -17,6 +17,10 @@ const ADMIN_PREFIX = "/admin";
 // completar. Por isso sai da lista de bypass mesmo estando em OPEN_ROUTES.
 const NEEDS_SESSION = ["/complete-signup"];
 
+// Públicas, mas lidam com senha, código 2FA ou sessão de recuperação: saem
+// com nonce (renderizadas por request) em vez de 'unsafe-inline'.
+const NONCE_PUBLIC = ["/login", "/login/admin", "/reset-password", "/invite", "/forgot-password"];
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -29,15 +33,15 @@ export async function proxy(request: NextRequest) {
   const { url, anonKey } = supabaseEnv();
   const cspBase = { supabaseUrl: url, dev: process.env.NODE_ENV === "development", https: request.nextUrl.protocol === "https:" };
 
-  if (isPublic) {
+  if (isPublic && !NONCE_PUBLIC.includes(pathname)) {
     const res = NextResponse.next();
     res.headers.set("Content-Security-Policy", buildCsp(cspBase));
     return res;
   }
 
-  // App autenticado: nonce por request. O Next lê o nonce do header CSP da
-  // REQUISIÇÃO e aplica nos próprios <script>; o da resposta é o que o
-  // navegador faz valer.
+  // App autenticado e telas de credencial: nonce por request. O Next lê o
+  // nonce do header CSP da REQUISIÇÃO e aplica nos próprios <script>; o da
+  // resposta é o que o navegador faz valer.
   const csp = buildCsp({ ...cspBase, nonce: createNonce() });
   const next = () => {
     const headers = new Headers(request.headers);
@@ -48,6 +52,7 @@ export async function proxy(request: NextRequest) {
   };
 
   let response = next();
+  if (isPublic) return response;
 
   const supabase = createServerClient(
     url,
