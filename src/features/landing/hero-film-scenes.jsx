@@ -9,6 +9,12 @@
 import { useFilmClock, Shot, Easing, animate, clamp } from '@/features/landing/hero-film-engine';
 import { C, SHOTS, SLAB_W, SLAB_H, Mark, PhoneCamera, PhoneQueue } from '@/features/landing/hero-film-pieces';
 
+// Fontes das estatísticas de mercado da cena "Economia":
+// - 12,3%: Neogrid, Índice de Ruptura, média de 2025 (supermercados).
+// - 31%:   GMA/FMI, "Retail Out-of-Stocks: A Worldwide Examination" (2002).
+// - 1,65%: 9ª Pesquisa Abrappe de Perdas no Varejo Brasileiro (2026, dados de 2025).
+export const MARKET_STATS_SOURCES = 'Fontes: Neogrid (ruptura 2025) · GMA/FMI (2002) · Abrappe (perdas 2025)';
+
 export const OM_SCENES = [
   { name: 'Abertura', dur: 6 },
   { name: 'Marca', dur: 5 },
@@ -338,13 +344,16 @@ export function Film() {
             T={T} start={K.Cadastro + 1.5} size={25} style={{ textAlign: 'left' }} />
           <div style={{ display: 'flex', gap: 12, marginTop: 8, opacity: clamp((T - K.Cadastro - 2.6) / 0.6, 0, 1) }}>
             <Glass pad="14px 22px" style={{ borderRadius: 14 }}>
-              <div style={{ fontSize: 34, fontWeight: 600, fontFamily: C.mono, letterSpacing: '-0.03em' }}>800</div>
-              <div style={{ fontSize: 17, color: 'rgba(255,255,255,.7)', marginTop: 2 }}>produtos num sábado</div>
+              <div style={{ fontSize: 34, fontWeight: 600, fontFamily: C.mono, letterSpacing: '-0.03em' }}>65%</div>
+              <div style={{ fontSize: 17, color: 'rgba(255,255,255,.7)', marginTop: 2 }}>dos registros de estoque divergem da prateleira*</div>
             </Glass>
             <Glass pad="14px 22px" style={{ borderRadius: 14 }}>
-              <div style={{ fontSize: 34, fontWeight: 600, fontFamily: C.mono, letterSpacing: '-0.03em' }}>4s</div>
-              <div style={{ fontSize: 17, color: 'rgba(255,255,255,.7)', marginTop: 2 }}>por item, sem digitar</div>
+              <div style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.03em' }}>Sem digitar</div>
+              <div style={{ fontSize: 17, color: 'rgba(255,255,255,.7)', marginTop: 2 }}>a IA preenche, você confere</div>
             </Glass>
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,.45)', opacity: clamp((T - K.Cadastro - 2.9) / 0.6, 0, 1) }}>
+            * DeHoratius &amp; Raman, Management Science (2008): 370 mil registros analisados
           </div>
         </div>
       </Shot>
@@ -366,12 +375,14 @@ export function Film() {
           alignItems: 'center', justifyContent: 'center', gap: 40,
           opacity: clamp((T - K.Economia) / 0.6, 0, 1) * clamp((K.Fechamento - 0.25 - T) / 0.45, 0, 1),
         }}>
-          <Words text="O que isso devolve para você" T={T} start={K.Economia + 0.15} size={58} />
+          <Words text="O que estoque sem controle custa" T={T} start={K.Economia + 0.15} size={58} />
           <div style={{ display: 'flex', gap: 26 }}>
+            {/* Estatísticas de mercado com fonte (ver MARKET_STATS_SOURCES abaixo).
+                Nada de número de cliente ou economia média: não temos base pra isso. */}
             {[
-              ['6 min → 12 s', 'para dar entrada numa nota'],
-              ['R$ 3.016', 'achados numa única conferência'],
-              ['R$ 8.996', 'em perdas silenciosas encontradas'],
+              ['12,3%', 'dos itens em falta nos supermercados em 2025'],
+              ['31%', 'dos clientes compram no concorrente quando falta'],
+              ['1,65%', 'do faturamento do varejo vira perda'],
             ].map(([big, small], i) => {
               const p = clamp((T - K.Economia - 0.7 - i * 0.22) / 0.62, 0, 1);
               const e = Easing.easeOutBack(p);
@@ -381,10 +392,13 @@ export function Film() {
                   opacity: clamp(p * 1.3, 0, 1), transform: `translateY(${(1 - e) * 44}px) scale(${0.92 + e * 0.08})`,
                 }}>
                   <div style={{ fontSize: 46, fontWeight: 600, fontFamily: C.mono, letterSpacing: '-0.038em', color: '#FFB99E' }}>{big}</div>
-                  <div style={{ fontSize: 20, color: 'rgba(255,255,255,.75)', marginTop: 9, lineHeight: 1.4 }}>{small}</div>
+                  <div style={{ fontSize: 20, color: 'rgba(255,255,255,.75)', marginTop: 9, lineHeight: 1.4, maxWidth: 300, marginInline: 'auto' }}>{small}</div>
                 </Glass>
               );
             })}
+          </div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,.5)', opacity: clamp((T - K.Economia - 1.6) / 0.6, 0, 1) }}>
+            {MARKET_STATS_SOURCES}
           </div>
         </div>
       </Shot>
